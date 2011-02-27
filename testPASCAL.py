@@ -9,7 +9,7 @@ import VOCpr
 import time
 import copy
 import itertools
-from trainPASCALmc2 import *
+from trainPASCAL import *
 
 
 if __name__=="__main__":
@@ -21,20 +21,20 @@ if __name__=="__main__":
     import sys
     if len(sys.argv)>1:
         cfg.cls=sys.argv[1]
-    cfg.numcl=3
+    cfg.numcl=2
     cfg.mythr=-10
     if len(sys.argv)>2:
         it=int(sys.argv[2])
-    testname="./data/train_24_01_11/%s_%d_better"%(cfg.cls,cfg.numcl)
+    testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
     if len(sys.argv)>3:
         cfg.mythr=float(sys.argv[3])
-    cfg.multipr=4
+    cfg.multipr=False
     cfg.bottomup=False
     #cfg.year="2007"
     cfg.maxtest=5000
-    cfg.show=False
+    cfg.show=True
     cfg.thr=-2
     cfg.auxdir="/home/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"
     cfg.test=True

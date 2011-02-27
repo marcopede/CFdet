@@ -144,7 +144,7 @@ if __name__=="__main__":
     cfg.numit=20#10
     cfg.comment="I shuld get more than 84... hopefully"
     cfg.numneg=0#not used but necessary
-    testname="./data/11_02_26/inria_pedro"
+    testname="./data/11_02_26/inria_pedro_comp"
     cfg.savefeat=False #save precomputed features 
     cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save
     debug=False
@@ -339,7 +339,9 @@ if __name__=="__main__":
             #w,r=util.loadSvm(svmname,dir="",lib=lib)
             import time
             tt1=time.time()
-            w,r=pegasos.train(trpos,trneg,svmname,dir="",pc=pc)
+            #w,r=pegasos.train(trpos,trneg,svmname,dir="",pc=pc)
+            w,r=pegasos.trainComp(trpos,trneg,svmname,dir="",pc=pc)
+            r=w[-1];w=w[:-1]
             #w,r=pegasos.trainkeep(trpos,trneg,svmname,dir="",pc=pc)
 
             m=tr.model(w,r,len(m["ww"]),31,usemrf=cfg.usemrf,usefather=cfg.usefather)
@@ -410,6 +412,7 @@ if __name__=="__main__":
         pylab.draw()
         pylab.show()
         pylab.savefig("%s_ap%d.png"%(testname,it))
+        util.savemat("%s_ap%d.mat"%(testname,it),{"tp":tp,"fp":fp,"scr":scr,"tot":tot,"rc":rc,"pr":pr,"ap":ap})
         tinit=((time.time()-initime)/3600.0)
         tpar=((time.time()-partime)/3600.0)
         print "AP(it=",it,")=",ap

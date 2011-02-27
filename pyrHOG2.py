@@ -1372,8 +1372,8 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         #pylab.gca().set_xlim(0,img.shape[1])
         #pylab.gca().set_ylim(pylab.gca().get_ylim()[::-1])
         dettime=time.time()-t
-        print "Elapsed Time:",dettime
-        print "Number HOG:",numhog
+        #print "Elapsed Time:",dettime
+        #print "Number HOG:",numhog
         tr.show(det,parts=showlabel,thr=-0.5,maxnum=10)           
         return tr,det,dettime,numhog
     else:

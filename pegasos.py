@@ -1,6 +1,6 @@
 import numpy
 import ctypes
-from ctypes import c_float,c_int
+from ctypes import c_float,c_int,c_void_p,POINTER
 
 ctypes.cdll.LoadLibrary("./libfastpegasos.so")
 lpeg= ctypes.CDLL("libfastpegasos.so")
@@ -237,12 +237,31 @@ def train_new(posnfeat,negnfeat,fname,oldw=None,dir="./save/",pc=0.017,path="/ho
     #fast_pegasos(ftype *w,int wx,ftype *ex,int exy,ftype *label,ftype lambda,int iter,int part)
     return w[:-1],b
 
-def trainComp(trpos,trneg,trposcl,trnegcl,fname,oldw=None,dir="./save/",pc=0.017,path="/home/marcopede/code/c/liblinear-1.7",maxtimes=100,eps=0.01,bias=100):
+lpeg.fast_pegasos_comp.argtypes=[
+    numpy.ctypeslib.ndpointer(dtype=c_float,ndim=1,flags="C_CONTIGUOUS")#w
+    ,c_int #num comp
+    ,POINTER(c_int) #compx
+    ,POINTER(c_int) #compy 
+    ,POINTER(c_void_p)#samples
+    ,c_int #numsamples
+    ,numpy.ctypeslib.ndpointer(dtype=c_int,ndim=1,flags="C_CONTIGUOUS")#labels
+    ,numpy.ctypeslib.ndpointer(dtype=c_int,ndim=1,flags="C_CONTIGUOUS")#comp number
+    ,c_float #lambda
+    ,c_int #iter
+    ,c_int #part
+    ]
+
+
+def trainComp(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./save/",pc=0.017,path="/home/marcopede/code/c/liblinear-1.7",maxtimes=100,eps=0.01,bias=100):
     """
         The same as trainSVMRaw but it does use files instad of lists:
         it is slower but it needs less memory.
     """
     ff=open(fname,"a")
+    if trposcl==None:
+        trposcl=numpy.zeros(len(trpos),dtype=numpy.int)
+    if trnegcl==None:
+        trnegcl=numpy.zeros(len(trneg),dtype=numpy.int)
     numcomp=numpy.array(trposcl).max()+1
     trcomp=[]
     newtrcomp=[]
@@ -260,12 +279,12 @@ def trainComp(trpos,trneg,trposcl,trnegcl,fname,oldw=None,dir="./save/",pc=0.017
     for l in range(numcomp):
         compx[l]=len(trpos[numpy.where(numpy.array(trposcl)==l)[0][0]])+1
     for p,val in enumerate(trposcl):
-        trcomp[val].append(numpy.concatenate((trpos[p],[1])).astype(c_float))
+        trcomp[val].append(numpy.concatenate((trpos[p],[bias])).astype(c_float))
         #trcompcl.append(val)
         label[val].append(1)
         compy[val]+=1
     for p,val in enumerate(trnegcl):
-        trcomp[val].append(numpy.concatenate((trneg[p],[1])).astype(c_float))        
+        trcomp[val].append(numpy.concatenate((trneg[p],[bias])).astype(c_float))        
         #trcompcl.append(val)
         label[val].append(-1)
         compy[val]+=1
@@ -273,8 +292,8 @@ def trainComp(trpos,trneg,trposcl,trnegcl,fname,oldw=None,dir="./save/",pc=0.017
     fdim=numpy.sum(compx)#len(posnfeat[0])+1
     #bigm=numpy.zeros((ntimes,fdim),dtype=numpy.float32)
     w=numpy.zeros(fdim,dtype=numpy.float32)
-    if oldw!=None:
-        w[:-1]=oldw
+    #if oldw!=None:
+    #    w[:-1]=oldw
     #for l in range(posntimes):
     #    bigm[l,:-1]=posnfeat[l]
     #    bigm[l,-1]=bias
@@ -325,4 +344,6 @@ def trainComp(trpos,trneg,trposcl,trnegcl,fname,oldw=None,dir="./save/",pc=0.017
         #sts.report(fname,"a","Training")
     #b=-w[-1]*float(bias)
     #fast_pegasos(ftype *w,int wx,ftype *ex,int exy,ftype *label,ftype lambda,int iter,int part)
-    return w,0#w[:-1],b
+    return w,0
+
+

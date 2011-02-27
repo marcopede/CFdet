@@ -118,7 +118,7 @@ def detectWrap(a):
         pylab.show()
     return res
 
-def myunique(old,new,oldcl,newcl,numcl=3):
+def myunique(old,new,oldcl,newcl,numcl):
     if old==[]:
         return new,newcl
     unew=[]
@@ -132,8 +132,8 @@ def myunique(old,new,oldcl,newcl,numcl=3):
         print ep,"/",len(new)
         #check the cluster
         #selec=numpy.arange(len(oldcl))[numpy.array(oldcl)==newcl[ep]]
-        apr=numpy.sum(numpy.abs(e[:100]-clst[newcl[ep]][:,:100]),1)
-        #print apr
+        apr=numpy.sum(numpy.abs(e[::100]-clst[newcl[ep]][:,::100]),1)
+        print apr
         #raw_input()
         if numpy.all(apr>0.1):
             unew.append(e)
@@ -143,7 +143,7 @@ def myunique(old,new,oldcl,newcl,numcl=3):
                 unew.append(e)
                 unewcl.append(newcl[ep]) 
     print "Doules",len(new)-len(unew)
-    #raw_input()
+    raw_input()
     return [unew,unewcl]
 
 if __name__=="__main__":
@@ -157,10 +157,10 @@ if __name__=="__main__":
     cfg.interv=10
     cfg.ovr=0.45
     cfg.sbin=8
-    cfg.maxpos=10#120
-    cfg.maxtest=10#100
-    cfg.maxneg=10#120
-    cfg.maxexamples=500
+    cfg.maxpos=1000#120
+    cfg.maxtest=1000#100
+    cfg.maxneg=1000#120
+    cfg.maxexamples=10000
     cfg.deform=True
     cfg.usemrf=True#True
     cfg.usefather=False#Flase
@@ -182,8 +182,17 @@ if __name__=="__main__":
     cfg.thr=-2
     cfg.mythr=-10
     cfg.auxdir="/home/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"#InriaPosData(basepath="/home/databases/").getStorageDir()
-    testname="./data/11_02_26/%s_%d_comp"%(cfg.cls,cfg.numcl)
+    testname="./data/11_02_27/%s_%d_test"%(cfg.cls,cfg.numcl)
     util.save(testname+".cfg",cfg)
+
+    mydebug=True
+    if mydebug:
+        cfg.multipr=False
+        cfg.maxpos=10
+        cfg.maxneg=10
+        cfg.maxtest=10
+        cfg.maxexamples=1000
+        #testname=testname+"_debug"
 
     if cfg.multipr==1:
         numcore=None
@@ -402,7 +411,7 @@ if __name__=="__main__":
                 trposcl+=tr.mixture(nfuse)
             print "----Pos Image %d----"%ii
             print "Pos:",len(nfuse),"Neg:",totneg
-            print "Tot Pos:",len(trpos)," Neg:",len(trneg)
+            print "Tot Pos:",len(trpos)," Neg:",len(trneg)+len(newtrneg)
             if cfg.show:
                 pylab.figure(20)
                 pylab.ioff()
@@ -415,7 +424,7 @@ if __name__=="__main__":
         del itr
 
         #delete doubles
-        newtrneg2,newtrnegcl2=myunique(trneg,newtrneg,trnegcl,newtrnegcl)
+        newtrneg2,newtrnegcl2=myunique(trneg,newtrneg,trnegcl,newtrnegcl,cfg.numcl)
         trneg=trneg+newtrneg2
         trnegcl=trnegcl+newtrnegcl2
         
@@ -452,13 +461,13 @@ if __name__=="__main__":
                         tr=mix[0]
                         fuse+=mix[1]
                         ineg=tr.descr(mix[2],flip=False)
-                        trneg+=ineg
+                        newtrneg+=ineg
                         totneg+=len(ineg)
-                        trnegcl+=tr.mixture(mix[2])
+                        newtrnegcl+=tr.mixture(mix[2])
                         if cfg.useflineg:
                             inegflip=tr.descr(mix[2],flip=True)
-                            trneg+=inegflip
-                            trnegcl+=tr.mixture(mix[2])
+                            newtrneg+=inegflip
+                            newtrnegcl+=tr.mixture(mix[2])
                     print "----Neg Image %d----"%ii
                     print "Pos:",0,"Neg:",totneg
                     print "Tot Pos:",len(trpos)," Neg:",len(trneg)
@@ -473,7 +482,7 @@ if __name__=="__main__":
             ##    break
 
             #delete doubles
-            newtrneg2,newtrnegcl2=myunique(trneg,newtrneg,trnegcl,newtrnegcl)
+            newtrneg2,newtrnegcl2=myunique(trneg,newtrneg,trnegcl,newtrnegcl,cfg.numcl)
             trneg=trneg+newtrneg2
             trnegcl=trnegcl+newtrnegcl2
 
@@ -538,7 +547,7 @@ if __name__=="__main__":
             #w,r=util.loadSvm(svmname,dir="",lib=lib)
             #w,r=util.trainSvmRawPeg(ftrpos,ftrneg,testname+".rpt.txt",dir="",pc=pc)
             import pegasos
-            w,r=pegasos.trainComp(trpos,trneg,trposcl,trnegcl,testname+".rpt.txt",dir="",pc=pc)
+            w,r=pegasos.trainComp(trpos,trneg,testname+".rpt.txt",trposcl,trnegcl,dir="",pc=pc)
             #util.objf(w,r,svmpos,svmneg,pc)
             #w=numpy.mean(ftrpos,0)**it
             #ftrpos=[]
@@ -549,8 +558,8 @@ if __name__=="__main__":
             #raw_input()            
 
             for idm,m in enumerate(models):
-                models[idm]=tr.model(w[cumsize[idm]:cumsize[idm+1]-1],r,len(m["ww"]),31,m["fy"],m["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather)
-                models[idm]["ra"]=w[cumsize[idm+1]-1]
+                models[idm]=tr.model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*100,len(m["ww"]),31,m["fy"],m["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather)
+                #models[idm]["ra"]=w[cumsize[idm+1]-1]
             util.save("%s%d.model"%(testname,it),models)
             if cfg.deform:
                 print m["df"]
@@ -633,6 +642,7 @@ if __name__=="__main__":
         pylab.draw()
         pylab.show()
         pylab.savefig("%s_ap%d.png"%(testname,it))
+        #util.savemat("%s_ap%d.mat"%(testname,it),{"tp":tp,"fp":fp,"scr":scr,"tot":tot,"rc":rc,"pr":pr,"ap":ap})
         tinit=((time.time()-initime)/3600.0)
         tpar=((time.time()-partime)/3600.0)
         print "AP(it=",it,")=",ap

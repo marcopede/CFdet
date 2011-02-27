@@ -140,14 +140,14 @@ if __name__=="__main__":
     cfg.svmc=0.001#0.001#0.002#0.004
     cfg.show=True
     cfg.thr=-2
-    cfg.multipr=4
+    cfg.multipr=8
     cfg.numit=20#10
     cfg.comment="I shuld get more than 84... hopefully"
     cfg.numneg=0#not used but necessary
     testname="./data/11_02_26/inria_pedro"
     cfg.savefeat=False #save precomputed features 
     cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save
-    debug=1
+    debug=False
     if debug:
         cfg.maxpos=10
         cfg.maxneg=10

@@ -537,7 +537,8 @@ if __name__=="__main__":
             #util.trainSvmRaw(ftrneg,ftrpos,svmname,dir="",pc=pc,lib=lib)
             #w,r=util.loadSvm(svmname,dir="",lib=lib)
             #w,r=util.trainSvmRawPeg(ftrpos,ftrneg,testname+".rpt.txt",dir="",pc=pc)
-            w,r=util.trainSvmRawPegComp(trpos,trneg,trposcl,trnegcl,testname+".rpt.txt",dir="",pc=pc)
+            import pegasos
+            w,r=pegasos.trainComp(trpos,trneg,trposcl,trnegcl,testname+".rpt.txt",dir="",pc=pc)
             #util.objf(w,r,svmpos,svmneg,pc)
             #w=numpy.mean(ftrpos,0)**it
             #ftrpos=[]

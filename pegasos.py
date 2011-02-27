@@ -237,3 +237,92 @@ def train_new(posnfeat,negnfeat,fname,oldw=None,dir="./save/",pc=0.017,path="/ho
     #fast_pegasos(ftype *w,int wx,ftype *ex,int exy,ftype *label,ftype lambda,int iter,int part)
     return w[:-1],b
 
+def trainComp(trpos,trneg,trposcl,trnegcl,fname,oldw=None,dir="./save/",pc=0.017,path="/home/marcopede/code/c/liblinear-1.7",maxtimes=100,eps=0.01,bias=100):
+    """
+        The same as trainSVMRaw but it does use files instad of lists:
+        it is slower but it needs less memory.
+    """
+    ff=open(fname,"a")
+    numcomp=numpy.array(trposcl).max()+1
+    trcomp=[]
+    newtrcomp=[]
+    trcompcl=[]
+    alabel=[]
+    label=[]
+    for l in range(numcomp):
+        trcomp.append([])#*numcomp
+        label.append([])
+    #trcomp=[trcomp]
+    #trcompcl=[]
+    #label=[[]]*numcomp
+    compx=[0]*numcomp
+    compy=[0]*numcomp
+    for l in range(numcomp):
+        compx[l]=len(trpos[numpy.where(numpy.array(trposcl)==l)[0][0]])+1
+    for p,val in enumerate(trposcl):
+        trcomp[val].append(numpy.concatenate((trpos[p],[1])).astype(c_float))
+        #trcompcl.append(val)
+        label[val].append(1)
+        compy[val]+=1
+    for p,val in enumerate(trnegcl):
+        trcomp[val].append(numpy.concatenate((trneg[p],[1])).astype(c_float))        
+        #trcompcl.append(val)
+        label[val].append(-1)
+        compy[val]+=1
+    ntimes=len(trpos)+len(trneg)
+    fdim=numpy.sum(compx)#len(posnfeat[0])+1
+    #bigm=numpy.zeros((ntimes,fdim),dtype=numpy.float32)
+    w=numpy.zeros(fdim,dtype=numpy.float32)
+    if oldw!=None:
+        w[:-1]=oldw
+    #for l in range(posntimes):
+    #    bigm[l,:-1]=posnfeat[l]
+    #    bigm[l,-1]=bias
+    #for l in range(negntimes):
+    #    bigm[posntimes+l,:-1]=negnfeat[l]
+    #    bigm[posntimes+l,-1]=bias
+    #labels=numpy.concatenate((numpy.ones(posntimes),-numpy.ones(negntimes))).astype(numpy.float32)
+    for l in range(numcomp):
+        trcompcl=numpy.concatenate((trcompcl,numpy.ones(compy[l],dtype=numpy.int32)*l))
+        alabel=numpy.concatenate((alabel,numpy.array(label[l])))
+    trcompcl=trcompcl.astype(numpy.int32)
+    alabel=alabel.astype(numpy.int32)
+    arrint=(c_int*numcomp)
+    arrfloat=(c_void_p*numcomp)
+    #trcomp1=[list()]*numcomp
+    for l in range(numcomp):#convert to array
+        trcomp[l]=numpy.array(trcomp[l])
+        newtrcomp.append(trcomp[l].ctypes.data_as(c_void_p))
+    print "Clusters size:",compx
+    print "Clusters elements:",compy
+    print "Starting Pegasos SVM training"
+    ff.write("Starting Pegasos SVM training\n")
+    lamd=1/(pc*ntimes)
+    obj=0.0
+    ncomp=c_int(numcomp)
+    
+    #print "check"
+    #pylab.figure(340);pylab.plot(alabel);pylab.show()
+    #pylab.figure(350);pylab.plot(trcomp[0].sum(0));pylab.show()
+    #pylab.figure(350);pylab.plot(trcomp[1].sum(0));pylab.show()
+    #print "X0:",trcomp[0][0,:7],newtrcomp[0]
+    #print "X1:",trcomp[1][0,:7],newtrcomp[1]
+    #raw_input()
+
+    for tt in range(maxtimes):
+        lpeg.fast_pegasos_comp(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,lamd,ntimes*10,tt)
+        #nobj=lpeg.objective(w,fdim,bigm,ntimes,labels,lamd)
+        nobj=1
+        print "Objective Function:",nobj
+        ff.write("Objective Function:%f\n"%nobj)
+        ratio=abs(abs(obj/nobj)-1)
+        print "Ratio:",ratio
+        ff.write("Ratio:%f\n"%ratio)
+        #if ratio<eps:
+        #    print "Converging after %d iterations"%tt
+        #    break
+        obj=nobj
+        #sts.report(fname,"a","Training")
+    #b=-w[-1]*float(bias)
+    #fast_pegasos(ftype *w,int wx,ftype *ex,int exy,ftype *label,ftype lambda,int iter,int part)
+    return w,0#w[:-1],b

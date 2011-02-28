@@ -29,7 +29,7 @@ def detectWrap(a):
     else:
         gtbbox=None
     f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.savedir+"/hog/",notsave=not(cfg.savefeat),hallucinate=cfg.hallucinate,cformat=True)
-    res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,small=True,show=cfg.show)
+    res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,small=True,show=cfg.show,usefather=cfg.usefather)
     if cfg.show:
         pylab.show()
     return res
@@ -128,7 +128,7 @@ if __name__=="__main__":
     cfg.maxneg=2000#120
     cfg.maxexamples=10000
     cfg.deform=True
-    cfg.usemrf=False
+    cfg.usemrf=True
     cfg.usefather=True
     cfg.bottomup=False
     cfg.initr=1
@@ -140,15 +140,16 @@ if __name__=="__main__":
     cfg.svmc=0.001#0.001#0.002#0.004
     cfg.show=True
     cfg.thr=-2
-    cfg.multipr=8
+    cfg.multipr=4
     cfg.numit=20#10
     cfg.comment="I shuld get more than 84... hopefully"
     cfg.numneg=0#not used but necessary
-    testname="./data/11_02_26/inria_pedro_comp"
+    testname="./data/11_02_28/inria_rightpedro"
     cfg.savefeat=False #save precomputed features 
     cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save
-    debug=False
-    if debug:
+    mydebug=False
+    if mydebug:
+        cfg.multipr=False
         cfg.maxpos=10
         cfg.maxneg=10
         cfg.maxtest=10
@@ -301,6 +302,14 @@ if __name__=="__main__":
                 for ii,res in enumerate(itr):
                     trpos+=res[3]#not necessary cause no positives
                     newtrneg+=res[4]
+                    if (nit>0 and res[4]!=[]):
+                        scr=res[2][0]["scr"]
+                        dense=numpy.sum(res[4][0]*w)-r
+                        #raw_input()
+                        if abs(scr-dense)>0.0001:
+                            print "Warning: the two scores must be equal!!!"
+                            print "Scr:",scr,"DesneSCR:",dense,"Diff:",abs(scr-dense)
+                            raw_input()
                     print "----Neg Image %d----"%ii
                     print "Pos:",len(res[3]),"Neg:",len(res[4])
                     print "Tot Pos:",len(trpos)," Neg:",len(newtrneg)      
@@ -322,7 +331,7 @@ if __name__=="__main__":
             #print len(trneg),trneglen
             #if len(trneg)/float(trneglen)<1.05 and not(limit):
             #if len(newtrneg2)<5 and not(newPositives):
-            if (float(len(newtrneg2))<=0.05*nSupportVectorsNeg) and not(newPositives):
+            if (float(len(newtrneg2))<=0.05*nSupportVectorsNeg) and not(newPositives) and not(limit):
                 print "Not enough negatives, convergence!"
                 break
             newPositives=False
@@ -339,9 +348,11 @@ if __name__=="__main__":
             #w,r=util.loadSvm(svmname,dir="",lib=lib)
             import time
             tt1=time.time()
-            #w,r=pegasos.train(trpos,trneg,svmname,dir="",pc=pc)
+            #w1,r1=pegasos.train(trpos,trneg,svmname,dir="",pc=pc)
             w,r=pegasos.trainComp(trpos,trneg,svmname,dir="",pc=pc)
-            r=w[-1];w=w[:-1]
+            r=-w[-1]*100;w=w[:-1]
+            #print "Results"
+            #raw_input()
             #w,r=pegasos.trainkeep(trpos,trneg,svmname,dir="",pc=pc)
 
             m=tr.model(w,r,len(m["ww"]),31,usemrf=cfg.usemrf,usefather=cfg.usefather)
@@ -369,7 +380,7 @@ if __name__=="__main__":
             print "Length before:",len(trneg)
             for p,d in enumerate(trneg):
                 if numpy.sum(d*w)-r<-1:
-                    if len(trneg)>(cfg.maxexamples-len(trpos))/2:
+                    if (len(trneg)+len(trpos))>((cfg.maxexamples)/2):
                         trneg.pop(p)
             print "Length after:",len(trneg)
             trneglen=len(trneg)

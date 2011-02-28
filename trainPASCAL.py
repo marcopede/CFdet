@@ -75,11 +75,13 @@ def extractInfo(trPosImages,maxnum=-1,usetr=True,usedf=False):
     area=(bb[:,2]-bb[:,0])*(bb[:,3]-bb[:,1])
     return name,bb[:cnt,:],ratio[:cnt],area[:cnt]
 
-def buildense(trpos,trposcl,cumsize):
+def buildense(trpos,trposcl,cumsize,bias=100):
     ftrpos=[]
     for iel,el in enumerate(trpos):
         ftrpos.append(numpy.zeros(cumsize[-1],dtype=numpy.float32))
         ftrpos[-1][cumsize[trposcl[iel]]:cumsize[trposcl[iel]+1]-1]=trpos[iel]
+        #bias
+        ftrpos[-1][cumsize[trposcl[iel]+1]-1]=bias
     return ftrpos    
 
 def clear(keep=("__builtins__", "clear")):
@@ -113,7 +115,7 @@ def detectWrap(a):
     f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.auxdir+"/hog/",notsave=notsave,hallucinate=cfg.hallucinate,cformat=True)
     res=[]
     for clm,m in enumerate(models):
-        res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=0.7,minnegincl=0,small=False,show=cfg.show,cl=clm,mythr=cfg.mythr))
+        res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=0.7,minnegincl=0,small=False,show=cfg.show,cl=clm,mythr=cfg.mythr,usemrf=cfg.usemrf))
     if cfg.show:
         pylab.show()
     return res
@@ -387,31 +389,63 @@ if __name__=="__main__":
         for ii,res in enumerate(itr):
             totneg=0
             fuse=[]
+            fuseneg=[]
             for mix in res:
                 #trpos+=res[3]
                 tr=mix[0]
                 fuse+=mix[1]
-                ineg=tr.descr(mix[2],flip=False)
-                newtrneg+=ineg
-                totneg+=len(ineg)
-                newtrnegcl+=tr.mixture(mix[2])
-                if cfg.useflineg:
-                    inegflip=tr.descr(mix[2],flip=True)
-                    newtrneg+=inegflip
-                    newtrnegcl+=tr.mixture(mix[2])
+                fuseneg+=mix[2]
+                #ineg=tr.descr(mix[2],flip=False)
+                #newtrneg+=ineg
+                #totneg+=len(ineg)
+                #newtrnegcl+=tr.mixture(mix[2])
+                #if cfg.useflineg:
+                #    inegflip=tr.descr(mix[2],flip=True)
+                #    newtrneg+=inegflip
+                #    newtrnegcl+=tr.mixture(mix[2])
             #for h in fuse:
             #    h["scr"]+=models[h["cl"]]["ra"]
             rfuse=tr.rank(fuse,maxnum=1000)
+            rfuseneg=tr.rank(fuseneg,maxnum=1000)
             nfuse=tr.cluster(rfuse,ovr=0.5)
+            nfuseneg=tr.cluster(rfuseneg,ovr=0.5)
             trpos+=tr.descr(nfuse)         
+            newtrneg+=tr.descr(nfuseneg)
             trposcl+=tr.mixture(nfuse)
+            newtrnegcl+=tr.mixture(nfuseneg)
             if cfg.useflipos:
                 iposflip=tr.descr(nfuse,flip=True)
                 trpos+=iposflip
                 trposcl+=tr.mixture(nfuse)
+            if cfg.useflineg:
+                inegflip=tr.descr(nfuseneg,flip=True)
+                newtrneg+=inegflip
+                newtrnegcl+=tr.mixture(nfuseneg)
             print "----Pos Image %d----"%ii
-            print "Pos:",len(nfuse),"Neg:",totneg
+            print "Pos:",len(nfuse),"Neg:",len(nfuseneg)
             print "Tot Pos:",len(trpos)," Neg:",len(trneg)+len(newtrneg)
+            #check score
+            if (nfuse!=[] and it>0):
+                aux=tr.descr(nfuse)[0]
+                auxcl=tr.mixture(nfuse)[0]
+                dns=buildense([aux],[auxcl],cumsize)[0]
+                dscr=numpy.sum(dns*w)
+                print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
+                if abs(nfuse[0]["scr"]-dscr)>0.00001:
+                    print "Warning: the two scores must be the same!!!"
+                    print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
+                    raw_input()
+            #check score
+            if (nfuseneg!=[] and it>0):
+                aux=tr.descr(nfuseneg)[0]
+                auxcl=tr.mixture(nfuseneg)[0]
+                dns=buildense([aux],[auxcl],cumsize)[0]
+                dscr=numpy.sum(dns*w)
+                print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
+                if abs(nfuseneg[0]["scr"]-dscr)<0.00001:
+                    print "Warning: the two scores must be the same!!!"
+                    print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
+                    raw_input()
             if cfg.show:
                 pylab.figure(20)
                 pylab.ioff()
@@ -433,6 +467,7 @@ if __name__=="__main__":
         newPositives=True
         for nit in range(5):
             newtrneg=[]
+            newtrnegcl=[]
             print "Negative Images Iteration %d:"%nit
             #print numpy.who()
             #raw_input()
@@ -456,22 +491,52 @@ if __name__=="__main__":
                     itr=mypool.imap(detectWrap,arg)
                 for ii,res in enumerate(itr):
                     totneg=0
+                    fuse=[]
+                    fuseneg=[]
                     for mix in res:
                         #trpos+=res[3]
                         tr=mix[0]
                         fuse+=mix[1]
-                        ineg=tr.descr(mix[2],flip=False)
-                        newtrneg+=ineg
-                        totneg+=len(ineg)
-                        newtrnegcl+=tr.mixture(mix[2])
-                        if cfg.useflineg:
-                            inegflip=tr.descr(mix[2],flip=True)
-                            newtrneg+=inegflip
-                            newtrnegcl+=tr.mixture(mix[2])
+                        fuseneg+=mix[2]
+                        #ineg=tr.descr(mix[2],flip=False)
+                        #newtrneg+=ineg
+                        #totneg+=len(ineg)
+                        #newtrnegcl+=tr.mixture(mix[2])
+                        #if cfg.useflineg:
+                        #    inegflip=tr.descr(mix[2],flip=True)
+                        #    newtrneg+=inegflip
+                        #    newtrnegcl+=tr.mixture(mix[2])
+                    rfuse=tr.rank(fuse,maxnum=1000)
+                    rfuseneg=tr.rank(fuseneg,maxnum=1000)
+                    nfuse=tr.cluster(rfuse,ovr=0.5)
+                    nfuseneg=tr.cluster(rfuseneg,ovr=0.5)
+                    trpos+=tr.descr(nfuse)         
+                    newtrneg+=tr.descr(nfuseneg)
+                    trposcl+=tr.mixture(nfuse)
+                    newtrnegcl+=tr.mixture(nfuseneg)
+                    if cfg.useflipos:
+                        iposflip=tr.descr(nfuse,flip=True)
+                        trpos+=iposflip
+                        trposcl+=tr.mixture(nfuse)
+                    if cfg.useflineg:
+                        inegflip=tr.descr(nfuseneg,flip=True)
+                        newtrneg+=inegflip
+                        newtrnegcl+=tr.mixture(nfuseneg)
+                    #check score
+                    if (nfuseneg!=[] and nit>0):
+                        aux=tr.descr(nfuseneg)[0]
+                        auxcl=tr.mixture(nfuseneg)[0]
+                        dns=buildense([aux],[auxcl],cumsize)[0]
+                        dscr=numpy.sum(dns*w)
+                        if abs(nfuseneg[0]["scr"]-dscr)>0.00001:
+                            print "Warning: the two scores must be the same!!!"
+                            print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
+                            raw_input()
+
                     print "----Neg Image %d----"%ii
-                    print "Pos:",0,"Neg:",totneg
-                    print "Tot Pos:",len(trpos)," Neg:",len(trneg)
-                if len(trneg)+len(trpos)>cfg.maxexamples:
+                    print "Pos:",0,"Neg:",len(nfuseneg)
+                    print "Tot Pos:",len(trpos)," Neg:",len(trneg)+len(newtrneg)
+                if len(newtrneg)+len(trneg)+len(trpos)>cfg.maxexamples:
                     print "Cache Limit Reached!"
                     limit=True
                     break
@@ -487,7 +552,7 @@ if __name__=="__main__":
             trnegcl=trnegcl+newtrnegcl2
 
             #if len(trneg)/float(trneglen)<1.05 and not(limit):
-            if len(newtrneg2)==0 and not(newPositives):
+            if len(newtrneg2)==0 and not(newPositives) and not(limit):
                 print "Not enough negatives, convergence!"
                 break
             newPositives=False
@@ -584,8 +649,8 @@ if __name__=="__main__":
             print "Length before:",len(trneg)
             for p,d in enumerate(trneg):
                 aux=buildense([d],[trnegcl[p]],cumsize)
-                if numpy.sum(aux*w)-r<-1:
-                    if len(trneg)>(cfg.maxexamples-len(trpos))/2:
+                if numpy.sum(aux*w)<-1:
+                    if len(trneg)+len(trpos)>(cfg.maxexamples)/2:
                         trneg.pop(p)
                         trnegcl.pop(p)
             print "Length after:",len(trneg)

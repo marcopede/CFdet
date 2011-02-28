@@ -2552,12 +2552,13 @@ def drawDef(dfeat,dy,dx,mindef=0.001,distr="father"):
     if distr=="father":       
         pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],"r", alpha=0.15, edgecolor="b",lw=1)    
     for l in range(len(py)):
-        wh=numpy.exp(-mindef/dfeat[ordy[l],ordx[l],0])/numpy.exp(1);hh=numpy.exp(-mindef/dfeat[ordy[l],ordx[l],1])/numpy.exp(1)
+        aux=dfeat[ordy[l],ordx[l],:].clip(-1,-mindef)
+        wh=numpy.exp(-mindef/aux[0])/numpy.exp(1);hh=numpy.exp(-mindef/aux[1])/numpy.exp(1)
         #print "Dx",wh,"Dy",hh
         e=Ellipse(xy=[(px[l]+dx),(py[l]+dy)], width=wh, height=hh, alpha=0.35)
         x1=-0.75+dx+px[l];x2=0.75+dx+px[l]
         y1=-0.76+dy+py[l];y2=0.75+dy+py[l]
-        col=[wh*hh]*3
+        col=numpy.array([wh*hh]*3).clip(0,1)
         if distr=="father":
             col[0]=0       
         e.set_facecolor(col)
@@ -2582,7 +2583,7 @@ def drawDeform(dfeat,mindef=0.001):
     pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],"r", alpha=0.15, edgecolor="r",lw=1)       
     wh=numpy.exp(-mindef/dfeat[0][0,0,0])/numpy.exp(1);hh=numpy.exp(-mindef/dfeat[0][0,0,1])/numpy.exp(1)
     e=Ellipse(xy=[0,0], width=wh, height=hh , alpha=0.35)
-    col=[wh*hh]*3
+    col=numpy.array([wh*hh]*3).clip(0,1)
     col[0]=0
     e.set_facecolor(col)
     pylab.axis("off")

@@ -1278,27 +1278,41 @@ class TreatDef(Treat):
                     break
         Treat.show(self,ldet,colors=colors,thr=thr,maxnum=maxnum)        
 
-    def descr(self,det,flip=False):   
+    def descr(self,det,flip=False,usemrf=True,usefather=True):   
         ld=[]
         for item in det:
             d=numpy.array([])
             for l in range(len(item["feat"])):
                 if not(flip):
-                    d=numpy.concatenate((d,item["feat"][l].flatten()))        
-                    d=numpy.concatenate((d,item["def"]["dy"][l].flatten()))
-                    d=numpy.concatenate((d,item["def"]["dx"][l].flatten()))
-                    d=numpy.concatenate((d,item["def"]["ddy"][l].flatten()))
-                    d=numpy.concatenate((d,item["def"]["ddx"][l].flatten()))
+                    d=numpy.concatenate((d,item["feat"][l].flatten()))       
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten())) 
+                    if l>0: #skip deformations level 0
+                        if usefather:
+                            d=numpy.concatenate((d, (item["def"]["dy"][l].flatten()**2)  ))
+                            d=numpy.concatenate((d, (item["def"]["dx"][l].flatten()**2)  ))
+                        if usemrf:
+                            d=numpy.concatenate((d,item["def"]["ddy"][l].flatten()))
+                            d=numpy.concatenate((d,item["def"]["ddx"][l].flatten()))
                 else:
                     d=numpy.concatenate((d,hogflip(item["feat"][l]).flatten()))        
-                    aux=item["def"]["dy"][l][:,::-1].copy()**2
-                    d=numpy.concatenate((d,aux.flatten()))
-                    aux=item["def"]["dx"][l][:,::-1].copy()**2
-                    d=numpy.concatenate((d,aux.flatten()))
-                    aux=defflip(item["def"]["ddy"][l])
-                    d=numpy.concatenate((d,aux.flatten()))
-                    aux=defflip(item["def"]["ddx"][l])
-                    d=numpy.concatenate((d,aux.flatten()))
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten())) 
+                    if l>0: #skip deformations level 0
+                        if usefather:
+                            aux=(item["def"]["dy"][l][:,::-1]**2)#.copy()
+                            d=numpy.concatenate((d,aux.flatten()))
+                            aux=(item["def"]["dx"][l][:,::-1]**2)#.copy()
+                            d=numpy.concatenate((d,aux.flatten()))
+                        if usemrf:
+                            aux=defflip(item["def"]["ddy"][l])
+                            d=numpy.concatenate((d,aux.flatten()))
+                            aux=defflip(item["def"]["ddx"][l])
+                            d=numpy.concatenate((d,aux.flatten()))
             ld.append(d.astype(numpy.float32))
         return ld
 
@@ -1315,29 +1329,34 @@ class TreatDef(Treat):
             dp=(fy*fx)*4**l*fsz
             ww.append((d[p:p+dp].reshape((fy*2**l,fx*2**l,fsz))).astype(numpy.float32))
             p+=dp
-            ddp=4**l
-            aux=numpy.zeros((2**l,2**l,4))
-            aux[:,:,0]=d[p:p+ddp].reshape((2**l,2**l))
-            p+=ddp
-            aux[:,:,1]=d[p:p+ddp].reshape((2**l,2**l))
-            p+=ddp
-            aux[:,:,2]=d[p:p+ddp].reshape((2**l,2**l))
-            p+=ddp
-            aux[:,:,3]=d[p:p+ddp].reshape((2**l,2**l))
-            p+=ddp
-            #df.append(-numpy.abs(-aux.astype(numpy.float32)))
-            aux[aux>-mindef/4**l]=-mindef/4**l
-            if not(usemrf):
-                aux[:,:,2:]=0
-            if not(usefather):
-                aux[:,:,:2]=0
-            df.append(aux.astype(numpy.float32))
+            if l>0: #skip level 0
+                ddp=4**l
+                aux=numpy.zeros((2**l,2**l,4))
+                if usefather:
+                    aux[:,:,0]=d[p:p+ddp].reshape((2**l,2**l))
+                    p+=ddp
+                    aux[:,:,1]=d[p:p+ddp].reshape((2**l,2**l))
+                    p+=ddp
+                if usemrf:
+                    aux[:,:,2]=d[p:p+ddp].reshape((2**l,2**l))
+                    p+=ddp
+                    aux[:,:,3]=d[p:p+ddp].reshape((2**l,2**l))
+                    p+=ddp
+                #####df.append(-numpy.abs(-aux.astype(numpy.float32)))
+    #            aux[aux>-mindef/4**l]=-mindef/4**l
+    #            #if not(usemrf):
+    #            #    aux[:,:,2:]=0
+    #            #if not(usefather):
+    #            #    aux[:,:,:2]=0
+                df.append(aux.astype(numpy.float32))
+            else:
+                df.append(numpy.zeros((2**l,2**l,4),dtype=numpy.float32))
         m={"ww":ww,"rho":rho,"fy":fy,"fx":fx,"df":df}
         return m
 
 import time
 
-def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False):
+def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True):
     """Detect objec in images
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -1378,9 +1397,11 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         return tr,det,dettime,numhog
     else:
         best1,worste1,ipos,ineg=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=1,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
-        iposflip=tr.descr(best1,flip=True)
+        ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)
+        iposflip=tr.descr(best1,flip=True,usemrf=usemrf,usefather=usefather)
         ipos=ipos+iposflip
-        inegflip=tr.descr(worste1,flip=True)
+        ineg=tr.descr(worste1,flip=False,usemrf=usemrf,usefather=usefather)
+        inegflip=tr.descr(worste1,flip=True,usemrf=usemrf,usefather=usefather)
         ineg=ineg+inegflip
     return tr,best1,worste1,ipos,ineg
 

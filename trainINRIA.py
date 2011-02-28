@@ -34,8 +34,8 @@ def detectWrap(a):
         pylab.show()
     return res
 
-class config(object):
-    pass
+#class config(object):
+#    pass
         
 class stats(object):
     """
@@ -114,48 +114,58 @@ def unique(old,new):
 
 
 if __name__=="__main__":
-    cfg=config()
+#    cfg=config()
 
-    dbpath="/home/databases/"
-    cfg.fy=8#remember small
-    cfg.fx=3
-    cfg.lev=3
-    cfg.interv=10
-    cfg.ovr=0.45
-    cfg.sbin=8
-    cfg.maxpos=2000#120
-    cfg.maxtest=2000#100
-    cfg.maxneg=2000#120
-    cfg.maxexamples=10000
-    cfg.deform=True
-    cfg.usemrf=True
-    cfg.usefather=True
-    cfg.bottomup=False
-    cfg.initr=1
-    cfg.ratio=1
-    cfg.hallucinate=1
-    cfg.numneginpos=5
-    cfg.useflipos=True
-    cfg.useflineg=True
-    cfg.svmc=0.001#0.001#0.002#0.004
-    cfg.show=True
-    cfg.thr=-2
-    cfg.multipr=4
-    cfg.numit=20#10
-    cfg.comment="I shuld get more than 84... hopefully"
-    cfg.numneg=0#not used but necessary
-    testname="./data/11_02_28/inria_rightpedro"
-    cfg.savefeat=False #save precomputed features 
-    cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save
-    mydebug=False
-    if mydebug:
-        cfg.multipr=False
-        cfg.maxpos=10
-        cfg.maxneg=10
-        cfg.maxtest=10
-        cfg.maxexamples=1000
+    try:
+        from config_local import * #your own configuration
+    except:
+        print "config_local.py is not present loading configdef.py"
+        from config import * #default configuration  
+        
+    cfg.savedir=InriaPosData(basepath=cfg.dbpath).getStorageDir() #where to save
 
-    util.save(testname+".cfg",cfg)
+    util.save(cfg.testname+".cfg",cfg)
+
+#    dbpath="/home/databases/"
+#    cfg.fy=8#remember small
+#    cfg.fx=3
+#    cfg.lev=3
+#    cfg.interv=10
+#    cfg.ovr=0.45
+#    cfg.sbin=8
+#    cfg.maxpos=2000#120
+#    cfg.maxtest=2000#100
+#    cfg.maxneg=2000#120
+#    cfg.maxexamples=10000
+#    cfg.deform=True
+#    cfg.usemrf=False
+#    cfg.usefather=True
+#    cfg.bottomup=False
+#    cfg.initr=1
+#    cfg.ratio=1
+#    cfg.hallucinate=1
+#    cfg.numneginpos=5
+#    cfg.useflipos=True
+#    cfg.useflineg=True
+#    cfg.svmc=0.001#0.001#0.002#0.004
+#    cfg.show=True
+#    cfg.thr=-2
+#    cfg.multipr=4
+#    cfg.numit=20#10
+#    cfg.comment="I shuld get more than 84... hopefully"
+#    cfg.numneg=0#not used but necessary
+#    testname="./data/11_02_28/inria_rightpedro"
+#    cfg.savefeat=False #save precomputed features 
+#    cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save
+#    mydebug=False
+#    if mydebug:
+#        cfg.multipr=False
+#        cfg.maxpos=10
+#        cfg.maxneg=10
+#        cfg.maxtest=10
+#        cfg.maxexamples=1000
+
+#    util.save(testname+".cfg",cfg)
 
     if cfg.multipr==1:
         numcore=None
@@ -163,13 +173,14 @@ if __name__=="__main__":
         numcore=cfg.multipr
 
     mypool = Pool(numcore)
-    
-    trPosImages=getRecord(InriaPosData(basepath=dbpath),cfg.maxpos)
-    trNegImages=getRecord(InriaNegData(basepath=dbpath),cfg.maxneg)
-    tsImages=getRecord(InriaTestFullData(basepath=dbpath),cfg.maxtest)
+
+    cfg.savedir=InriaPosData(basepath=cfg.dbpath).getStorageDir()    
+    trPosImages=getRecord(InriaPosData(basepath=cfg.dbpath),cfg.maxpos)
+    trNegImages=getRecord(InriaNegData(basepath=cfg.dbpath),cfg.maxneg)
+    tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
 
     stcfg=stats([{"name":"cfg*"}])
-    stcfg.report(testname+".rpt.txt","w","Initial Configuration")
+    stcfg.report(cfg.testname+".rpt.txt","w","Initial Configuration")
 
     sts=stats(
         [{"name":"it","txt":"Iteration"},
@@ -336,10 +347,10 @@ if __name__=="__main__":
                 break
             newPositives=False
 
-            sts.report(testname+".rpt.txt","a","Before Training")
+            sts.report(cfg.testname+".rpt.txt","a","Before Training")
 
             print "SVM learning"
-            svmname="%s.svm"%testname
+            svmname="%s.svm"%cfg.testname
             #lib="libsvm"
             lib="linear"
             #pc=0.008 #single resolution
@@ -356,7 +367,7 @@ if __name__=="__main__":
             #w,r=pegasos.trainkeep(trpos,trneg,svmname,dir="",pc=pc)
 
             m=tr.model(w,r,len(m["ww"]),31,usemrf=cfg.usemrf,usefather=cfg.usefather)
-            util.save("%s%d.model"%(testname,it),m)
+            util.save("%s%d.model"%(cfg.testname,it),m)
             if cfg.deform:
                 print m["df"]
 
@@ -366,14 +377,14 @@ if __name__=="__main__":
             util.drawModel(m["ww"])
             pylab.draw()
             pylab.show()
-            pylab.savefig("%s_hog%d.png"%(testname,it))
+            pylab.savefig("%s_hog%d.png"%(cfg.testname,it))
             if cfg.deform:
                 pylab.figure(101)
                 pylab.clf()
                 util.drawDeform(m["df"])
                 pylab.draw()
                 pylab.show()
-                pylab.savefig("%s_def%d.png"%(testname,it))
+                pylab.savefig("%s_def%d.png"%(cfg.testname,it))
             #raw_input()
 
             print "Filter Data"
@@ -397,7 +408,7 @@ if __name__=="__main__":
                 #if (pegasos.predict2(d,w,r) >=-1):                
                     nSupportVectorsNeg = nSupportVectorsNeg + 1      
 
-            sts.report(testname+".rpt.txt","a","After Filtering")
+            sts.report(cfg.testname+".rpt.txt","a","After Filtering")
      
         print "Test"
         detlist=[]
@@ -422,14 +433,14 @@ if __name__=="__main__":
         rc,pr,ap=VOCpr.drawPrfast(tp,fp,tot)
         pylab.draw()
         pylab.show()
-        pylab.savefig("%s_ap%d.png"%(testname,it))
-        util.savemat("%s_ap%d.mat"%(testname,it),{"tp":tp,"fp":fp,"scr":scr,"tot":tot,"rc":rc,"pr":pr,"ap":ap})
+        pylab.savefig("%s_ap%d.png"%(cfg.testname,it))
+        util.savemat("%s_ap%d.mat"%(cfg.testname,it),{"tp":tp,"fp":fp,"scr":scr,"tot":tot,"rc":rc,"pr":pr,"ap":ap})
         tinit=((time.time()-initime)/3600.0)
         tpar=((time.time()-partime)/3600.0)
         print "AP(it=",it,")=",ap
         print "Partial Time: %.3f h"%tpar
         print "Training Time: %.3f h"%tinit
-        rpres.report(testname+".rpt.txt","a","Results")
+        rpres.report(cfg.testname+".rpt.txt","a","Results")
         
 
 

@@ -1,0 +1,35 @@
+#local configuration file example
+#rename it config_local.py and set your local configuration
+
+import config
+
+cfg=config.cfg
+
+cfg.multipr=4
+#cfg.dbpath = "/share/ISE/marcopede/database/" #database path
+cfg.dbpath = "/home/databases/" #database path
+cfg.maxpos=100 #maximum number of positive images
+cfg.maxtest=100 #maximum number of test images
+cfg.maxneg=100 #maximum number of negative images
+cfg.maxexamples=8000 #maximum number of examples
+
+cfg.usemrf=True
+cfg.usefather=True
+cfg.bottomup=False
+cfg.initr=1
+cfg.ratio=1
+
+cfg.comment    ="Nothing to say"
+cfg.testname="./data/11_02_28/iria_test1" #location of the current test
+
+cfg.debug = True #debug mode
+
+if cfg.debug:
+    cfg.show=True
+    cfg.multipr=False#2
+    cfg.maxpos=10#120
+    cfg.maxtest=10#100
+    cfg.maxneg=10#120
+    cfg.description="DEBUG"
+    #cfg.testname=cfg.testname+"_debug"
+

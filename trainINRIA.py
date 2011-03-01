@@ -121,8 +121,9 @@ if __name__=="__main__":
     except:
         print "config_local.py is not present loading configdef.py"
         from config import * #default configuration  
-        
-    cfg.savedir=InriaPosData(basepath=cfg.dbpath).getStorageDir() #where to save
+
+    if cfg.savedir=="":        
+ 	cfg.savedir=InriaPosData(basepath=cfg.dbpath).getStorageDir() #where to save
 
     util.save(cfg.testname+".cfg",cfg)
 
@@ -174,7 +175,7 @@ if __name__=="__main__":
 
     mypool = Pool(numcore)
 
-    cfg.savedir=InriaPosData(basepath=cfg.dbpath).getStorageDir()    
+    #cfg.savedir=InriaPosData(basepath=cfg.dbpath).getStorageDir()    
     trPosImages=getRecord(InriaPosData(basepath=cfg.dbpath),cfg.maxpos)
     trNegImages=getRecord(InriaNegData(basepath=cfg.dbpath),cfg.maxneg)
     tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
@@ -320,7 +321,7 @@ if __name__=="__main__":
                         if abs(scr-dense)>0.0001:
                             print "Warning: the two scores must be equal!!!"
                             print "Scr:",scr,"DesneSCR:",dense,"Diff:",abs(scr-dense)
-                            raw_input()
+                            #raw_input() skept only for the moment!!!!
                     print "----Neg Image %d----"%ii
                     print "Pos:",len(res[3]),"Neg:",len(res[4])
                     print "Tot Pos:",len(trpos)," Neg:",len(newtrneg)      

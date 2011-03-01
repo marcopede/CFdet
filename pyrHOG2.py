@@ -845,9 +845,9 @@ class Treat:
         if show=="Parts":
             self.show(self.best,parts=True)
             self.show(self.worste,parts=True)
-        self.trpos=self.descr(self.best)
-        self.trneg=self.descr(self.worste)
-        return self.best,self.worste,self.trpos,self.trneg
+        #self.trpos=self.descr(self.best)
+        #self.trneg=self.descr(self.worste)
+        return self.best,self.worste#,self.trpos,self.trneg
 
     def doalltrain_debug(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,minnegovr=0,minnegincl=0,cl=0):
         self.det=self.select(thr,cl=cl)        
@@ -1396,13 +1396,22 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         tr.show(det,parts=showlabel,thr=-0.5,maxnum=10)           
         return tr,det,dettime,numhog
     else:
-        best1,worste1,ipos,ineg=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=1,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
-        ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)
-        iposflip=tr.descr(best1,flip=True,usemrf=usemrf,usefather=usefather)
-        ipos=ipos+iposflip
-        ineg=tr.descr(worste1,flip=False,usemrf=usemrf,usefather=usefather)
-        inegflip=tr.descr(worste1,flip=True,usemrf=usemrf,usefather=usefather)
-        ineg=ineg+inegflip
+        #best1,worste1,ipos,ineg=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=1,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
+        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=1,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
+        if deform:
+            ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)
+            iposflip=tr.descr(best1,flip=True,usemrf=usemrf,usefather=usefather)
+            ipos=ipos+iposflip
+            ineg=tr.descr(worste1,flip=False,usemrf=usemrf,usefather=usefather)
+            inegflip=tr.descr(worste1,flip=True,usemrf=usemrf,usefather=usefather)
+            ineg=ineg+inegflip
+        else:
+            ipos=tr.descr(best1,flip=False)
+            iposflip=tr.descr(best1,flip=True)
+            ipos=ipos+iposflip
+            ineg=tr.descr(worste1,flip=False)
+            inegflip=tr.descr(worste1,flip=True)
+            ineg=ineg+inegflip
     return tr,best1,worste1,ipos,ineg
 
 

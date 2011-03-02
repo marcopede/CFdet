@@ -19,6 +19,7 @@ cfg.deform=True
 cfg.usemrf=False
 cfg.usefather=True
 cfg.bottomup=False
+cfg.inclusion=False
 cfg.initr=1
 cfg.ratio=1
 cfg.hallucinate=1

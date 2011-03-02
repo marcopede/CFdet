@@ -8,7 +8,7 @@ import pylab
 import scipy.misc.pilutil
 import cPickle
 #import scipy.ndimage.filters as flt
-#import time
+import time
 
 #global ccc
 #ccc=0
@@ -835,8 +835,9 @@ class Treat:
         return self.det5
 
     def doalltrain(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,posovr=0.5,numpos=1,numneg=10,minnegovr=0,minnegincl=0,cl=0):
-        self.det=self.select(thr,cl=cl)        
-        self.det=self.rank(self.det,rank) 
+        t=time.time()
+        self.det=self.select_fast(thr,cl=cl)        
+        self.det=self.rank_fast(self.det,rank) 
         if refine:
             self.det=self.refine(self.det)
         self.det=self.bbox(self.det)
@@ -852,6 +853,7 @@ class Treat:
             self.show(self.worste,parts=True)
         #self.trpos=self.descr(self.best)
         #self.trneg=self.descr(self.worste)
+        print "DoAll Time:",time.time()-t
         return self.best,self.worste#,self.trpos,self.trneg
 
     def doalltrain_debug(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,minnegovr=0,minnegincl=0,cl=0):
@@ -1382,9 +1384,10 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
         tr=Treat(f,scr,pos,initr,m["fy"],m["fx"])
     numhog=f.getHOG()
+    print "Scan:",time.time()-t    
     #dettime=time.time()-t
     #print "Elapsed Time:",dettime
-    #print "Number HOG:",numhog
+    print "Number HOG:",numhog
     #print "Getting Detections"
     #best1,worste1,ipos,ineg=tr.doalltrain(gtbbox,thr=-5,rank=10000,show=show,mpos=10,numpos=1,numneg=5,minnegovr=0.01)        
     if gtbbox==None:
@@ -1397,13 +1400,13 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         #pylab.gca().set_xlim(0,img.shape[1])
         #pylab.gca().set_ylim(pylab.gca().get_ylim()[::-1])
         dettime=time.time()-t
-        #print "Elapsed Time:",dettime
+        print "Elapsed Time:",dettime
         #print "Number HOG:",numhog
         tr.show(det,parts=showlabel,thr=-0.5,maxnum=10)           
         return tr,det,dettime,numhog
     else:
         best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
-        if True:#remember to use it in INRIA
+        if False:#remember to use it in INRIA
             if deform:
                 ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)
                 iposflip=tr.descr(best1,flip=True,usemrf=usemrf,usefather=usefather)
@@ -1420,7 +1423,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
                 ineg=ineg+inegflip
         else:
             ipos=[];ineg=[]
-
-    return tr,best1,worste1,ipos,ineg
+        print "Detect:",time.time()-t    
+        return tr,best1,worste1,ipos,ineg
 
 

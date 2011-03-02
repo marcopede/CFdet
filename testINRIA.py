@@ -7,7 +7,7 @@ import util
 import pyrHOG2
 import VOCpr
 import time
-import trainINRIAmc
+import trainINRIA
 import itertools
 
 class config(object):
@@ -45,7 +45,8 @@ class config(object):
 #testname="./data/test3_11/CVPR11_usefahter";it=9# 93!!!
 #testname="./data/test3_11/CVPR11_usefahter";it=6
 #testname="./data/INRIA/testTDnoMRFright";it=9
-testname="./data/CVPR/bottomup";it=9
+#testname="./data/CVPR/bottomup";it=9
+testname="./data/11_02_26/inria_both";it=10
 import sys
 if len(sys.argv)>1:
     it=int(sys.argv[1])
@@ -57,16 +58,18 @@ cfg.ovr=0.5
 cfg.thr=-2
 cfg.deform=True
 cfg.bottomup=False
-cfg.usemrf=True#False#True#da togliere
+cfg.loadfeat=True
+cfg.savefeat=False
+#cfg.usemrf=True#False#True#da togliere
 #cfg.ratio=1#datogliere
-cfg.multipr=False
-cfg.inclusion=False
+cfg.multipr=8
+cfg.inclusion=True
 cfg.nms=0.5
+cfg.dbpath="/home/databases/"
 #cfg.auxdir="/state/partition1/marcopede/INRIA/"#InriaPosData(basepath="/home/databases/").getStorageDir()
-cfg.auxdir=InriaPosData(basepath="/home/databases/").getStorageDir()
+cfg.auxdir=InriaPosData(basepath=cfg.dbpath).getStorageDir()
 cfg.show=False
 cfg.mythr=-10
-cfg.savefeat=False
 #cfg.usemrf=False
 #cfg.maxpostest=1000
 
@@ -80,7 +83,7 @@ cfg.savefeat=False
 #tsImages=InriaTestFullData(basepath="/home/databases/")
 #tsImages=DirImages(imagepath="/home/marcopede/Dropbox/Marco/PruebasDemos",ext=".jpg")
 #tsImages=getRecord(InriaTestFullData(basepath="/share/ISE/marcopede/database/"),cfg.maxtest)
-tsImages=getRecord(InriaTestFullData(basepath="/home/databases/"),cfg.maxtest)
+tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
 #tsImages=getRecord(InriaTestData(basepath="/share/ISE/marcopede/database/"),cfg.maxtest)
 
 #svmname="./data/%s.svm"%testname
@@ -90,15 +93,15 @@ tsImages=getRecord(InriaTestFullData(basepath="/home/databases/"),cfg.maxtest)
 #m=tr.model(w,r,len(m["ww"]),31)
 
 m=util.load("%s%d.model"%(testname,it))
-if cfg.deform:
-    print m["df"]
-    for id,l in enumerate(m["df"]):
-        m["df"][id]=numpy.zeros(l.shape,dtype=numpy.float32)
+#if cfg.deform:
+#    print m["df"]
+#    for id,l in enumerate(m["df"]):
+#        m["df"][id]=numpy.zeros(l.shape,dtype=numpy.float32)
 
 ##############################
 ####just for the error...
-for id,l in enumerate(m["df"]):
-    m["df"][id][:,:,:2]=numpy.zeros((l.shape[0],l.shape[1],2),dtype=numpy.float32)
+#for id,l in enumerate(m["df"]):
+#    m["df"][id][:,:,:2]=numpy.zeros((l.shape[0],l.shape[1],2),dtype=numpy.float32)
 #############################
 
 #del m["df"][2]
@@ -132,9 +135,9 @@ print "---Test Images----"
 arg=[[i,tsImages[i]["name"],None,m,cfg] for i in range(len(tsImages))]
 mypool = Pool(numcore)
 if not(cfg.multipr):
-    itr=itertools.imap(trainINRIAmc.detectWrap,arg)        
+    itr=itertools.imap(trainINRIA.detectWrap,arg)        
 else:
-    itr=mypool.imap(trainINRIAmc.detectWrap,arg)
+    itr=mypool.imap(trainINRIA.detectWrap,arg)
 for i,im in enumerate(itr):
     print "---- Image %d----"%i
     print "Detections:", len(im[1]) 

@@ -37,6 +37,8 @@ if __name__=="__main__":
     #cfg.year="2007"
     cfg.maxtest=5000
     cfg.show=False
+    cfg.savefeat=False
+    cfg.loadfeat=True
     cfg.thr=-2
     cfg.auxdir="/home/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"
     cfg.test=True

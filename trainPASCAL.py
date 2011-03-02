@@ -115,7 +115,7 @@ def detectWrap(a):
     f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.auxdir+"/hog/",notsave=notsave,hallucinate=cfg.hallucinate,cformat=True)
     res=[]
     for clm,m in enumerate(models):
-        res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=0.7,minnegincl=0,small=False,show=cfg.show,cl=clm,mythr=cfg.mythr,usemrf=cfg.usemrf))
+        res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=0.7,minnegincl=0,small=False,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos))
     if cfg.show:
         pylab.show()
     return res
@@ -131,11 +131,12 @@ def myunique(old,new,oldcl,newcl,numcl):
         select=numpy.arange(len(oldcl))[numpy.array(oldcl)==c]
         clst.append(numpy.array([old[i] for i in select]))
     for ep,e in enumerate(new):
-        print ep,"/",len(new)
+        #print ep,"/",len(new)
+        print ".",
         #check the cluster
         #selec=numpy.arange(len(oldcl))[numpy.array(oldcl)==newcl[ep]]
         apr=numpy.sum(numpy.abs(e[::100]-clst[newcl[ep]][:,::100]),1)
-        print apr
+        #print apr
         #raw_input()
         if numpy.all(apr>0.1):
             unew.append(e)
@@ -144,57 +145,72 @@ def myunique(old,new,oldcl,newcl,numcl):
             if numpy.all(numpy.sum(numpy.abs(e-clst[newcl[ep]][apr<=0.1,:]),1)>0.1):
                 unew.append(e)
                 unewcl.append(newcl[ep]) 
+                print ep,"/",len(new)
     print "Doules",len(new)-len(unew)
-    raw_input()
+    #raw_input()
     return [unew,unewcl]
 
 if __name__=="__main__":
 
-    cfg=config()
+    #cfg=config()
+    try:
+        from config_local_pascal import * #your own configuration
+    except:
+        print "config_local.py is not present loading configdef.py"
+        from config import * #default configuration  
+        
+    if cfg.savedir=="":
+        cfg.savedir=InriaPosData(basepath=cfg.dbpath).getStorageDir() #where to save
 
-    cfg.fy=[3,4]#[7,]#[3,4]
-    cfg.fx=[6,5]#[11,]#[6,5]
-    cfg.lev=[3,3,3,3]
-    cfg.numcl=2
-    cfg.interv=10
-    cfg.ovr=0.45
-    cfg.sbin=8
-    cfg.maxpos=1000#120
-    cfg.maxtest=1000#100
-    cfg.maxneg=1000#120
-    cfg.maxexamples=10000
-    cfg.deform=True
-    cfg.usemrf=True#True
-    cfg.usefather=False#Flase
-    cfg.bottomup=False
-    cfg.initr=1
-    cfg.ratio=1
-    cfg.hallucinate=1
-    cfg.numneginpos=6/cfg.numcl
-    cfg.useflipos=True
-    cfg.useflineg=True
-    cfg.multipr=4
-    cfg.svmc=0.005#0.002#0.004
-    cfg.cls="bicycle"
+    util.save(cfg.testname+".cfg",cfg)
+
+#    cfg.fy=[3,4]#[7,]#[3,4]
+#    cfg.fx=[6,5]#[11,]#[6,5]
+#    cfg.lev=[3,3,3]
+#    cfg.numcl=2
+    #cfg.interv=10
+    #cfg.ovr=0.45
+    #cfg.sbin=8
+    #cfg.maxpos=1000#120
+    #cfg.maxtest=1000#100
+    #cfg.maxneg=1000#120
+    #cfg.maxexamples=10000
+    #cfg.deform=True
+    #cfg.usemrf=True#True
+    #cfg.usefather=True#Flase
+    #cfg.bottomup=False
+    #cfg.initr=1
+    #cfg.ratio=1
+    #cfg.mpos=1
+    #cfg.hallucinate=1
+    #cfg.numneginpos=6/cfg.numcl
+    #cfg.useflipos=True
+    #cfg.useflineg=True
+    #cfg.multipr=4
+    #cfg.svmc=0.005#0.002#0.004
+    #cfg.cls="bicycle"
     import sys
     if len(sys.argv)>1:
         cfg.cls=sys.argv[1]
-    cfg.year="2007"
-    cfg.show=False
-    cfg.thr=-2
-    cfg.mythr=-10
-    cfg.auxdir="/home/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"#InriaPosData(basepath="/home/databases/").getStorageDir()
-    testname="./data/11_02_27/%s_%d_test"%(cfg.cls,cfg.numcl)
-    util.save(testname+".cfg",cfg)
+    #cfg.year="2007"
+    #cfg.show=False
+    #cfg.thr=-2
+    #cfg.mythr=-10
+    #cfg.auxdir="/home/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"#InriaPosData(basepath="/home/databases/").getStorageDir()
+    cfg.auxdir=cfg.savedir
+    #testname="./data/11_03_01/%s_%d_test"%(cfg.cls,cfg.numcl)
+    testname=cfg.testname
+    #util.save(testname+".cfg",cfg)
 
-    mydebug=True
-    if mydebug:
-        cfg.multipr=False
-        cfg.maxpos=10
-        cfg.maxneg=10
-        cfg.maxtest=10
-        cfg.maxexamples=1000
-        #testname=testname+"_debug"
+    #mydebug=False
+    #if mydebug:
+    #    cfg.show=False
+    #    cfg.multipr=4
+    #    cfg.maxpos=10
+    #    cfg.maxneg=10
+    #    cfg.maxtest=10
+    #    cfg.maxexamples=1000
+    #    #testname=testname+"_debug"
 
     if cfg.multipr==1:
         numcore=None
@@ -373,9 +389,9 @@ if __name__=="__main__":
         partime=time.time()
         print "Positive Images:"
         if it==0:#force to take best overlapping
-            mpos=100
+            cfg.mpos=10
         else:
-            mpos=0.5
+            cfg.mpos=0.5
         cfgpos=copy.copy(cfg)
         cfgpos.numneg=cfg.numneginpos
         arg=[[i,trPosImages[i]["name"],trPosImages[i]["bbox"],models,cfgpos] for i in range(len(trPosImages))]
@@ -430,22 +446,22 @@ if __name__=="__main__":
                 auxcl=tr.mixture(nfuse)[0]
                 dns=buildense([aux],[auxcl],cumsize)[0]
                 dscr=numpy.sum(dns*w)
-                print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
-                if abs(nfuse[0]["scr"]-dscr)>0.00001:
+                #print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
+                if abs(nfuse[0]["scr"]-dscr)>0.0001:
                     print "Warning: the two scores must be the same!!!"
                     print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
-                    raw_input()
+                    #raw_input()
             #check score
             if (nfuseneg!=[] and it>0):
                 aux=tr.descr(nfuseneg)[0]
                 auxcl=tr.mixture(nfuseneg)[0]
                 dns=buildense([aux],[auxcl],cumsize)[0]
                 dscr=numpy.sum(dns*w)
-                print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
-                if abs(nfuseneg[0]["scr"]-dscr)<0.00001:
+                #print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
+                if abs(nfuseneg[0]["scr"]-dscr)>0.0001:
                     print "Warning: the two scores must be the same!!!"
                     print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
-                    raw_input()
+                    #raw_input()
             if cfg.show:
                 pylab.figure(20)
                 pylab.ioff()
@@ -483,11 +499,9 @@ if __name__=="__main__":
                 print "PART:%d Elements:%d"%(rr,len(arg))
                 #arg=[[i,trNegImages[i]["name"],trNegImages[i]["bbox"],models,cfgneg] for i in range((it+1)*len(trNegImages)/(10))]
                 t=time.time()
-                #mypool = Pool(numcore)
                 if not(cfg.multipr):
                     itr=itertools.imap(detectWrap,arg)        
                 else:
-                    #res=mypool.map(detectWrap,arg)
                     itr=mypool.imap(detectWrap,arg)
                 for ii,res in enumerate(itr):
                     totneg=0
@@ -528,10 +542,10 @@ if __name__=="__main__":
                         auxcl=tr.mixture(nfuseneg)[0]
                         dns=buildense([aux],[auxcl],cumsize)[0]
                         dscr=numpy.sum(dns*w)
-                        if abs(nfuseneg[0]["scr"]-dscr)>0.00001:
+                        if abs(nfuseneg[0]["scr"]-dscr)>0.0001:
                             print "Warning: the two scores must be the same!!!"
                             print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
-                            raw_input()
+                            #raw_input()
 
                     print "----Neg Image %d----"%ii
                     print "Pos:",0,"Neg:",len(nfuseneg)
@@ -612,7 +626,7 @@ if __name__=="__main__":
             #w,r=util.loadSvm(svmname,dir="",lib=lib)
             #w,r=util.trainSvmRawPeg(ftrpos,ftrneg,testname+".rpt.txt",dir="",pc=pc)
             import pegasos
-            w,r=pegasos.trainComp(trpos,trneg,testname+".rpt.txt",trposcl,trnegcl,dir="",pc=pc)
+            w,r=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,dir="",pc=pc)
             #util.objf(w,r,svmpos,svmneg,pc)
             #w=numpy.mean(ftrpos,0)**it
             #ftrpos=[]
@@ -622,8 +636,9 @@ if __name__=="__main__":
             #pylab.figure(300);pylab.plot(w);pylab.show()
             #raw_input()            
 
+            bias=100
             for idm,m in enumerate(models):
-                models[idm]=tr.model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*100,len(m["ww"]),31,m["fy"],m["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather)
+                models[idm]=tr.model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather)
                 #models[idm]["ra"]=w[cumsize[idm+1]-1]
             util.save("%s%d.model"%(testname,it),models)
             if cfg.deform:
@@ -645,6 +660,7 @@ if __name__=="__main__":
                     pylab.show()
                     pylab.savefig("%s_def%d_cl%d.png"%(testname,it,idm))
 
+            sts.report(testname+".rpt.txt","a","Before Filtering")
             print "Filter Data"
             print "Length before:",len(trneg)
             for p,d in enumerate(trneg):

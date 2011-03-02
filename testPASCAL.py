@@ -16,8 +16,8 @@ if __name__=="__main__":
 
     cfg=config()
 
-    cfg.cls="bottle"
-    it=5
+    cfg.cls="bicycle"
+    it=4
     import sys
     if len(sys.argv)>1:
         cfg.cls=sys.argv[1]
@@ -25,16 +25,18 @@ if __name__=="__main__":
     cfg.mythr=-10
     if len(sys.argv)>2:
         it=int(sys.argv[2])
-    testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
+    #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
+    testname="./data/11_02_26/%s_%d_comp_bias3"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
+    cfg.mpos=1
     if len(sys.argv)>3:
         cfg.mythr=float(sys.argv[3])
-    cfg.multipr=False
+    cfg.multipr=8
     cfg.bottomup=False
     #cfg.year="2007"
     cfg.maxtest=5000
-    cfg.show=True
+    cfg.show=False
     cfg.thr=-2
     cfg.auxdir="/home/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"
     cfg.test=True
@@ -103,7 +105,8 @@ if __name__=="__main__":
     del itr
     
     #tp,fp,scr,tot=VOCpr.VOCprlistfastscore(tsImages,detlist,numim=cfg.maxpostest,show=False,ovr=0.5)
-    tp,fp,scr,tot=VOCpr.VOCprRecord_wrong(tsImages,detlist,show=False,ovr=0.5)
+    #tp,fp,scr,tot=VOCpr.VOCprRecord_wrong(tsImages,detlist,show=False,ovr=0.5)
+    tp,fp,scr,tot=VOCpr.VOCprRecord(tsImages,detlist,show=False,ovr=0.5)
     pylab.figure(15)
     pylab.clf()
     rc,pr,ap=VOCpr.drawPrfast(tp,fp,tot)

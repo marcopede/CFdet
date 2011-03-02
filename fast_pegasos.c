@@ -118,30 +118,65 @@ void fast_pegasos_comp(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsam
     printf("N:%g t:%d\n",n,t);
 }
 
-ftype objective_comp(ftype *w,int wx,ftype *ex, int exy,ftype *label,ftype lambda)
+ftype objective_comp(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsamplescomp,int *label,ftype lambda,ftype *errpos,ftype *errneg,ftype *reg)
 {
-    int c,y;
-    ftype val,err=0,errpos=0,errneg=0,norm;
-    for (c=0;c<exy;c++)
+    int c,y,l,totsz,wxtot,wx;
+    ftype val,err=0,*x,totloss;
+    int sumszx[10],sumszy[10];//max 10 components
+    wxtot=0;
+    totsz=0;
+    sumszx[0]=0;
+    sumszy[0]=0;
+    errpos[0]=0.0;
+    errneg[0]=0.0;
+    //printf("numcomp:%d \n",numcomp);
+    //printf("compx:%d compy:%d \n",compx[0],compy[0]);
+    for (c=0;c<numcomp;c++)
     {
-        y=label[c];
-        val=score(w,ex+c*wx,wx);
-        if (val*y<1)
+        wxtot+=compx[c];
+        totsz+=compy[c];
+        sumszx[c+1]=wxtot;
+        sumszy[c+1]=totsz;
+        //printf("sumx:%d sumy:%d \n",sumszx[c+1],sumszy[c+1]);
+    }
+    //printf("wxtot:%d totsz:%d \n",wxtot,totsz);
+    for (l=0;l<numcomp;l++)
+    {
+        printf("NumComp: %d\n",l);
+        for (c=0;c<compy[l];c++)
         {
-            err+=1-y*val;
-            if (y>0)
-                errpos+=err;
-            else
-                errneg+=err;
-        }
-    } 
-    err=err/exy;
-    errpos=errpos/exy;
-    errneg=errneg/exy;
-    norm=lambda/2.0*score(w,w,wx);
-    printf("lambda/2*|w|**2=%g Loss=%g \n", norm, err);
-    printf("Pos Loss=%g Neg Loss=%g \n", errpos, errneg);
-    return norm+err;
+            y=label[sumszy[l]+c];
+            printf("y %d",y);
+            wx=compx[l];
+            x=ptrsamplescomp[l]+c*wx;
+            //printf("computing score\n");
+            val=score(w+sumszx[l],x,wx);
+            if (val*y<1)
+            {
+                //printf("update\n");
+                err=err+1-y*val;
+                //printf("y %d",y);
+                if (y>0)
+                {
+                    //printf("joder!!!");
+                    errpos[0]=errpos[0]+1-y*val;
+                }
+                else
+                {
+                    //printf("tio!!!");
+                    errneg[0]=errneg[0]+1-y*val;
+                }
+            }
+        } 
+    }
+    err=err/totsz;
+    errpos[0]=errpos[0]/totsz;
+    errneg[0]=errneg[0]/totsz;
+    reg[0]=lambda/2.0*score(w,w,wx);
+    printf("lambda/2*|w|**2=%f Loss=%f \n", *reg, err);
+    printf("Pos Loss=%f Neg Loss=%f \n", errpos[0], errneg[0]);
+    totloss=err+(*reg);
+    return totloss;
 }
 
 void fast_pegasos_noproj(ftype *w,int wx,ftype *ex,int exy,ftype *label,ftype lambda,int iter,int part)

@@ -295,7 +295,7 @@ def inclusion(rect1,rect2):
         yy2 = min(rect1[2], rect2[2]);
         ia=(xx2-xx1+1)*(yy2-yy1+1)
     #fsd
-    return ia/float(min(a1,a2))#float(a1)
+    return ia/float(a1)#ia/float(min(a1,a2))#float(a1)
 
 
 def overlap_array(a,b):

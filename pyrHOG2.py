@@ -999,10 +999,11 @@ class Treat:
             for cl in cllist:
                 for cle in cl:
                     if not(inclusion):
+                        #myovr=util.overlap(ls["bbox"],cle["bbox"])
                         myovr=util.overlap(ls["bbox"],cle["bbox"])
                     else:   
-                        myovr=util.inclusion(cle["bbox"],ls["bbox"])
-                        #myovr=util.inclusion(ls["bbox"],cle["bbox"])
+                        #myovr=util.inclusion(cle["bbox"],ls["bbox"])
+                        myovr=util.inclusion(ls["bbox"],cle["bbox"])
                     if myovr>ovr:
                         cl.append(ls)
                         found=True
@@ -1356,7 +1357,7 @@ class TreatDef(Treat):
 
 import time
 
-def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True):
+def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1):
     """Detect objec in images
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -1396,22 +1397,25 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         tr.show(det,parts=showlabel,thr=-0.5,maxnum=10)           
         return tr,det,dettime,numhog
     else:
-        #best1,worste1,ipos,ineg=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=1,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
-        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=1,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
-        if deform:
-            ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)
-            iposflip=tr.descr(best1,flip=True,usemrf=usemrf,usefather=usefather)
-            ipos=ipos+iposflip
-            ineg=tr.descr(worste1,flip=False,usemrf=usemrf,usefather=usefather)
-            inegflip=tr.descr(worste1,flip=True,usemrf=usemrf,usefather=usefather)
-            ineg=ineg+inegflip
+        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
+        if True:#remember to use it in INRIA
+            if deform:
+                ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)
+                iposflip=tr.descr(best1,flip=True,usemrf=usemrf,usefather=usefather)
+                ipos=ipos+iposflip
+                ineg=tr.descr(worste1,flip=False,usemrf=usemrf,usefather=usefather)
+                inegflip=tr.descr(worste1,flip=True,usemrf=usemrf,usefather=usefather)
+                ineg=ineg+inegflip
+            else:
+                ipos=tr.descr(best1,flip=False)
+                iposflip=tr.descr(best1,flip=True)
+                ipos=ipos+iposflip
+                ineg=tr.descr(worste1,flip=False)
+                inegflip=tr.descr(worste1,flip=True)
+                ineg=ineg+inegflip
         else:
-            ipos=tr.descr(best1,flip=False)
-            iposflip=tr.descr(best1,flip=True)
-            ipos=ipos+iposflip
-            ineg=tr.descr(worste1,flip=False)
-            inegflip=tr.descr(worste1,flip=True)
-            ineg=ineg+inegflip
+            ipos=[];ineg=[]
+
     return tr,best1,worste1,ipos,ineg
 
 

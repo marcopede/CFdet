@@ -241,21 +241,21 @@ if __name__=="__main__":
     #trNegImages=InriaNegData(basepath="/home/databases/")
     #tsImages=InriaTestFullData(basepath="/home/databases/")
     trPosImages=getRecord(VOC07Data(select="pos",cl="%s_trainval.txt"%cfg.cls,
-                    basepath="/home/databases/",
+                    basepath=cfg.dbpath,#"/home/databases/",
                     trainfile="VOC2007/VOCdevkit/VOC2007/ImageSets/Main/",
                     imagepath="VOC2007/VOCdevkit/VOC2007/JPEGImages/",
                     annpath="VOC2007/VOCdevkit/VOC2007/Annotations/",
                     local="VOC2007/VOCdevkit/local/VOC2007/",
                     usetr=True,usedf=False),cfg.maxpos)
     trNegImages=getRecord(VOC07Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
-                    basepath="/home/databases/",#"/share/ISE/marcopede/database/",
+                    basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
                     trainfile="VOC2007/VOCdevkit/VOC2007/ImageSets/Main/",
                     imagepath="VOC2007/VOCdevkit/VOC2007/JPEGImages/",
                     annpath="VOC2007/VOCdevkit/VOC2007/Annotations/",
                     local="VOC2007/VOCdevkit/local/VOC2007/",
                     usetr=True,usedf=False),cfg.maxneg)
     tsImages=getRecord(VOC07Data(select="pos",cl="%s_test.txt"%cfg.cls,
-                    basepath="/home/databases/",#"/share/ISE/marcopede/database/",
+                    basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
                     trainfile="VOC2007/VOCdevkit/VOC2007/ImageSets/Main/",
                     imagepath="VOC2007/VOCdevkit/VOC2007/JPEGImages/",
                     annpath="VOC2007/VOCdevkit/VOC2007/Annotations/",

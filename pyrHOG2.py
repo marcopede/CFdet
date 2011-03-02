@@ -121,33 +121,35 @@ class container(object):
         self.ptr=ptrarray
 
 class pyrHOG:
-    def __init__(self,im,interv=10,sbin=8,savedir="./",compress=False,notsave=False,hallucinate=0,cformat=False):
+    def __init__(self,im,interv=10,sbin=8,savedir="./",compress=False,notload=False,notsave=False,hallucinate=0,cformat=False):
         """
         Compute the HOG pyramid of an image
         if im is a string call precomputed
         if im is an narray call compute
         """
+
+        import time
+        t=time.time()       
         self.hog=[]#hog pyramid as a list of hog features
         self.interv=interv
         self.oct=0
         self.sbin=sbin#number of pixels per spatial bin
         if isinstance(im,pyrHOG):#build a copy
             self.__copy(im)
-            return
+            #return
         if isinstance(im,str):
-            self._precompute(im,interv,sbin,savedir,compress,notsave,hallucinate,cformat=cformat)
-            return
+            self._precompute(im,interv,sbin,savedir,compress,notload,notsave,hallucinate,cformat=cformat)
+            #return
         if type(im)==numpy.ndarray:
             self._compute(im,interv,sbin,hallucinate,cformat=cformat)
-            return
-        raise "Error: im must be either a string or an image"
+            #return
+        print "Features: ",time.time()-t
+        #raise "Error: im must be either a string or an image"
         
     def _compute(self,img,interv=10,sbin=8,hallucinate=0,cformat=False):
         """
         Compute the HOG pyramid of an image in a list
         """
-        import time
-        t=time.time()
         l=[]
         scl=[]
         octimg=img.astype(numpy.float)#copy()
@@ -198,7 +200,6 @@ class pyrHOG:
         self.sbin=sbin
         self.scale=scl
         self.hallucinate=hallucinate
-        print "Features: ",time.time()-t
 
     def _computeold(self,img,interv=10,sbin=8):
         """
@@ -231,12 +232,15 @@ class pyrHOG:
         self.sbin=sbin
         print "Features: ",time.time()-t
         
-    def _precompute(self,imname,interv=10,sbin=8,savedir="./",compress=False,notsave=True,hallucinate=0,cformat=False):
+    def _precompute(self,imname,interv=10,sbin=8,savedir="./",compress=False,notload=False,notsave=True,hallucinate=0,cformat=False):
         """
         Check if the HOG if imname is already computed, otherwise 
         compute it and save in savedir
         """
         try:
+            if notload:
+                #generate an error to pass to computing hog
+                error
             f=[]
             if compress:
                 f=gzip.open(savedir+imname.split("/")[-1]+".zhog%d_%d_%d"%(interv,sbin,hallucinate),"rb")
@@ -721,7 +725,8 @@ class pyrHOG:
         #print "Level %d"%lev,"i=",i
         #print "Position: ",((locy/2)*2+(locx/2))*4,((locy/2)*2+(locx/2)+1)*4
         #print "Size of prec",auxprec.shape
-        ff.scanDef(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,pres,1,auxprec.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),pady,padx)#,ctypes.POINTER(c_float)())#auxprec.ctypes.data_as(ctypes.POINTER(ctypes.c_float)))
+        #substituted scandef with scnadef2 but not tested!!!!
+        ff.scanDef2(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,pres,1,auxprec.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),pady,padx)#,ctypes.POINTER(c_float)())#auxprec.ctypes.data_as(ctypes.POINTER(ctypes.c_float)))
         res+=auxres
         #ct.parts=parts
         ct.best=[parts]

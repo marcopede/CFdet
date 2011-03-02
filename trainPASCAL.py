@@ -110,9 +110,9 @@ def detectWrap(a):
     else:
         gtbbox=None
     notsave=False
-    if cfg.__dict__.has_key("test"):
-        notsave=cfg.test
-    f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.auxdir+"/hog/",notsave=notsave,hallucinate=cfg.hallucinate,cformat=True)
+    #if cfg.__dict__.has_key("test"):
+    #    notsave=cfg.test
+    f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.auxdir+"/hog/",notsave=not(cfg.savefeat),notload=not(cfg.loadfeat),hallucinate=cfg.hallucinate,cformat=True)
     res=[]
     for clm,m in enumerate(models):
         res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=0.7,minnegincl=0,small=False,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos))

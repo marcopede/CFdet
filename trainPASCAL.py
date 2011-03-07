@@ -321,8 +321,8 @@ if __name__=="__main__":
         lfx.append(fx)
         print
 
-    cfg.fy=lfy
-    cfg.fx=lfx
+    cfg.fy=[7,10]#lfy
+    cfg.fx=[11,7]#lfx
 
     import time
     initime=time.time()
@@ -379,6 +379,9 @@ if __name__=="__main__":
     trnegcl=[]
     newtrneg=[]
     newtrnegcl=[]
+    negratio=[]
+    w=None
+    oldprloss=numpy.zeros((0,6))
     for it in range(10):
         trpos=[]
         trposcl=[]
@@ -481,7 +484,7 @@ if __name__=="__main__":
         #negative retraining
         trneglen=1
         newPositives=True
-        for nit in range(5):
+        for nit in range(25):
             newtrneg=[]
             newtrnegcl=[]
             print "Negative Images Iteration %d:"%nit
@@ -586,26 +589,6 @@ if __name__=="__main__":
                 clsize[l]=len(trneg[c])+1
                 cumsize[l+1]=numpy.sum(clsize[:l+1])
 
-            #ftrpos=buildense(trpos,trposcl,cumsize)
-            #ftrneg=buildense(trneg,trnegcl,cumsize)
-            #for iel,el in enumerate(trpos):
-            #    ftrpos.append(numpy.zeros(cumsize[-1],dtype=numpy.float32))
-            #    ftrpos[-1][cumsize[trposcl[iel]]:cumsize[trposcl[iel]+1]-1]=trpos[iel]
-                #for l in range(numcl):
-                #    if l!=trposcl[iel]:
-                #        ftrpos[-1][cumsize[l+1]-1]=1
-            #raw_input()
-            #for iel,el in enumerate(trneg):
-            #    ftrneg.append(numpy.zeros(cumsize[-1],dtype=numpy.float32))
-            #    ftrneg[-1][cumsize[trnegcl[iel]]:cumsize[trnegcl[iel]+1]-1]=trneg[iel]
-                #for l in range(numcl):
-                #    if l!=trnegcl[iel]:
-                #        ftrneg[-1][cumsize[l+1]-1]=1
-            #trpos=ftrpos
-            #trneg=ftrneg
-            #trpos=[]
-
-            print "SVM learning"
             #show pos examples
             if 0:
                 pylab.figure(23)
@@ -615,6 +598,23 @@ if __name__=="__main__":
                 pylab.show()
                 #raw_input()
 
+            #check negative loss
+            if nit>0:
+                lambd=1.0/(len(trpos)*cfg.svmc)
+                #trpos,trneg,trposcl,trnegcl,clsize,w,lamda
+                posl,negl,reg,nobj,hpos,hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,lambd)
+                print "NIT:",nit,"OLDLOSS",prloss[-1][1],"NEWLOSS:",negl
+                negratio.append(negl/(prloss[-1][1]+0.000001))
+                print "RATIO: newneg/totneg:",negratio
+                raw_input()
+                if (negratio[-1]<1.05):
+                    print "Very small negative newloss: convergence at iteration %d!"%nit
+                    raw_input()
+                    break
+            else:
+                negl=1
+
+            print "SVM learning"
             svmname="%s.svm"%testname
             #lib="libsvm"
             lib="linear"
@@ -626,15 +626,19 @@ if __name__=="__main__":
             #w,r=util.loadSvm(svmname,dir="",lib=lib)
             #w,r=util.trainSvmRawPeg(ftrpos,ftrneg,testname+".rpt.txt",dir="",pc=pc)
             import pegasos
-            w,r=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,dir="",pc=pc)
-            #util.objf(w,r,svmpos,svmneg,pc)
-            #w=numpy.mean(ftrpos,0)**it
-            #ftrpos=[]
-            #ftrneg=[]
-            #trneg=[]
-            #trnegcl=[]
-            #pylab.figure(300);pylab.plot(w);pylab.show()
-            #raw_input()            
+            if w==None: 
+                w=numpy.zeros(cumsize[-1])
+            w,r,prloss=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,oldw=w,dir="",pc=pc)
+            pylab.figure(500)
+            pylab.clf()
+            oldprloss=numpy.concatenate((oldprloss,prloss),0)
+            pylab.plot(oldprloss)
+            pylab.semilogy()
+            pylab.legend(["loss+","loss-","reg","obj","hard+","hard-"])
+            #pylab.savefig("%s_ap%d.png"%(cfg.testname,it))
+            pylab.draw()
+            pylab.show()
+            raw_input()
 
             bias=100
             for idm,m in enumerate(models):
@@ -664,7 +668,7 @@ if __name__=="__main__":
             print "Filter Data"
             print "Length before:",len(trneg)
             for p,d in enumerate(trneg):
-                aux=buildense([d],[trnegcl[p]],cumsize)
+                aux=buildense([d],[trnegcl[p]],cumsize)[0]
                 if numpy.sum(aux*w)<-1:
                     if len(trneg)+len(trpos)>(cfg.maxexamples)/2:
                         trneg.pop(p)

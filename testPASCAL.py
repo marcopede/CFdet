@@ -17,7 +17,7 @@ if __name__=="__main__":
     cfg=config()
 
     cfg.cls="bicycle"
-    it=4
+    it=7
     import sys
     if len(sys.argv)>1:
         cfg.cls=sys.argv[1]
@@ -26,7 +26,7 @@ if __name__=="__main__":
     if len(sys.argv)>2:
         it=int(sys.argv[2])
     #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
-    testname="./data/11_02_26/%s_%d_comp_bias3"%(cfg.cls,cfg.numcl)
+    testname="./data/11_03_07/%s_%d_test"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
     cfg.mpos=1
@@ -39,7 +39,7 @@ if __name__=="__main__":
     cfg.show=False
     cfg.savefeat=False
     cfg.loadfeat=True
-    cfg.thr=-2
+    cfg.thr=-3
     cfg.auxdir="/home/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"
     cfg.test=True
     models=util.load("%s%d.model"%(testname,it))
@@ -104,6 +104,7 @@ if __name__=="__main__":
             pylab.gca().set_ylim(pylab.gca().get_ylim()[::-1])
             tr.show(nfuse,parts=showlabel,thr=-0.8,maxnum=10)           
             pylab.show()
+            #raw_input()
     del itr
     
     #tp,fp,scr,tot=VOCpr.VOCprlistfastscore(tsImages,detlist,numim=cfg.maxpostest,show=False,ovr=0.5)

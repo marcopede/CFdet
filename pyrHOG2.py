@@ -772,6 +772,11 @@ class Treat:
         self.sample=sample
         self.occl=occl
 
+    def showBBox(self,allgtbbox,colors=["w","g"],new_alpha=0.15):
+        for item in allgtbbox:
+            bbox=item["bbox"]
+            pylab.fill([bbox[1],bbox[1],bbox[3],bbox[3],bbox[1]],[bbox[0],bbox[2],bbox[2],bbox[0],bbox[0]],colors[0], alpha=new_alpha, edgecolor=colors[0],lw=2)
+
     def doall(self,thr=-1,rank=1000,refine=True,occl=False,cluster=0.5,rawdet=False,show=False,inclusion=False,cl=0):
         #import time
         #t=time.time()
@@ -779,7 +784,7 @@ class Treat:
         #print len(self.det)
         #print "Select",time.time()-t
         #t=time.time()
-        self.det=self.rank_fast(self.det,rank) 
+        self.det=self.rank_fast(self.det,rank,cl=cl) 
         #print "Rank",time.time()-t
         if refine:
         #    t=time.time()
@@ -837,7 +842,7 @@ class Treat:
     def doalltrain(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,posovr=0.5,numpos=1,numneg=10,minnegovr=0,minnegincl=0,cl=0):
         t=time.time()
         self.det=self.select_fast(thr,cl=cl)        
-        self.det=self.rank_fast(self.det,rank) 
+        self.det=self.rank_fast(self.det,rank,cl=cl) 
         if refine:
             self.det=self.refine(self.det)
         self.det=self.bbox(self.det)
@@ -848,6 +853,7 @@ class Treat:
         if show:
             self.show(self.best,colors=["b"])
             self.show(self.worste,colors=["r"])
+            self.showBBox(gtbbox)
         if show=="Parts":
             self.show(self.best,parts=True)
             self.show(self.worste,parts=True)
@@ -930,7 +936,7 @@ class Treat:
             maxnum=len(rdet)
         return rdet[:maxnum]
 
-    def rank_fast(self,detx,maxnum=1000):
+    def rank_fast(self,detx,maxnum=1000,cl=0):
         """
            rank detections based on score
         """
@@ -945,7 +951,7 @@ class Treat:
         mcy=numpy.array(cy)*(2*self.sample+1)-self.fy+1+self.sample#+max(self.hy)
         mcx=numpy.array(cx)*(2*self.sample+1)-self.fx+1+self.sample#+max(self.hx)
         for l in pos[:maxnum]:
-            rdet.append({"i":i[l],"py":cy[l],"px":cx[l],"scr":det[l],"ry":mcy[l],"rx":mcx[l],"scl":self.scale[i[l]+self.f.starti],"fy":self.fy,"fx":self.fx,"cl":0})
+            rdet.append({"i":i[l],"py":cy[l],"px":cx[l],"scr":det[l],"ry":mcy[l],"rx":mcx[l],"scl":self.scale[i[l]+self.f.starti],"fy":self.fy,"fx":self.fx,"cl":cl})
         return rdet
 
     def refine(self,ldet):
@@ -1402,11 +1408,11 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         dettime=time.time()-t
         print "Elapsed Time:",dettime
         #print "Number HOG:",numhog
-        tr.show(det,parts=showlabel,thr=-0.5,maxnum=10)           
+        tr.show(det,parts=showlabel,thr=-1.0,maxnum=0)           
         return tr,det,dettime,numhog
     else:
         best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
-        if False:#remember to use it in INRIA
+        if True:#remember to use it in INRIA
             if deform:
                 ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)
                 iposflip=tr.descr(best1,flip=True,usemrf=usemrf,usefather=usefather)

@@ -22,6 +22,7 @@ cfg.bottomup=False
 cfg.inclusion=False
 cfg.initr=1
 cfg.ratio=1
+cfg.mpos=0.5
 cfg.hallucinate=1
 cfg.numneginpos=5
 cfg.useflipos=True
@@ -35,6 +36,7 @@ cfg.comment="I shuld get more than 84... hopefully"
 cfg.numneg=0#not used but necessary
 cfg.testname="./data/11_02_28/inria_rightpedro"
 cfg.savefeat=False #save precomputed features 
+cfg.loadfeat=True
 #cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save
 #    mydebug=False
 #    if mydebug:

@@ -60,6 +60,14 @@ def load(filename):
     fd.close()
     return aux                    
 
+def loadmat(filename):
+    import scipy.io.matlab
+    fd=open(filename,"r")
+    aux = scipy.io.matlab.loadmat(filename)
+    fd.close()
+    return aux                    
+
+
 def callfunc(cfg,name,func,args=[],force=False,verbose=False,ascii=False):
     modname=cfg.tname+"."+name
     try:
@@ -3017,7 +3025,11 @@ def showExamples(ex,fy,fx,w=None,r=None):
             pylab.text(0,0,"%.3f"%(numpy.sum(ex[l]*w)-r))
         pylab.imshow(img,cmap=pylab.cm.gray,interpolation="nearest")
 
-
+def savedetVOC(det,filename):
+    ff=open(filename,"w")
+    for l in det:
+        ff.write("%s %f %d %d %d %d\n"%(l[0],l[1],int(l[2]),int(l[3]),int(l[4]),int(l[5])))
+    ff.close()
 
     
 

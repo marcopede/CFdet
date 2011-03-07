@@ -57,13 +57,13 @@ cfg.numneg=1000
 cfg.ovr=0.5
 cfg.thr=-2
 cfg.deform=True
-cfg.bottomup=False
+cfg.bottomup=True
 cfg.loadfeat=True
 cfg.savefeat=False
 #cfg.usemrf=True#False#True#da togliere
 #cfg.ratio=1#datogliere
 cfg.multipr=8
-cfg.inclusion=True
+cfg.inclusion=False
 cfg.nms=0.5
 cfg.dbpath="/home/databases/"
 #cfg.auxdir="/state/partition1/marcopede/INRIA/"#InriaPosData(basepath="/home/databases/").getStorageDir()

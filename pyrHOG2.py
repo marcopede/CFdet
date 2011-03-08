@@ -859,7 +859,7 @@ class Treat:
             self.show(self.worste,parts=True)
         #self.trpos=self.descr(self.best)
         #self.trneg=self.descr(self.worste)
-        print "DoAll Time:",time.time()-t
+        #print "DoAll Time:",time.time()-t
         return self.best,self.worste#,self.trpos,self.trneg
 
     def doalltrain_debug(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,minnegovr=0,minnegincl=0,cl=0):
@@ -1390,10 +1390,10 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
         tr=Treat(f,scr,pos,initr,m["fy"],m["fx"])
     numhog=f.getHOG()
-    print "Scan:",time.time()-t    
+    #print "Scan:",time.time()-t    
     #dettime=time.time()-t
     #print "Elapsed Time:",dettime
-    print "Number HOG:",numhog
+    #print "Number HOG:",numhog
     #print "Getting Detections"
     #best1,worste1,ipos,ineg=tr.doalltrain(gtbbox,thr=-5,rank=10000,show=show,mpos=10,numpos=1,numneg=5,minnegovr=0.01)        
     if gtbbox==None:
@@ -1406,7 +1406,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         #pylab.gca().set_xlim(0,img.shape[1])
         #pylab.gca().set_ylim(pylab.gca().get_ylim()[::-1])
         dettime=time.time()-t
-        print "Elapsed Time:",dettime
+        #print "Elapsed Time:",dettime
         #print "Number HOG:",numhog
         tr.show(det,parts=showlabel,thr=-1.0,maxnum=0)           
         return tr,det,dettime,numhog

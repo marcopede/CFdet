@@ -80,6 +80,58 @@ void fast_pegasos(ftype *w,int wx,ftype *ex,int exy,ftype *label,ftype lambda,in
 
 void fast_pegasos_comp(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsamplescomp,int totsamples,int *label,int *comp,ftype lambda,int iter,int part)
 {
+    int wx=0,wxtot=0,wcx;
+    srand48(3);
+    int c,cp,bcp,d,y,t,pex,pexcomp,totsz,sumszx[10],sumszy[10];//max 10 components
+    ftype *x,n,scr,norm,val,ptrc,wscr,bwscr=-1.0;
+    totsz=0;
+    sumszx[0]=0;
+    sumszy[0]=0;
+    for (c=0;c<numcomp;c++)
+    {
+        wxtot+=compx[c];
+        totsz+=compy[c];
+        sumszx[c+1]=wxtot;
+        sumszy[c+1]=totsz;
+    }
+    for (c=0;c<iter;c++)
+    {
+        t=c+part*iter+1;
+        pex=(int)(drand48()*(totsamples-0.5));
+        //printf("S: %d\n",pex);
+        wx=compx[comp[pex]];
+        x=ptrsamplescomp[comp[pex]]+(pex-sumszy[comp[pex]])*wx;
+        y=label[pex];
+        //printf("Y %d ",y);
+        n=1.0/(lambda*t);
+        //printf("C %d ",comp[pex]);
+        scr=score(x,w+sumszx[comp[pex]],wx);
+        //only the component l2_max
+        bwscr=-1.0;
+        for (cp=0;cp<numcomp;cp++)
+        {   
+            wscr=score(w+sumszx[cp],w+sumszx[cp],compx[cp]);
+            //printf("Wscore(%d)=%f\n",cp,wscr);
+            if (wscr>bwscr)
+            {
+                bwscr=wscr;
+                bcp=cp;
+            }
+        }
+        //printf("Regularize Component %d \n",bcp);
+        mul(w+sumszx[bcp],1-n*lambda,compx[bcp]);    
+        //all the vector
+        //mul(w,1-n*lambda,wxtot);
+        if (scr*y<1.0)
+        {
+            addmul(w+sumszx[comp[pex]],x,y*n,wx);            
+        }
+    }
+    printf("N:%g t:%d\n",n,t);
+}
+
+void fast_pegasos_comp_old(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsamplescomp,int totsamples,int *label,int *comp,ftype lambda,int iter,int part)
+{
     int wx=0,wxtot=0;
     srand48(3);
     int c,d,y,t,pex,pexcomp,totsz,sumszx[10],sumszy[10];//max 10 components
@@ -117,6 +169,7 @@ void fast_pegasos_comp(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsam
     }
     printf("N:%g t:%d\n",n,t);
 }
+
 
 ftype objective_comp(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsamplescomp,int *label,ftype lambda,ftype *errpos,ftype *errneg,ftype *reg)
 {

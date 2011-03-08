@@ -416,7 +416,7 @@ def trainComp_old(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./s
     #fast_pegasos(ftype *w,int wx,ftype *ex,int exy,ftype *label,ftype lambda,int iter,int part)
     return w,0
 
-def trainComp(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./save/",pc=0.017,path="/home/marcopede/code/c/liblinear-1.7",mintimes=30,maxtimes=200,eps=0.001,bias=100):
+def trainComp(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./save/",pc=0.017,path="/home/marcopede/code/c/liblinear-1.7",mintimes=30,maxtimes=200,eps=0.001,bias=100,num_stop_count=5):
     """
         The same as trainSVMRaw but it does use files instad of lists:
         it is slower but it needs less memory.
@@ -511,8 +511,14 @@ def trainComp(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./save/
         print "Ratio:",ratio
         ff.write("Ratio:%f\n"%ratio)
         if ratio<eps and tt>mintimes:
-            print "Converging after %d iterations"%tt
-            break
+            if stop_count==0:
+                print "Converging after %d iterations"%tt
+                break
+            else:
+                print "Missing ",stop_count," iterations to converge" 
+                stop_count-=1
+        else:
+            stop_count=num_stop_count
         obj=nobj
         #sts.report(fname,"a","Training")
     #b=-w[-1]*float(bias)

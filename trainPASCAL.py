@@ -380,6 +380,7 @@ if __name__=="__main__":
     newtrneg=[]
     newtrnegcl=[]
     negratio=[]
+    fobj=[]
     w=None
     oldprloss=numpy.zeros((0,6))
     for it in range(10):
@@ -606,10 +607,12 @@ if __name__=="__main__":
                 print "NIT:",nit,"OLDLOSS",prloss[-1][1],"NEWLOSS:",negl
                 negratio.append(negl/(prloss[-1][1]+0.000001))
                 print "RATIO: newneg/totneg:",negratio
-                raw_input()
-                if (negratio[-1]<1.05):
+                fobj.append(nobj)
+                print "OBj:",fobj
+                #raw_input()
+                if (negratio[-1]<1.1):
                     print "Very small negative newloss: convergence at iteration %d!"%nit
-                    raw_input()
+                    #raw_input()
                     break
             else:
                 negl=1
@@ -629,16 +632,19 @@ if __name__=="__main__":
             if w==None: 
                 w=numpy.zeros(cumsize[-1])
             w,r,prloss=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,oldw=w,dir="",pc=pc)
+            #pylab.figure(300)
+            #pylab.clf()
+            #pylab.plot(w)
             pylab.figure(500)
             pylab.clf()
             oldprloss=numpy.concatenate((oldprloss,prloss),0)
             pylab.plot(oldprloss)
             pylab.semilogy()
             pylab.legend(["loss+","loss-","reg","obj","hard+","hard-"])
-            #pylab.savefig("%s_ap%d.png"%(cfg.testname,it))
+            pylab.savefig("%s_loss%d.png"%(cfg.testname,it))
             pylab.draw()
             pylab.show()
-            raw_input()
+            #raw_input()
 
             bias=100
             for idm,m in enumerate(models):
@@ -648,21 +654,22 @@ if __name__=="__main__":
             if cfg.deform:
                 print m["df"]
 
-            print "Show model"
-            for idm,m in enumerate(models):    
-                pylab.figure(100+idm)
-                pylab.clf()
-                util.drawModel(m["ww"])
-                pylab.draw()
-                pylab.show()
-                pylab.savefig("%s_hog%d_cl%d.png"%(testname,it,idm))
-                if cfg.deform:
-                    pylab.figure(110+idm)
+            if True:
+                print "Show model"
+                for idm,m in enumerate(models):    
+                    pylab.figure(100+idm)
                     pylab.clf()
-                    util.drawDeform(m["df"])
+                    util.drawModel(m["ww"])
                     pylab.draw()
                     pylab.show()
-                    pylab.savefig("%s_def%d_cl%d.png"%(testname,it,idm))
+                    pylab.savefig("%s_hog%d_cl%d.png"%(testname,it,idm))
+                    if cfg.deform:
+                        pylab.figure(110+idm)
+                        pylab.clf()
+                        util.drawDeform(m["df"])
+                        pylab.draw()
+                        pylab.show()
+                        pylab.savefig("%s_def%d_cl%d.png"%(testname,it,idm))
 
             sts.report(testname+".rpt.txt","a","Before Filtering")
             print "Filter Data"

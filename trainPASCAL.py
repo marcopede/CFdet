@@ -516,7 +516,7 @@ if __name__=="__main__":
             if posl>prloss[-1][0]:
                 print "Warning increasing positive loss"
                 #raw_input()
-            if (posratio[-1]<0.001) and float(abs(len(trpos)-len(oldtrpos))/len(oldtrpos))<0.01:
+            if (posratio[-1]<0.001) and float(abs(len(trpos)-len(oldtrpos)))/len(oldtrpos)<0.01:
                 print "Very small positive improvement: convergence at iteration %d!"%it
                 #raw_input()
                 break
@@ -529,7 +529,7 @@ if __name__=="__main__":
         #negative retraining
         trneglen=1
         newPositives=True
-        for nit in range(25):
+        for nit in range(10):
             newtrneg=[]
             newtrnegcl=[]
             print "Negative Images Iteration %d:"%nit

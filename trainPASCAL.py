@@ -516,7 +516,7 @@ if __name__=="__main__":
             if posl>prloss[-1][0]:
                 print "Warning increasing positive loss"
                 #raw_input()
-            if (posratio[-1]<0.001):
+            if (posratio[-1]<0.001) and (len(trpos)-len(oldtrpos))/len(oldtrpos)<0.05:
                 print "Very small positive improvement: convergence at iteration %d!"%it
                 #raw_input()
                 break

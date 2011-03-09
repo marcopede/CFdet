@@ -300,10 +300,10 @@ if __name__=="__main__":
     for l in range(numcl):
         print "Cluster same number",l,":"
         print "Samples:",len(a[cl==l])
-        meanA=numpy.mean(a[cl==l])/16.0/4.0
+        meanA=numpy.mean(a[cl==l])/16.0/(4**(cfg.lev[l]-1))#4.0
         print "Mean Area:",meanA
         sa=numpy.sort(a[cl==l])
-        minA=numpy.mean(sa[len(sa)/perc])/16.0/4.0
+        minA=numpy.mean(sa[len(sa)/perc])/16.0/(4**(cfg.lev[l]-1))#4.0
         print "Min Area:",minA
         aspt=numpy.mean(r[cl==l])
         print "Aspect:",aspt
@@ -317,9 +317,11 @@ if __name__=="__main__":
             fy=(max(minfy,numpy.sqrt(minA*(aspt))))
             fx=(fy/(aspt))        
         print "Fy:%.2f"%fy,"~",round(fy),"Fx:%.2f"%fx,"~",round(fx)
-        lfy.append(fy)
-        lfx.append(fx)
+        lfy.append(round(fy))
+        lfx.append(round(fx))
         print
+
+    #raw_input()
 
     cfg.fy=lfy#[7,10]#lfy
     cfg.fx=lfx#[11,7]#lfx
@@ -385,7 +387,9 @@ if __name__=="__main__":
     w=None
     oldprloss=numpy.zeros((0,6))
     for it in range(10):
+        oldtrpos=trpos[:]
         trpos=[]
+        oldtrposcl=trposcl[:]
         trposcl=[]
         #just for test
         newtrneg=[]
@@ -396,7 +400,7 @@ if __name__=="__main__":
         if it==0:#force to take best overlapping
             cfg.mpos=10
         else:
-            cfg.mpos=0.5
+            cfg.mpos=0#0.5
         cfgpos=copy.copy(cfg)
         cfgpos.numneg=cfg.numneginpos
         arg=[[i,trPosImages[i]["name"],trPosImages[i]["bbox"],models,cfgpos] for i in range(len(trPosImages))]
@@ -478,29 +482,49 @@ if __name__=="__main__":
                 pylab.show()
         del itr
 
-        #delete doubles
-        newtrneg2,newtrnegcl2=myunique(trneg,newtrneg,trnegcl,newtrnegcl,cfg.numcl)
-        trneg=trneg+newtrneg2
-        trnegcl=trnegcl+newtrnegcl2
-
         if it>0:
+            oldpscr=[]
+            for idel,el in enumerate(oldtrpos):
+                aux=el
+                auxcl=oldtrposcl[idel]
+                dns=buildense([aux],[auxcl],cumsize)[0]
+                oldpscr.append(numpy.sum(dns*w))
+            pscr=[]
+            for idel,el in enumerate(trpos):
+                aux=el
+                auxcl=trposcl[idel]
+                dns=buildense([aux],[auxcl],cumsize)[0]
+                pscr.append(numpy.sum(dns*w))
+            
+            pylab.figure(99)
+            pylab.clf()
+            pylab.plot(oldpscr)
+            pylab.plot(pscr)
+            #pylab.legend("old","new")
+            pylab.show()
+            #raw_input()
+
             lambd=1.0/(len(trpos)*cfg.svmc)
             #trpos,trneg,trposcl,trnegcl,clsize,w,lamda
             posl,negl,reg,nobj,hpos,hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,lambd)
             print "IT:",it,"OLDPOSLOSS",prloss[-1][0],"NEWPOSLOSS:",posl
-            posratio.append(posl/prloss[-1][0])
-            print "RATIO: oldpos/newpos:",posratio
+            posratio.append(abs(posl-prloss[-1][0])/prloss[-1][0])
+            print "RATIO: abs(oldpos-newpos)/oldpos:",posratio
             #fobj.append(nobj)
             #print "OBj:",fobj
             #raw_input()
             if posl>prloss[-1][0]:
                 print "Warning increasing positive loss"
-                raw_input()
-            if (posratio[-1]>0.999):
+                #raw_input()
+            if (posratio[-1]<0.001):
                 print "Very small positive improvement: convergence at iteration %d!"%it
                 #raw_input()
                 break
 
+        #delete doubles
+        newtrneg2,newtrnegcl2=myunique(trneg,newtrneg,trnegcl,newtrnegcl,cfg.numcl)
+        trneg=trneg+newtrneg2
+        trnegcl=trnegcl+newtrnegcl2
         
         #negative retraining
         trneglen=1
@@ -620,15 +644,15 @@ if __name__=="__main__":
                 #raw_input()
 
             #check negative loss
-            if nit>0:
+            if nit>0 and not(limit):
                 lambd=1.0/(len(trpos)*cfg.svmc)
                 #trpos,trneg,trposcl,trnegcl,clsize,w,lamda
                 posl,negl,reg,nobj,hpos,hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,lambd)
                 print "NIT:",nit,"OLDLOSS",prloss[-1][3],"NEWLOSS:",nobj
                 negratio.append(nobj/(prloss[-1][3]+0.000001))
                 print "RATIO: newobj/oldobj:",negratio
-                fobj.append(nobj)
-                print "OBj:",fobj
+                #fobj.append(nobj)
+                #print "OBj:",fobj
                 #raw_input()
                 if (negratio[-1]<1.05):
                     print "Very small negative newloss: convergence at iteration %d!"%nit
@@ -651,7 +675,7 @@ if __name__=="__main__":
             import pegasos
             if w==None: 
                 w=numpy.zeros(cumsize[-1])
-            w,r,prloss=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,oldw=w,dir="",pc=pc)
+            w,r,prloss=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,oldw=w,dir="",pc=pc,k=10,numthr=numcore)
             #pylab.figure(300)
             #pylab.clf()
             #pylab.plot(w)

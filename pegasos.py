@@ -67,6 +67,23 @@ lpeg.fast_pegasos_comp.argtypes=[
     ,c_int #parts
     ]
 
+#void fast_pegasos_comp_parall(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsamplescomp,int totsamples,int *label,int *comp,ftype lambda,int iter,int part,int k,int numthr)
+lpeg.fast_pegasos_comp_parall.argtypes=[
+    numpy.ctypeslib.ndpointer(dtype=c_float,ndim=1,flags="C_CONTIGUOUS")#w
+    ,c_int #numcomp
+    ,POINTER(c_int) #compx
+    ,POINTER(c_int) #compy
+    ,POINTER(c_void_p) #ptrsamples
+    ,numpy.ctypeslib.ndpointer(dtype=c_int,ndim=1,flags="C_CONTIGUOUS") #label
+    ,numpy.ctypeslib.ndpointer(dtype=c_int,ndim=1,flags="C_CONTIGUOUS") #components
+    ,c_float #lambda
+    ,c_int #iter
+    ,c_int #parts
+    ,c_int #k
+    ,c_int #numthr
+    ]
+
+
 #ftype objective_comp(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsamplescomp,int *label,int* comp,ftype lambda,ftype *errpos,ftype *errneg)
 lpeg.objective_comp.argtypes=[
     numpy.ctypeslib.ndpointer(dtype=c_float,ndim=1,flags="C_CONTIGUOUS")#w
@@ -416,7 +433,7 @@ def trainComp_old(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./s
     #fast_pegasos(ftype *w,int wx,ftype *ex,int exy,ftype *label,ftype lambda,int iter,int part)
     return w,0
 
-def trainComp(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./save/",pc=0.017,path="/home/marcopede/code/c/liblinear-1.7",mintimes=30,maxtimes=200,eps=0.001,bias=100,num_stop_count=5):
+def trainComp(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./save/",pc=0.017,path="/home/marcopede/code/c/liblinear-1.7",mintimes=30,maxtimes=200,eps=0.001,bias=100,num_stop_count=5,numthr=1,k=1):
     """
         The same as trainSVMRaw but it does use files instad of lists:
         it is slower but it needs less memory.
@@ -500,6 +517,7 @@ def trainComp(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./save/
     loss.append([posl,negl,reg,nobj,hpos,hneg])
     for tt in range(maxtimes):
         lpeg.fast_pegasos_comp(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,lamd,ntimes*10*numcomp,tt)
+        #lpeg.fast_pegasos_comp(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,lamd,ntimes*10*numcomp/k,tt,k,numthr)
         #nobj=lpeg.objective(w,fdim,bigm,ntimes,labels,lamd)
         #nobj=1
         posl,negl,reg,nobj,hpos,hneg=objective(trpos,trneg,trposcl,trnegcl,compx,w,lamd)

@@ -341,7 +341,7 @@ if __name__=="__main__":
             print "---Negative Images It %d:----"%nit
             print "   Tot Pos:",len(trpos)
             print "   Tot Neg:",len(trneg)
-            raw_input()
+            #raw_input()
 
             #print len(trneg),trneglen
             #if len(trneg)/float(trneglen)<1.05 and not(limit):

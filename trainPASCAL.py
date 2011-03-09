@@ -321,8 +321,8 @@ if __name__=="__main__":
         lfx.append(fx)
         print
 
-    cfg.fy=[7,10]#lfy
-    cfg.fx=[11,7]#lfx
+    cfg.fy=lfy#[7,10]#lfy
+    cfg.fx=lfx#[11,7]#lfx
 
     import time
     initime=time.time()
@@ -380,6 +380,7 @@ if __name__=="__main__":
     newtrneg=[]
     newtrnegcl=[]
     negratio=[]
+    posratio=[]
     fobj=[]
     w=None
     oldprloss=numpy.zeros((0,6))
@@ -481,6 +482,25 @@ if __name__=="__main__":
         newtrneg2,newtrnegcl2=myunique(trneg,newtrneg,trnegcl,newtrnegcl,cfg.numcl)
         trneg=trneg+newtrneg2
         trnegcl=trnegcl+newtrnegcl2
+
+        if it>0:
+            lambd=1.0/(len(trpos)*cfg.svmc)
+            #trpos,trneg,trposcl,trnegcl,clsize,w,lamda
+            posl,negl,reg,nobj,hpos,hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,lambd)
+            print "IT:",it,"OLDPOSLOSS",prloss[-1][0],"NEWPOSLOSS:",posl
+            posratio.append(posl/prloss[-1][0])
+            print "RATIO: oldpos/newpos:",posratio
+            #fobj.append(nobj)
+            #print "OBj:",fobj
+            #raw_input()
+            if posl>prloss[-1][0]:
+                print "Warning increasing positive loss"
+                raw_input()
+            if (posratio[-1]>0.999):
+                print "Very small positive improvement: convergence at iteration %d!"%it
+                #raw_input()
+                break
+
         
         #negative retraining
         trneglen=1
@@ -604,13 +624,13 @@ if __name__=="__main__":
                 lambd=1.0/(len(trpos)*cfg.svmc)
                 #trpos,trneg,trposcl,trnegcl,clsize,w,lamda
                 posl,negl,reg,nobj,hpos,hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,lambd)
-                print "NIT:",nit,"OLDLOSS",prloss[-1][1],"NEWLOSS:",negl
-                negratio.append(negl/(prloss[-1][1]+0.000001))
-                print "RATIO: newneg/totneg:",negratio
+                print "NIT:",nit,"OLDLOSS",prloss[-1][3],"NEWLOSS:",nobj
+                negratio.append(nobj/(prloss[-1][3]+0.000001))
+                print "RATIO: newobj/oldobj:",negratio
                 fobj.append(nobj)
                 print "OBj:",fobj
                 #raw_input()
-                if (negratio[-1]<1.1):
+                if (negratio[-1]<1.05):
                     print "Very small negative newloss: convergence at iteration %d!"%nit
                     #raw_input()
                     break
@@ -640,8 +660,8 @@ if __name__=="__main__":
             oldprloss=numpy.concatenate((oldprloss,prloss),0)
             pylab.plot(oldprloss)
             pylab.semilogy()
-            pylab.legend(["loss+","loss-","reg","obj","hard+","hard-"])
-            pylab.savefig("%s_loss%d.png"%(cfg.testname,it))
+            pylab.legend(["loss+","loss-","reg","obj","hard+","hard-"],loc='upper left')
+            pylab.savefig("%s_loss%d.pdf"%(cfg.testname,it))
             pylab.draw()
             pylab.show()
             #raw_input()

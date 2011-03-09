@@ -38,7 +38,7 @@ if __name__=="__main__":
     cfg.maxtest=5000
     cfg.show=False
     cfg.savefeat=False
-    cfg.loadfeat=True
+    cfg.loadfeat=False
     cfg.thr=-2
     cfg.auxdir="/home/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"
     cfg.test=True
@@ -83,7 +83,7 @@ if __name__=="__main__":
         #for h in fuse:
         #    h["scr"]+=models[h["cl"]]["ra"]
         rfuse=tr.rank(fuse,maxnum=300)
-        nfuse=tr.cluster(rfuse,ovr=0.5,inclusion=False)
+        nfuse=tr.cluster(rfuse,ovr=0.5,inclusion=True)
         print "----Test Image %d----"%ii
         for l in nfuse:
             detlist.append([tsImages[ii]["name"].split("/")[-1].split(".")[0],l["scr"],l["bbox"][1],l["bbox"][0],l["bbox"][3],l["bbox"][2]])
@@ -122,8 +122,8 @@ if __name__=="__main__":
     print "AP(it=",it,")=",ap
     print "Testing Time: %.3f s"%tottime#/3600.0)
     results={"det":detlist,"ap":ap,"tp":tp,"fp":fp,"pr":pr,"rc":rc,"numhog":numhog,"mythr":cfg.mythr,"time":tottime}
-    util.savemat("%s_ap%d_test_thr_%.3f.mat"%(testname,it,cfg.mythr),results)
-    util.save("%s_ap%d_test_thr_%.3f.dat"%(testname,it,cfg.mythr),results)
+    #util.savemat("%s_ap%d_test_thr_%.3f.mat"%(testname,it,cfg.mythr),results)
+    #util.save("%s_ap%d_test_thr_%.3f.dat"%(testname,it,cfg.mythr),results)
     fd=open("%s_ap%d_test.txt"%(testname,it),"a")
     fd.write("Threshold used:%f\n"%cfg.mythr)
     fd.write("Total number of HOG:%d\n"%numhog)

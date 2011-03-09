@@ -31,7 +31,7 @@ def detectWrap(a):
     else:
         gtbbox=None
     f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.savedir+"/hog/",notload=not(cfg.loadfeat),notsave=not(cfg.savefeat),hallucinate=cfg.hallucinate,cformat=True)
-    res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,inclusion=cfg.inclusion,small=False,show=cfg.show,usefather=cfg.usefather)
+    res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,posovr=cfg.posovr,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,inclusion=cfg.inclusion,small=False,show=cfg.show,usefather=cfg.usefather)
     if cfg.show:
         pylab.show()
     print "Detect Wrap:",time.time()-t
@@ -341,6 +341,7 @@ if __name__=="__main__":
             print "---Negative Images It %d:----"%nit
             print "   Tot Pos:",len(trpos)
             print "   Tot Neg:",len(trneg)
+            raw_input()
 
             #print len(trneg),trneglen
             #if len(trneg)/float(trneglen)<1.05 and not(limit):
@@ -363,7 +364,7 @@ if __name__=="__main__":
             import time
             tt1=time.time()
             #w1,r1=pegasos.train(trpos,trneg,svmname,dir="",pc=pc)
-            w,r=pegasos.trainComp(trpos,trneg,svmname,dir="",pc=pc)
+            w,r,prloss=pegasos.trainComp(trpos,trneg,svmname,dir="",pc=pc)
             r=-w[-1]*100;w=w[:-1]
             #print "Results"
             #raw_input()

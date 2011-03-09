@@ -841,7 +841,9 @@ class Treat:
 
     def doalltrain(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,posovr=0.5,numpos=1,numneg=10,minnegovr=0,minnegincl=0,cl=0):
         t=time.time()
-        self.det=self.select_fast(thr,cl=cl)        
+        self.det=self.select_fast(thr,cl=cl)
+        if gtbbox!=[]:# select only over the positive gtbbox
+            self.det=self.filter_pos(self.det,gtbbox)
         self.det=self.rank_fast(self.det,rank,cl=cl) 
         if refine:
             self.det=self.refine(self.det)
@@ -860,6 +862,7 @@ class Treat:
         #self.trpos=self.descr(self.best)
         #self.trneg=self.descr(self.worste)
         #print "DoAll Time:",time.time()-t
+        #raw_input()
         return self.best,self.worste#,self.trpos,self.trneg
 
     def doalltrain_debug(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,minnegovr=0,minnegincl=0,cl=0):
@@ -922,6 +925,49 @@ class Treat:
             ii+=(i*numpy.ones(len(cy),dtype=numpy.int)).tolist()
             det+=self.scr[i][cy,cx].tolist()
         return det,mcy,mcx,ii
+
+    def filter_pos(self,detx,gtbbox=[]):
+        """
+        for each response higher than the threshold execute doitobj.doit
+        """
+        #gt["bbox"]
+        rdet=[]
+        det=numpy.array(detx[0])
+        cy=numpy.array(detx[1])
+        cx=numpy.array(detx[2])
+        i=numpy.array(detx[3])
+        scale=numpy.array(self.scale)
+        scl=numpy.array(scale[i+self.f.starti])
+        mcy=(numpy.array(cy)*(2*self.sample+1)-self.fy+1+self.sample).astype(numpy.float)
+        mcx=(numpy.array(cx)*(2*self.sample+1)-self.fx+1+self.sample).astype(numpy.float)
+        y1=mcy/scl*self.sbin
+        x1=mcx/scl*self.sbin
+        y2=(mcy+self.fy)/scl*self.sbin
+        x2=(mcx+self.fx)/scl*self.sbin
+        sel=numpy.zeros(len(det))
+        for l in gtbbox:
+            bbx=l["bbox"]
+            h=(bbx[2]-bbx[0])/2
+            w=(bbx[3]-bbx[1])/2
+            #bigbb=[bbx[0]-h,bbx[1]-w,bbx[2]+h,bbx[3]+w]
+            #sely=numpy.logical_and(y1>bigbb[0],y2<bigbb[2])
+            #selx=numpy.logical_and(x1>bigbb[1],x2<bigbb[3])
+            #sel=numpy.logical_or(sel,numpy.logical_and(sely,selx))
+            sely1=numpy.logical_and(y1>bbx[0]-h,y1<bbx[0]+h)
+            sely2=numpy.logical_and(y2>bbx[2]-h,y2<bbx[2]+h)
+            selx1=numpy.logical_and(x1>bbx[1]-h,x1<bbx[1]+h)
+            selx2=numpy.logical_and(x2>bbx[3]-h,x2<bbx[3]+h)
+            sely=numpy.logical_and(sely1,sely2)
+            selx=numpy.logical_and(selx1,selx2)
+            sel=numpy.logical_or(sel,numpy.logical_and(sely,selx))
+        det=det[sel]#.tolist()
+        cy=cy[sel]#.tolist()
+        cx=cx[sel]#.tolist()
+        i=i[sel]#.tolist()
+        print "Number bbox before",len(detx[0])
+        print "Number bbox after",len(det)
+        #raw_input()
+        return det,cy,cx,i
 
     def compare(self,a, b):
         return cmp(b["scr"], a["scr"]) # compare as integers
@@ -1411,7 +1457,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         tr.show(det,parts=showlabel,thr=-1.0,maxnum=0)           
         return tr,det,dettime,numhog
     else:
-        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
+        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=500,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
         if True:#remember to use it in INRIA
             if deform:
                 ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)

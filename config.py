@@ -23,6 +23,7 @@ cfg.inclusion=False
 cfg.initr=1
 cfg.ratio=1
 cfg.mpos=0.5
+cfg.posovr=0.7
 cfg.hallucinate=1
 cfg.numneginpos=5
 cfg.useflipos=True

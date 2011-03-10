@@ -162,6 +162,10 @@ if __name__=="__main__":
     if cfg.savedir=="":
         cfg.savedir=InriaPosData(basepath=cfg.dbpath).getStorageDir() #where to save
 
+    import sys
+    if len(sys.argv)>1:
+        cfg.cls=sys.argv[1]
+
     util.save(cfg.testname+".cfg",cfg)
 
 #    cfg.fy=[3,4]#[7,]#[3,4]
@@ -189,9 +193,6 @@ if __name__=="__main__":
     #cfg.multipr=4
     #cfg.svmc=0.005#0.002#0.004
     #cfg.cls="bicycle"
-    import sys
-    if len(sys.argv)>1:
-        cfg.cls=sys.argv[1]
     #cfg.year="2007"
     #cfg.show=False
     #cfg.thr=-2
@@ -400,7 +401,7 @@ if __name__=="__main__":
         if it==0:#force to take best overlapping
             cfg.mpos=10
         else:
-            cfg.mpos=0#0.5
+            cfg.mpos=0.5
         cfgpos=copy.copy(cfg)
         cfgpos.numneg=cfg.numneginpos
         arg=[[i,trPosImages[i]["name"],trPosImages[i]["bbox"],models,cfgpos] for i in range(len(trPosImages))]

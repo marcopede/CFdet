@@ -514,7 +514,7 @@ if __name__=="__main__":
             posl,negl,reg,nobj,hpos,hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,lambd)
             print "IT:",it,"OLDPOSLOSS",prloss[-1][0],"NEWPOSLOSS:",posl
             posratio.append(abs(posl-prloss[-1][0])/prloss[-1][0])
-            nexratio.append(float(abs(len(trpos)-len(oldtrpos)))/len(oldtrpos)<0.01)
+            nexratio.append(float(abs(len(trpos)-len(oldtrpos)))/len(oldtrpos))
             print "RATIO: abs(oldpos-newpos)/oldpos:",posratio
             print "N old examples:",len(oldtrpos),"N new examples",len(trpos),"ratio",nexratio
             #fobj.append(nobj)

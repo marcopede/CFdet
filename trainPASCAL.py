@@ -115,7 +115,7 @@ def detectWrap(a):
     f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.auxdir+"/hog/",notsave=not(cfg.savefeat),notload=not(cfg.loadfeat),hallucinate=cfg.hallucinate,cformat=True)
     res=[]
     for clm,m in enumerate(models):
-        res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=0.7,minnegincl=0,small=False,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos))
+        res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,minnegincl=0,small=False,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos))
     if cfg.show:
         pylab.show()
     return res
@@ -304,10 +304,12 @@ if __name__=="__main__":
     for l in range(numcl):
         print "Cluster same number",l,":"
         print "Samples:",len(a[cl==l])
-        meanA=numpy.mean(a[cl==l])/16.0/(0.5*4**(cfg.lev[l]-1))#4.0
+        #meanA=numpy.mean(a[cl==l])/16.0/(0.5*4**(cfg.lev[l]-1))#4.0
+        meanA=numpy.mean(a[cl==l])/16.0/(4**(cfg.lev[l]-1))#4.0
         print "Mean Area:",meanA
         sa=numpy.sort(a[cl==l])
-        minA=numpy.mean(sa[len(sa)/perc])/16.0/(0.5*4**(cfg.lev[l]-1))#4.0
+        #minA=numpy.mean(sa[len(sa)/perc])/16.0/(0.5*4**(cfg.lev[l]-1))#4.0
+        minA=numpy.mean(sa[len(sa)/perc])/16.0/(4**(cfg.lev[l]-1))#4.0
         print "Min Area:",minA
         aspt=numpy.mean(r[cl==l])
         print "Aspect:",aspt

@@ -842,8 +842,8 @@ class Treat:
     def doalltrain(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,posovr=0.5,numpos=1,numneg=10,minnegovr=0,minnegincl=0,cl=0):
         t=time.time()
         self.det=self.select_fast(thr,cl=cl)
-        if gtbbox!=[]:# select only over the positive gtbbox
-            self.det=self.filter_pos(self.det,gtbbox)
+        #if gtbbox!=[]:# select only over the positive gtbbox
+        #    self.det=self.filter_pos(self.det,gtbbox)
         self.det=self.rank_fast(self.det,rank,cl=cl) 
         if refine:
             self.det=self.refine(self.det)
@@ -1457,7 +1457,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         tr.show(det,parts=showlabel,thr=-1.0,maxnum=0)           
         return tr,det,dettime,numhog
     else:
-        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=500,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
+        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
         if True:#remember to use it in INRIA
             if deform:
                 ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)

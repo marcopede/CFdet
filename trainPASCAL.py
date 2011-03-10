@@ -160,11 +160,14 @@ if __name__=="__main__":
         from config import * #default configuration  
         
     if cfg.savedir=="":
-        cfg.savedir=InriaPosData(basepath=cfg.dbpath).getStorageDir() #where to save
+        #cfg.savedir=InriaPosData(basepath=cfg.dbpath).getStorageDir() #where to save
+        cfg.savedir=VOC07Data(basepath=cfg.dbpath).getStorageDir()
 
     import sys
     if len(sys.argv)>1:
         cfg.cls=sys.argv[1]
+ 
+    cfg.testname=cfg.testpath+cfg.cls+("%d"%cfg.numcl)+"_"+cfg.testspec
 
     util.save(cfg.testname+".cfg",cfg)
 
@@ -301,10 +304,10 @@ if __name__=="__main__":
     for l in range(numcl):
         print "Cluster same number",l,":"
         print "Samples:",len(a[cl==l])
-        meanA=numpy.mean(a[cl==l])/16.0/(4**(cfg.lev[l]-1))#4.0
+        meanA=numpy.mean(a[cl==l])/16.0/(0.5*4**(cfg.lev[l]-1))#4.0
         print "Mean Area:",meanA
         sa=numpy.sort(a[cl==l])
-        minA=numpy.mean(sa[len(sa)/perc])/16.0/(4**(cfg.lev[l]-1))#4.0
+        minA=numpy.mean(sa[len(sa)/perc])/16.0/(0.5*4**(cfg.lev[l]-1))#4.0
         print "Min Area:",minA
         aspt=numpy.mean(r[cl==l])
         print "Aspect:",aspt
@@ -401,7 +404,7 @@ if __name__=="__main__":
         if it==0:#force to take best overlapping
             cfg.mpos=10
         else:
-            cfg.mpos=0.5
+            cfg.mpos=0#0.5
         cfgpos=copy.copy(cfg)
         cfgpos.numneg=cfg.numneginpos
         arg=[[i,trPosImages[i]["name"],trPosImages[i]["bbox"],models,cfgpos] for i in range(len(trPosImages))]

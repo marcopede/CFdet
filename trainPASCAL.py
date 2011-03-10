@@ -387,6 +387,7 @@ if __name__=="__main__":
     newtrnegcl=[]
     negratio=[]
     posratio=[]
+    nexratio=[]
     fobj=[]
     w=None
     oldprloss=numpy.zeros((0,6))
@@ -513,14 +514,16 @@ if __name__=="__main__":
             posl,negl,reg,nobj,hpos,hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,lambd)
             print "IT:",it,"OLDPOSLOSS",prloss[-1][0],"NEWPOSLOSS:",posl
             posratio.append(abs(posl-prloss[-1][0])/prloss[-1][0])
+            nexratio.append(float(abs(len(trpos)-len(oldtrpos)))/len(oldtrpos)<0.01)
             print "RATIO: abs(oldpos-newpos)/oldpos:",posratio
+            print "N old examples:",len(oldtrpos),"N new examples",len(trpos),"ratio",nexratio
             #fobj.append(nobj)
             #print "OBj:",fobj
             #raw_input()
             if posl>prloss[-1][0]:
                 print "Warning increasing positive loss"
                 #raw_input()
-            if (posratio[-1]<0.001) and float(abs(len(trpos)-len(oldtrpos)))/len(oldtrpos)<0.01:
+            if (posratio[-1]<0.001) and nexratio[-1]<0.01:
                 print "Very small positive improvement: convergence at iteration %d!"%it
                 #raw_input()
                 break

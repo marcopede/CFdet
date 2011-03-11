@@ -1478,4 +1478,77 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         print "Detect:",time.time()-t    
         return tr,best1,worste1,ipos,ineg
 
+def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1):
+    """Detect objec in images
+        used for both test --> gtbbox=None
+        and trainig --> gtbbox = list of bounding boxes
+    """
+    #build flip
+    m1=flip(m)
+    t=time.time()        
+    f.resetHOG()
+    if deform:
+        if bottomup:
+            scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
+            scr1,pos1=f.scanRCFLDefBU(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
+        else:
+            scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
+            scr1,pos1=f.scanRCFLDefThr(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
+        #tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"])
+    else:
+        scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
+        scr1,pos1=f.scanRCFL(m1,initr=initr,ratio=ratio,small=small)
+        #tr=Treat(f,scr,pos,initr,m["fy"],m["fx"])
+    lr=[]
+    for idl,l in enumerate(scr):
+        auxscr=numpy.zeros((l.shape[0],l.shape[1],2),numpy.float32)
+        fscr=numpy.max(auxscr,2)
+        lr.append(numpy.argmax(auxscr,2))
+    if deform:
+        tr=TreatDefLR(f,scr,pos,lr,initr,m["fy"],m["fx"])
+    else:
+        tr=TreatLR(f,scr,pos,lr,initr,m["fy"],m["fx"])
+
+    numhog=f.getHOG()
+    #print "Scan:",time.time()-t    
+    #dettime=time.time()-t
+    #print "Elapsed Time:",dettime
+    #print "Number HOG:",numhog
+    #print "Getting Detections"
+    #best1,worste1,ipos,ineg=tr.doalltrain(gtbbox,thr=-5,rank=10000,show=show,mpos=10,numpos=1,numneg=5,minnegovr=0.01)        
+    if gtbbox==None:
+        if show==True:
+            showlabel="Parts"
+        else:
+            showlabel=False
+        det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)#remember to take away inclusion
+        #pylab.gca().set_ylim(0,img.shape[0])
+        #pylab.gca().set_xlim(0,img.shape[1])
+        #pylab.gca().set_ylim(pylab.gca().get_ylim()[::-1])
+        dettime=time.time()-t
+        #print "Elapsed Time:",dettime
+        #print "Number HOG:",numhog
+        tr.show(det,parts=showlabel,thr=-1.0,maxnum=0)           
+        return tr,det,dettime,numhog
+    else:
+        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
+        if True:#remember to use it in INRIA
+            if deform:
+                ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)
+                iposflip=tr.descr(best1,flip=True,usemrf=usemrf,usefather=usefather)
+                ipos=ipos+iposflip
+                ineg=tr.descr(worste1,flip=False,usemrf=usemrf,usefather=usefather)
+                inegflip=tr.descr(worste1,flip=True,usemrf=usemrf,usefather=usefather)
+                ineg=ineg+inegflip
+            else:
+                ipos=tr.descr(best1,flip=False)
+                iposflip=tr.descr(best1,flip=True)
+                ipos=ipos+iposflip
+                ineg=tr.descr(worste1,flip=False)
+                inegflip=tr.descr(worste1,flip=True)
+                ineg=ineg+inegflip
+        else:
+            ipos=[];ineg=[]
+        print "Detect:",time.time()-t    
+        return tr,best1,worste1,ipos,ineg
 

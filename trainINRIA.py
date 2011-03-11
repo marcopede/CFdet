@@ -248,8 +248,14 @@ if __name__=="__main__":
 
     trpos=[]
     trneg=[]
+    posratio=[]
+    negratio=[]
+    nexratio=[]
+    w=None
     mpos=0.5
+    oldprloss=numpy.zeros((0,6))
     for it in range(cfg.numit):
+        lenoldtrpos=len(trpos)
         trpos=[]
         newtrneg=[]
         #trneg=[]#only for a test
@@ -286,6 +292,29 @@ if __name__=="__main__":
         print "---Positive Images:----"
         print "   Tot Pos:",len(trpos)
         print "   Tot Neg:",len(trneg)      
+
+        if it>0:
+            
+            lambd=1.0/(len(trpos)*cfg.svmc)
+            #trpos,trneg,trposcl,trnegcl,clsize,w,lamda
+            posl,negl,reg,nobj,hpos,hneg=pegasos.objective(trpos,trneg,numpy.zeros(len(trpos)),numpy.zeros(len(trneg)),[len(trpos[0])+1],numpy.concatenate((w,[-r/100])),lambd)
+            print "IT:",it,"OLDPOSLOSS",prloss[-1][0],"NEWPOSLOSS:",posl
+            posratio.append(abs(posl-prloss[-1][0])/prloss[-1][0])
+            nexratio.append(float(abs(len(trpos)-lenoldtrpos))/lenoldtrpos)
+            print "RATIO: abs(oldpos-newpos)/oldpos:",posratio
+            print "N old examples:",lenoldtrpos,"N new examples",len(trpos),"ratio",nexratio
+            #fobj.append(nobj)
+            #print "OBj:",fobj
+            #raw_input()
+            if posl>prloss[-1][0]:
+                print "Warning increasing positive loss"
+                #raw_input()
+            if (posratio[-1]<0.001) and nexratio[-1]<0.01:
+                print "Very small positive improvement: convergence at iteration %d!"%it
+                #raw_input()
+                break
+
+
         #negative retraining
         trneglen=1
         cfgneg=copy.copy(cfg)
@@ -343,13 +372,26 @@ if __name__=="__main__":
             print "   Tot Neg:",len(trneg)
             #raw_input()
 
-            #print len(trneg),trneglen
-            #if len(trneg)/float(trneglen)<1.05 and not(limit):
-            #if len(newtrneg2)<5 and not(newPositives):
             if (float(len(newtrneg2))<=0.05*nSupportVectorsNeg) and not(newPositives) and not(limit):
                 print "Not enough negatives, convergence!"
                 break
             newPositives=False
+
+            #check negative loss
+            if nit>0 and not(limit):
+                lambd=1.0/(len(trpos)*cfg.svmc)
+                #trpos,trneg,trposcl,trnegcl,clsize,w,lamda
+                posl,negl,reg,nobj,hpos,hneg=pegasos.objective(trpos,trneg,numpy.zeros(len(trpos)),numpy.zeros(len(trneg)),[len(trpos[0])+1],numpy.concatenate((w,[-r/100])),lambd)
+                print "NIT:",nit,"OLDLOSS",prloss[-1][3],"NEWLOSS:",nobj
+                negratio.append(nobj/(prloss[-1][3]+0.000001))
+                print "RATIO: newobj/oldobj:",negratio
+                #fobj.append(nobj)
+                #print "OBj:",fobj
+                #raw_input()
+                if (negratio[-1]<1.05):
+                    print "Very small negative newloss: convergence at iteration %d!"%nit
+                    #raw_input()
+                    break
 
             sts.report(cfg.testname+".rpt.txt","a","Before Training")
 
@@ -363,12 +405,25 @@ if __name__=="__main__":
             #w,r=util.loadSvm(svmname,dir="",lib=lib)
             import time
             tt1=time.time()
-            #w1,r1=pegasos.train(trpos,trneg,svmname,dir="",pc=pc)
-            w,r,prloss=pegasos.trainComp(trpos,trneg,svmname,dir="",pc=pc)
+            #w,r=pegasos.train(trpos,trneg,svmname,dir="",pc=pc)
+            if w==None: 
+                w=numpy.zeros(len(trpos[0]),numpy.float32)
+                r=0
+            w,r,prloss=pegasos.trainComp(trpos,trneg,svmname,oldw=numpy.concatenate((w,[-r/100])),pc=pc,k=10,numthr=numcore)
+            #w,r,prloss=pegasos.trainComp(trpos,trneg,svmname,dir="",pc=pc)
             r=-w[-1]*100;w=w[:-1]
             #print "Results"
             #raw_input()
             #w,r=pegasos.trainkeep(trpos,trneg,svmname,dir="",pc=pc)
+            pylab.figure(500)
+            pylab.clf()
+            oldprloss=numpy.concatenate((oldprloss,prloss),0)
+            pylab.plot(oldprloss)
+            pylab.semilogy()
+            pylab.legend(["loss+","loss-","reg","obj","hard+","hard-"],loc='upper left')
+            pylab.savefig("%s_loss%d.pdf"%(cfg.testname,it))
+            pylab.draw()
+            pylab.show()
 
             m=tr.model(w,r,len(m["ww"]),31,usemrf=cfg.usemrf,usefather=cfg.usefather)
             util.save("%s%d.model"%(cfg.testname,it),m)

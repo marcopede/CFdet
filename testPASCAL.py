@@ -26,7 +26,7 @@ if __name__=="__main__":
     if len(sys.argv)>2:
         it=int(sys.argv[2])
     #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
-    testname="./data/11_03_08/%s_%d_test"%(cfg.cls,cfg.numcl)
+    testname="./data/11_03_11/%s_%d_3lev"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
     cfg.mpos=1
@@ -52,7 +52,7 @@ if __name__=="__main__":
     mypool = Pool(numcore)
     
     tsImages=getRecord(VOC07Data(select="all",cl="%s_test.txt"%cfg.cls,
-                    basepath="/home/databases/",
+                    basepath=cfg.dbpath,#"/home/databases/",
                     trainfile="VOC2007/VOCdevkit/VOC2007/ImageSets/Main/",
                     imagepath="VOC2007/VOCdevkit/VOC2007/JPEGImages/",
                     annpath="VOC2007/VOCdevkit/VOC2007/Annotations/",

@@ -301,10 +301,10 @@ lpeg.fast_pegasos_comp.argtypes=[
 
 
 def objective(trpos,trneg,trposcl,trnegcl,clsize,w,lamda):
-    posloss=0
+    posloss=0.0
     total=(len(trpos))
     clsum=numpy.concatenate(([0],numpy.cumsum(clsize)))
-    hardpos=0
+    hardpos=0.0
     for idl,l in enumerate(trpos):
         c=int(trposcl[idl])
         pstart=clsum[c]
@@ -335,8 +335,8 @@ def objective(trpos,trneg,trposcl,trnegcl,clsize,w,lamda):
     reg=lamda*max(scr)*0.5
     posloss=posloss/total
     negloss=negloss/total
-    hardpos=hardpos/total
-    hardneg=hardneg/total
+    hardpos=float(hardpos)/total
+    hardneg=float(hardneg)/total
     return posloss,negloss,reg,posloss+negloss+reg,hardpos,hardneg
 
 def trainComp_old(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./save/",pc=0.017,path="/home/marcopede/code/c/liblinear-1.7",maxtimes=100,eps=0.01,bias=100):

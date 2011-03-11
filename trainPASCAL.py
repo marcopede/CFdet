@@ -230,12 +230,15 @@ if __name__=="__main__":
         [{"name":"it","txt":"Iteration"},
         {"name":"nit","txt":"Negative Iteration"},
         {"name":"trpos","fnc":"len","txt":"Positive Examples"},
-        {"name":"trneg","fnc":"len","txt":"Negative Examples"}]
+        {"name":"trneg","fnc":"len","txt":"Negative Examples"},
+        {"name":"negratio[-1]","txt":"Ratio Neg loss: "}]
         )
 
     rpres=stats([{"name":"tinit","txt":"Time from the beginning"},
                 {"name":"tpar","txt":"Time last iteration"},
-                {"name":"ap","txt":"Average precision: "}])
+                {"name":"ap","txt":"Average precision: "},
+                {"name":"nexratio[-1]","txt":"Ratio Examples: "},
+                {"name":"posratio[-1]","txt":"Ratio Pos loss: "}])
 
     clst=stats([{"name":"l","txt":"Cluster "},
                 {"name":"npcl","txt":"Positive Examples"},
@@ -387,16 +390,16 @@ if __name__=="__main__":
     trnegcl=[]
     newtrneg=[]
     newtrnegcl=[]
-    negratio=[]
-    posratio=[]
-    nexratio=[]
+    negratio=[-1]
+    posratio=[-1]
+    nexratio=[-1]
     fobj=[]
     w=None
     oldprloss=numpy.zeros((0,6))
     for it in range(10):
-        oldtrpos=trpos[:]
+        numoldtrpos=len(trpos)
         trpos=[]
-        oldtrposcl=trposcl[:]
+        #numoldtrposcl=len(trposcl)
         trposcl=[]
         #just for test
         newtrneg=[]
@@ -441,16 +444,26 @@ if __name__=="__main__":
             rfuseneg=tr.rank(fuseneg,maxnum=1000)
             nfuse=tr.cluster(rfuse,ovr=0.5)
             nfuseneg=tr.cluster(rfuseneg,ovr=0.5)
-            trpos+=tr.descr(nfuse)         
-            newtrneg+=tr.descr(nfuseneg)
+            if cfg.deform:
+                trpos+=tr.descr(nfuse,usemrf=cfg.usemrf,usefather=cfg.usefather)         
+                newtrneg+=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather)
+            else:
+                trpos+=tr.descr(nfuse)         
+                newtrneg+=tr.descr(nfuseneg)
             trposcl+=tr.mixture(nfuse)
             newtrnegcl+=tr.mixture(nfuseneg)
             if cfg.useflipos:
-                iposflip=tr.descr(nfuse,flip=True)
+                if cfg.deform:
+                    iposflip=tr.descr(nfuse,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)
+                else:
+                    iposflip=tr.descr(nfuse,flip=True)
                 trpos+=iposflip
                 trposcl+=tr.mixture(nfuse)
             if cfg.useflineg:
-                inegflip=tr.descr(nfuseneg,flip=True)
+                if cfg.deform:
+                    inegflip=tr.descr(nfuseneg,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)
+                else:
+                    inegflip=tr.descr(nfuseneg,flip=True)
                 newtrneg+=inegflip
                 newtrnegcl+=tr.mixture(nfuseneg)
             print "----Pos Image %d----"%ii
@@ -458,7 +471,10 @@ if __name__=="__main__":
             print "Tot Pos:",len(trpos)," Neg:",len(trneg)+len(newtrneg)
             #check score
             if (nfuse!=[] and it>0):
-                aux=tr.descr(nfuse)[0]
+                if cfg.deform:
+                    aux=tr.descr(nfuse,usemrf=cfg.usemrf,usefather=cfg.usefather)[0]
+                else:
+                    aux=tr.descr(nfuse)[0]
                 auxcl=tr.mixture(nfuse)[0]
                 dns=buildense([aux],[auxcl],cumsize)[0]
                 dscr=numpy.sum(dns*w)
@@ -469,7 +485,10 @@ if __name__=="__main__":
                     #raw_input()
             #check score
             if (nfuseneg!=[] and it>0):
-                aux=tr.descr(nfuseneg)[0]
+                if cfg.deform:
+                    aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather)[0]
+                else:
+                    aux=tr.descr(nfuseneg)[0]
                 auxcl=tr.mixture(nfuseneg)[0]
                 dns=buildense([aux],[auxcl],cumsize)[0]
                 dscr=numpy.sum(dns*w)
@@ -490,35 +509,35 @@ if __name__=="__main__":
         del itr
 
         if it>0:
-            oldpscr=[]
-            for idel,el in enumerate(oldtrpos):
-                aux=el
-                auxcl=oldtrposcl[idel]
-                dns=buildense([aux],[auxcl],cumsize)[0]
-                oldpscr.append(numpy.sum(dns*w))
-            pscr=[]
-            for idel,el in enumerate(trpos):
-                aux=el
-                auxcl=trposcl[idel]
-                dns=buildense([aux],[auxcl],cumsize)[0]
-                pscr.append(numpy.sum(dns*w))
+            #oldpscr=[]
+            #for idel,el in enumerate(oldtrpos):
+            #    aux=el
+            #    auxcl=oldtrposcl[idel]
+            #    dns=buildense([aux],[auxcl],cumsize)[0]
+            #    oldpscr.append(numpy.sum(dns*w))
+            #pscr=[]
+            #for idel,el in enumerate(trpos):
+            #    aux=el
+            #    auxcl=trposcl[idel]
+            #    dns=buildense([aux],[auxcl],cumsize)[0]
+            #    pscr.append(numpy.sum(dns*w))
             
-            pylab.figure(99)
-            pylab.clf()
-            pylab.plot(oldpscr)
-            pylab.plot(pscr)
-            #pylab.legend("old","new")
-            pylab.show()
-            #raw_input()
+            #pylab.figure(99)
+            #pylab.clf()
+            #pylab.plot(oldpscr)
+            #pylab.plot(pscr)
+            ##pylab.legend("old","new")
+            #pylab.show()
+            ##raw_input()
 
             lambd=1.0/(len(trpos)*cfg.svmc)
             #trpos,trneg,trposcl,trnegcl,clsize,w,lamda
             posl,negl,reg,nobj,hpos,hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,lambd)
             print "IT:",it,"OLDPOSLOSS",prloss[-1][0],"NEWPOSLOSS:",posl
             posratio.append(abs(posl-prloss[-1][0])/prloss[-1][0])
-            nexratio.append(float(abs(len(trpos)-len(oldtrpos)))/len(oldtrpos))
+            nexratio.append(float(abs(len(trpos)-numoldtrpos))/numoldtrpos)
             print "RATIO: abs(oldpos-newpos)/oldpos:",posratio
-            print "N old examples:",len(oldtrpos),"N new examples",len(trpos),"ratio",nexratio
+            print "N old examples:",numoldtrpos,"N new examples",len(trpos),"ratio",nexratio
             #fobj.append(nobj)
             #print "OBj:",fobj
             #raw_input()
@@ -581,21 +600,34 @@ if __name__=="__main__":
                     rfuseneg=tr.rank(fuseneg,maxnum=1000)
                     nfuse=tr.cluster(rfuse,ovr=0.5)
                     nfuseneg=tr.cluster(rfuseneg,ovr=0.5)
-                    trpos+=tr.descr(nfuse)         
-                    newtrneg+=tr.descr(nfuseneg)
+                    if cfg.deform:
+                        trpos+=tr.descr(nfuse,usemrf=cfg.usemrf,usefather=cfg.usefather)         
+                        newtrneg+=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather)
+                    else:
+                        trpos+=tr.descr(nfuse)         
+                        newtrneg+=tr.descr(nfuseneg)
                     trposcl+=tr.mixture(nfuse)
                     newtrnegcl+=tr.mixture(nfuseneg)
                     if cfg.useflipos:
-                        iposflip=tr.descr(nfuse,flip=True)
+                        if cfg.deform:
+                            iposflip=tr.descr(nfuse,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)
+                        else:
+                            iposflip=tr.descr(nfuse,flip=True)
                         trpos+=iposflip
                         trposcl+=tr.mixture(nfuse)
                     if cfg.useflineg:
-                        inegflip=tr.descr(nfuseneg,flip=True)
+                        if cfg.deform:
+                            inegflip=tr.descr(nfuseneg,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)
+                        else:
+                            inegflip=tr.descr(nfuseneg,flip=True)
                         newtrneg+=inegflip
                         newtrnegcl+=tr.mixture(nfuseneg)
                     #check score
                     if (nfuseneg!=[] and nit>0):
-                        aux=tr.descr(nfuseneg)[0]
+                        if cfg.deform:
+                            aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather)[0]
+                        else:
+                            aux=tr.descr(nfuseneg)[0]
                         auxcl=tr.mixture(nfuseneg)[0]
                         dns=buildense([aux],[auxcl],cumsize)[0]
                         dscr=numpy.sum(dns*w)

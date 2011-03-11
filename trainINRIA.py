@@ -493,7 +493,7 @@ if __name__=="__main__":
         pylab.draw()
         pylab.show()
         pylab.savefig("%s_ap%d.png"%(cfg.testname,it))
-        util.savemat("%s_ap%d.mat"%(cfg.testname,it),{"tp":tp,"fp":fp,"scr":scr,"tot":tot,"rc":rc,"pr":pr,"ap":ap})
+        #util.savemat("%s_ap%d.mat"%(cfg.testname,it),{"tp":tp,"fp":fp,"scr":scr,"tot":tot,"rc":rc,"pr":pr,"ap":ap})
         tinit=((time.time()-initime)/3600.0)
         tpar=((time.time()-partime)/3600.0)
         print "AP(it=",it,")=",ap

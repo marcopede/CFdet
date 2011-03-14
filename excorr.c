@@ -207,8 +207,11 @@ inline ftype refineighpr(ftype *img,int imgy,int imgx,ftype *mask,int masky,int 
                     {
                         //printf("Prior in %d %d\n",posy+iy,posx+ix);                 
                         //val=10;//pr[(posy+iy)*imgx+posx+ix];
+                        //val=pr[(posy+iy)*imgx+posx+ix];
                     }
                 }
+                else
+                    val=-10;
             }
             else
             {

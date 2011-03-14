@@ -34,6 +34,7 @@ def detectWrap(a):
     res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,posovr=cfg.posovr,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,inclusion=cfg.inclusion,small=False,show=cfg.show,usefather=cfg.usefather)
     if cfg.show:
         pylab.show()
+#        raw_input()
     print "Detect Wrap:",time.time()-t
     return res
 
@@ -192,12 +193,15 @@ if __name__=="__main__":
         {"name":"trneg","fnc":"len","txt":"Negative Examples"},
         {"name":"nSupportVectorsPos","txt":"Positive Support Vectors"},
         {"name":"nSupportVectorsNeg","txt":"Negative Support Vectors"},
-        {"name":"doubles","txt":"Double Examples"}]
+        {"name":"doubles","txt":"Double Examples"},
+        {"name":"negratio[-1]","txt":"Ratio Neg loss:"}]
         )
 
     rpres=stats([{"name":"tinit","txt":"Time from the beginning"},
                 {"name":"tpar","txt":"Time last iteration"},
-                {"name":"ap","txt":"Average precision: "}])
+                {"name":"ap","txt":"Average precision: "},
+                {"name":"nexratio[-1]","txt":"Ratio Examples: "},
+                {"name":"posratio[-1]","txt":"Ratio Pos loss: "}])
 
     import time
     initime=time.time()
@@ -205,52 +209,58 @@ if __name__=="__main__":
 
     fy=cfg.fy
     fx=cfg.fx
+    ww=[]
+    dd=[]
+    for l in range(cfg.lev):
     #lowf1=numpy.random.random((fy,fx,31)).astype(numpy.float32)
-    lowf1=numpy.ones((fy,fx,31)).astype(numpy.float32)
-    lowf=lowf1/numpy.sqrt(numpy.sum(lowf1**2))/float(fx*fy)*1
+        lowf1=numpy.ones((fy*2**l,fx*2**l,31)).astype(numpy.float32)
+        lowf=lowf1/numpy.sqrt(numpy.sum(lowf1**2))/float(fx*fy)*1
     #lowd=numpy.random.random((1,1,4)).astype(numpy.float32)
-    lowd=-numpy.ones((1,1,4)).astype(numpy.float32)
+        lowd=-numpy.ones((1*2**l,1*2**l,4)).astype(numpy.float32)
+        ww.append(lowf)
+        dd.append(lowd)
     #midf1=numpy.random.random((2*fy,2*fx,31)).astype(numpy.float32)
-    midf1=numpy.ones((2*fy,2*fx,31)).astype(numpy.float32)
-    midf=midf1/numpy.sqrt(numpy.sum(midf1**2))/float(4*fx*fy)*1
+    #midf1=numpy.ones((2*fy,2*fx,31)).astype(numpy.float32)
+    #midf=midf1/numpy.sqrt(numpy.sum(midf1**2))/float(4*fx*fy)*0
     #midd=numpy.random.random((2,2,4)).astype(numpy.float32)
-    midd=-numpy.ones((2,2,4)).astype(numpy.float32)
+    #midd=-numpy.ones((2,2,4)).astype(numpy.float32)
     #higf1=numpy.random.random((4*fy,4*fx,31)).astype(numpy.float32)
-    higf1=numpy.ones((4*fy,4*fx,31)).astype(numpy.float32)
-    higf=higf1/numpy.sqrt(numpy.sum(higf1**2))/float(16*fx*fy)*1
+    #higf1=numpy.ones((4*fy,4*fx,31)).astype(numpy.float32)
+    #higf=higf1/numpy.sqrt(numpy.sum(higf1**2))/float(16*fx*fy)*0
     #higd=numpy.random.random((4,4,4)).astype(numpy.float32)
-    higd=-numpy.ones((4,4,4)).astype(numpy.float32)
-    vhigf1=numpy.ones((8*fy,8*fx,31)).astype(numpy.float32)
-    vhigf=vhigf1/numpy.sqrt(numpy.sum(vhigf1**2))/float(64*fx*fy)
+    #higd=-numpy.ones((4,4,4)).astype(numpy.float32)
+    #vhigf1=numpy.ones((8*fy,8*fx,31)).astype(numpy.float32)
+    #vhigf=vhigf1/numpy.sqrt(numpy.sum(vhigf1**2))/float(64*fx*fy)
     #higd=numpy.random.random((4,4,4)).astype(numpy.float32)
-    vhigd=-numpy.ones((8,8,4)).astype(numpy.float32)
-    ww3=[lowf,midf,higf]
-    wwh=[lowf,midf,higf,vhigf]
-    ww2=[midf,higf]
-    ww1=[higf]
-    ww4=[lowf,midf]
-    ww5=[midf]
-    ww6=[lowf]
-    dd1=[lowd]
-    dd2=[lowd,midd]
-    dd3=[lowd,midd,higd]
-    ddh=[lowd,midd,higd,vhigd]
+    #vhigd=-numpy.ones((8,8,4)).astype(numpy.float32)
+    #ww3=[lowf,midf,higf]
+    #wwh=[lowf,midf,higf,vhigf]
+    #ww2=[midf,higf]
+    #ww1=[higf]
+    #ww4=[lowf,midf]
+    #ww5=[midf]
+    #ww6=[lowf]
+    #dd1=[lowd]
+    #dd2=[lowd,midd]
+    #dd3=[lowd,midd,higd]
+    #ddh=[lowd,midd,higd,vhigd]
     rho=0
-    model1={"ww":ww1,"rho":rho,"df":dd1,"fy":ww1[0].shape[0],"fx":ww1[0].shape[1]}
-    model2={"ww":ww2,"rho":rho,"df":dd2,"fy":ww2[0].shape[0],"fx":ww2[0].shape[1]}
-    model3={"ww":ww3,"rho":rho,"df":dd3,"fy":ww3[0].shape[0],"fx":ww3[0].shape[1]}
-    modelh={"ww":wwh,"rho":rho,"df":ddh,"fy":wwh[0].shape[0],"fx":wwh[0].shape[1]}
-    model4={"ww":ww4,"rho":rho,"df":dd2,"fy":ww4[0].shape[0],"fx":ww4[0].shape[1]}
-    model5={"ww":ww5,"rho":rho,"df":dd1,"fy":ww5[0].shape[0],"fx":ww5[0].shape[1]}
-    model6={"ww":ww6,"rho":rho,"df":dd1,"fy":ww6[0].shape[0],"fx":ww6[0].shape[1]}
-    lmodels=[model1,model2,model3]
-    m=model3#model3
+    m={"ww":ww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1]}
+    #model1={"ww":ww1,"rho":rho,"df":dd1,"fy":ww1[0].shape[0],"fx":ww1[0].shape[1]}
+    #model2={"ww":ww2,"rho":rho,"df":dd2,"fy":ww2[0].shape[0],"fx":ww2[0].shape[1]}
+    #model3={"ww":ww3,"rho":rho,"df":dd3,"fy":ww3[0].shape[0],"fx":ww3[0].shape[1]}
+    #modelh={"ww":wwh,"rho":rho,"df":ddh,"fy":wwh[0].shape[0],"fx":wwh[0].shape[1]}
+    #model4={"ww":ww4,"rho":rho,"df":dd2,"fy":ww4[0].shape[0],"fx":ww4[0].shape[1]}
+    #model5={"ww":ww5,"rho":rho,"df":dd1,"fy":ww5[0].shape[0],"fx":ww5[0].shape[1]}
+    #model6={"ww":ww6,"rho":rho,"df":dd1,"fy":ww6[0].shape[0],"fx":ww6[0].shape[1]}
+    #lmodels=[model1,model2,model3]
+    #m=model3#model3
 
     trpos=[]
     trneg=[]
-    posratio=[]
-    negratio=[]
-    nexratio=[]
+    posratio=[-1]
+    negratio=[-1]
+    nexratio=[-1]
     w=None
     mpos=0#0.5
     oldprloss=numpy.zeros((0,6))
@@ -279,6 +289,14 @@ if __name__=="__main__":
         #res=it.next()
             trpos+=res[3]
             newtrneg+=res[4]
+            if (it>0 and res[4]!=[]):
+                scr=res[2][0]["scr"]
+                dense=numpy.sum(res[3][0]*w)-r
+                #raw_input()
+                if abs(scr-dense)>0.0001:
+                    print "Warning: the two scores must be equal!!!"
+                    print "Scr:",scr,"DesneSCR:",dense,"Diff:",abs(scr-dense)
+                    raw_input()
             print "----Pos Image %d----"%ii
             print "Pos:",len(res[3]),"Neg:",len(res[4])
             print "Tot Pos:",len(trpos)," Neg:",len(newtrneg)      

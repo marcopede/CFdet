@@ -506,6 +506,7 @@ if __name__=="__main__":
                 pylab.imshow(img,interpolation="nearest",animated=True)
                 tr.show(nfuse,parts=cfg.show)      
                 pylab.show()
+                #raw_input()
         del itr
 
         if it>0:

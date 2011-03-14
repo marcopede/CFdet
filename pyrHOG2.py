@@ -619,7 +619,7 @@ class pyrHOG:
                 ipr=pr[i].ctypes.data_as(ctypes.POINTER(c_float))
             else:
                 ipr=ctypes.POINTER(c_float)()
-            ff.scaneigh(self.hog[i],
+            ff.scaneighpr(self.hog[i],
                 self.hog[i].shape[0],
                 self.hog[i].shape[1],
                 ww[0],
@@ -633,7 +633,8 @@ class pyrHOG:
                 nelem,ipr)
             samples[:,:,:]=(samples[:,:,:]+pparts[-1][0][0,0,:2,:,:])*2+1
             #self.scanRCFLPart(model,samples,pparts[-1],res[-1],i-self.interv,1,0,0,ratio,usemrf) 
-            self.scanRCFLPart(model,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf) 
+            if len(ww)>1:
+                self.scanRCFLPart(model,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf) 
             res[i-self.starti]-=rho
             #pylab.figure(1)
             #pylab.imshow(res[-1],interpolation="nearest")
@@ -1010,6 +1011,7 @@ class Treat:
         if rawdet:
             self.best=self.rawdet(self.best)
             self.worste=self.rawdet(self.worste)
+        #show="Parts"
         if show:
             self.show(self.best,colors=["b"])
             self.show(self.worste,colors=["r"])
@@ -1603,8 +1605,8 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         #pylab.figure(200)
         #pylab.clf()
    #     print h
-        #print "Min",pr[h+f.starti].min(),"Max",pr[h+f.starti].max()
-        #print "Min",scr[h].min(),"Max",scr[h].max()
+        #print "Pr Min",pr[h+f.starti].min(),"Max",pr[h+f.starti].max()
+        #print "SCR Min",scr[h].min(),"Max",scr[h].max()
         #pylab.imshow(scr[h],interpolation="nearest")
         #pylab.figure(201)
         #pylab.clf()

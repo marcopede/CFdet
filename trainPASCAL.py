@@ -482,7 +482,7 @@ if __name__=="__main__":
                 if abs(nfuse[0]["scr"]-dscr)>0.0001:
                     print "Warning: the two scores must be the same!!!"
                     print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
-                    #raw_input()
+                    raw_input()
             #check score
             if (nfuseneg!=[] and it>0):
                 if cfg.deform:

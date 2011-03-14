@@ -46,7 +46,7 @@ class config(object):
 #testname="./data/test3_11/CVPR11_usefahter";it=6
 #testname="./data/INRIA/testTDnoMRFright";it=9
 #testname="./data/CVPR/bottomup";it=9
-testname="./data/11_02_26/inria_both";it=10
+testname="./data/11_03_13/inria_prior";it=7
 import sys
 if len(sys.argv)>1:
     it=int(sys.argv[1])
@@ -56,8 +56,8 @@ cfg.maxtest=1000#100
 cfg.numneg=1000
 cfg.ovr=0.5
 cfg.thr=-2
-cfg.deform=True
-cfg.bottomup=True
+#cfg.deform=True
+#cfg.bottomup=True
 cfg.loadfeat=True
 cfg.savefeat=False
 #cfg.usemrf=True#False#True#da togliere

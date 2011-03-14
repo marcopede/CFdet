@@ -37,6 +37,10 @@ lhog.process.argtypes=[
 ff.scaneigh.argtypes=[numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_float,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer
 (dtype=c_int,flags="C_CONTIGUOUS"),c_int,c_int,c_int]
 
+ff.scaneighpr.argtypes=[numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_float,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer
+(dtype=c_int,flags="C_CONTIGUOUS"),c_int,c_int,c_int,ctypes.POINTER(c_float)]
+
+
 #ff.scanDef.argtypes = [
 #    ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
 #    c_int,c_int,c_int,
@@ -400,6 +404,44 @@ class pyrHOG:
         "get the HOG computation counter"
         return ff.getHOG()
 
+    def buildPrior(self,gt,fy,fx,py=0.5,px=0.5,v=1):
+        pr=[]
+        for i in range(len(self.hog)):
+            #samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(ctypes.c_int)
+            prior=numpy.zeros((self.hog[i].shape[0],self.hog[i].shape[1]),numpy.float32)
+            scl=self.scale[i]
+            for l in gt:
+                bbx=l["bbox"]
+                #h=(bbx[2]-bbx[0])/2
+                #w=(bbx[3]-bbx[1])/2
+                cy=(float(bbx[0])*scl/self.sbin)#-1
+                cx=(float(bbx[1])*scl/self.sbin)#-1
+                cy1=(float(bbx[2])*scl/self.sbin)#-1
+                cx1=(float(bbx[3])*scl/self.sbin)#-1
+                for dy in range(-int(py+1),int(py+1)+1):#[-1,0,+1]:
+                    for dx in range(-int(px+1),int(px+1)+1):
+                        cpy=cy+dy
+                        cpx=cx+dx
+                        cyr=cpy+fy
+                        cxr=cpx+fx
+                        #print "Scale",scl
+                        #print "Cy1",cy1,"cyr",cyr
+                        #print "Cx1",cx1,"cxr",cxr
+                        dsy=abs(cy1-cyr);dsx=abs(cx1-cxr)
+                        if dsy<=py and dsx<=px:
+                            if int(cpy)>=0 and int(cpx)>=0 and int(cpy)<prior.shape[0] and int(cpx)<prior.shape[1]:
+                            #if round(cpy)>=0 and round(cpx)>=0 and round(cpy)<prior.shape[0] and round(cpx)<prior.shape[1]:
+                                #print "Prior:",round(cpy),round(cpx)
+                                #prior[round(cpy),round(cpx)]=v*(py-dsy)/py*(px-dsx)/px
+                                prior[int(cpy),int(cpx)]=v*(py-dsy)/py*(px-dsx)/px
+            pr.append(prior)
+            #if numpy.any(prior!=0):        
+            #    pylab.figure(89)
+            #    pylab.imshow(prior,interpolation="nearest")
+            #    pylab.show()
+            #    raw_input()
+        return pr                     
+
 
     def scanRCFL(self,model,initr=1,ratio=1,small=True):
         ww=model["ww"]
@@ -445,6 +487,59 @@ class pyrHOG:
                     #set occlusion
             res[i-self.starti]-=rho
         return res,pparts
+
+    def scanRCFLpr(self,model,initr=1,ratio=1,small=True,pr=None):
+        ww=model["ww"]
+        rho=model["rho"]
+        res=[]#score
+        pparts=[]#parts position
+        tot=0
+        if not(small):
+            self.starti=self.interv*(len(ww)-1)
+        else:
+            self.starti=0
+        from time import time
+        for i in range(self.starti,len(self.hog)):
+            samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(ctypes.c_int)
+            sshape=samples.shape[1:3]
+            res.append(numpy.zeros(sshape,dtype=ctypes.c_float))
+            pparts.append(numpy.zeros((2,len(ww),sshape[0],sshape[1]),dtype=c_int))
+            for lev in range(len(ww)):
+                if i-self.interv*lev>=0:
+                    #print "Lev:",lev
+                    if lev==0:
+                        r=initr
+                        if pr!=None:
+                            ipr=pr[i].ctypes.data_as(ctypes.POINTER(c_float))
+                        else:
+                            ipr=ctypes.POINTER(c_float)()
+                    else:
+                        ipr=ctypes.POINTER(c_float)()
+                        r=ratio
+                    auxres=res[-1].copy()
+                    ff.scaneighpr(self.hog[i-self.interv*lev],
+                        self.hog[i-self.interv*lev].shape[0],
+                        self.hog[i-self.interv*lev].shape[1],
+                        ww[lev],
+                        ww[lev].shape[0],ww[lev].shape[1],ww[lev].shape[2],
+                        samples[0,:,:],
+                        samples[1,:,:],
+                        auxres,
+                        pparts[-1][0,lev,:,:],
+                        pparts[-1][1,lev,:,:],
+                        r,r,
+                        sshape[0]*sshape[1],
+                        ipr)
+                        #res[-1].size)
+                    res[i-self.starti]+=auxres
+                    samples[:,:,:]=(samples[:,:,:]+pparts[-1][:,lev,:,:])*2+1
+                    #samples[1,:,:]=(samples[1,:,:]+pparts[-1][1,lev,:,:])*2+1
+                else:
+                    pass
+                    #set occlusion
+            res[i-self.starti]-=rho
+        return res,pparts
+
 
     def scanRCFLDef(self,model,initr=1,ratio=1,small=True,usemrf=True):
         ww=model["ww"]
@@ -844,6 +939,7 @@ class Treat:
         self.det=self.select_fast(thr,cl=cl)
         #if gtbbox!=[]:# select only over the positive gtbbox
         #    self.det=self.filter_pos(self.det,gtbbox)
+        #    pr=self.f.buildPrior(gtbbox,self.fy,self.fx)
         self.det=self.rank_fast(self.det,rank,cl=cl) 
         if refine:
             self.det=self.refine(self.det)
@@ -1250,7 +1346,6 @@ class Treat:
         return lpos2,lneg
                 
 
-
 class TreatDef(Treat):
 
     def refine(self,ldet):
@@ -1423,6 +1518,10 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
     """
     #f=pyrHOG2.pyrHOG(imname,interv=10,savedir=auxdir+"/hog/",notsave=False,hallucinate=hallucinate,cformat=True)
     #print "Scanning"
+    if gtbbox!=None and gtbbox!=[]:
+        pr=f.buildPrior(gtbbox,m["fy"],m["fx"])
+    else:
+        pr=None
     t=time.time()        
     f.resetHOG()
     if deform:
@@ -1433,9 +1532,22 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             #scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
         tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"])
     else:
-        scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
+        #scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
+        scr,pos=f.scanRCFLpr(m,initr=initr,ratio=ratio,small=small,pr=pr)
         tr=Treat(f,scr,pos,initr,m["fy"],m["fx"])
     numhog=f.getHOG()
+    #for h in range(18,len(scr)):
+        #pylab.figure(200)
+        #pylab.clf()
+   #     print h
+   #     print "Min",pr[h+f.starti].min(),"Max",pr[h+f.starti].max()
+   #     print "Min",scr[h].min(),"Max",scr[h].max()
+        #pylab.imshow(scr[h],interpolation="nearest")
+        #pylab.figure(201)
+        #pylab.clf()
+        #pylab.imshow(pr[h+f.starti],interpolation="nearest")
+        #pylab.show()
+        #raw_input()
     #print "Scan:",time.time()-t    
     #dettime=time.time()-t
     #print "Elapsed Time:",dettime
@@ -1454,81 +1566,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         dettime=time.time()-t
         #print "Elapsed Time:",dettime
         #print "Number HOG:",numhog
-        tr.show(det,parts=showlabel,thr=-1.0,maxnum=0)           
-        return tr,det,dettime,numhog
-    else:
-        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
-        if True:#remember to use it in INRIA
-            if deform:
-                ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)
-                iposflip=tr.descr(best1,flip=True,usemrf=usemrf,usefather=usefather)
-                ipos=ipos+iposflip
-                ineg=tr.descr(worste1,flip=False,usemrf=usemrf,usefather=usefather)
-                inegflip=tr.descr(worste1,flip=True,usemrf=usemrf,usefather=usefather)
-                ineg=ineg+inegflip
-            else:
-                ipos=tr.descr(best1,flip=False)
-                iposflip=tr.descr(best1,flip=True)
-                ipos=ipos+iposflip
-                ineg=tr.descr(worste1,flip=False)
-                inegflip=tr.descr(worste1,flip=True)
-                ineg=ineg+inegflip
-        else:
-            ipos=[];ineg=[]
-        print "Detect:",time.time()-t    
-        return tr,best1,worste1,ipos,ineg
-
-def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1):
-    """Detect objec in images
-        used for both test --> gtbbox=None
-        and trainig --> gtbbox = list of bounding boxes
-    """
-    #build flip
-    m1=flip(m)
-    t=time.time()        
-    f.resetHOG()
-    if deform:
-        if bottomup:
-            scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
-            scr1,pos1=f.scanRCFLDefBU(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
-        else:
-            scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
-            scr1,pos1=f.scanRCFLDefThr(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
-        #tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"])
-    else:
-        scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
-        scr1,pos1=f.scanRCFL(m1,initr=initr,ratio=ratio,small=small)
-        #tr=Treat(f,scr,pos,initr,m["fy"],m["fx"])
-    lr=[]
-    for idl,l in enumerate(scr):
-        auxscr=numpy.zeros((l.shape[0],l.shape[1],2),numpy.float32)
-        fscr=numpy.max(auxscr,2)
-        lr.append(numpy.argmax(auxscr,2))
-    if deform:
-        tr=TreatDefLR(f,scr,pos,lr,initr,m["fy"],m["fx"])
-    else:
-        tr=TreatLR(f,scr,pos,lr,initr,m["fy"],m["fx"])
-
-    numhog=f.getHOG()
-    #print "Scan:",time.time()-t    
-    #dettime=time.time()-t
-    #print "Elapsed Time:",dettime
-    #print "Number HOG:",numhog
-    #print "Getting Detections"
-    #best1,worste1,ipos,ineg=tr.doalltrain(gtbbox,thr=-5,rank=10000,show=show,mpos=10,numpos=1,numneg=5,minnegovr=0.01)        
-    if gtbbox==None:
-        if show==True:
-            showlabel="Parts"
-        else:
-            showlabel=False
-        det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)#remember to take away inclusion
-        #pylab.gca().set_ylim(0,img.shape[0])
-        #pylab.gca().set_xlim(0,img.shape[1])
-        #pylab.gca().set_ylim(pylab.gca().get_ylim()[::-1])
-        dettime=time.time()-t
-        #print "Elapsed Time:",dettime
-        #print "Number HOG:",numhog
-        tr.show(det,parts=showlabel,thr=-1.0,maxnum=0)           
+        tr.show(det,parts=showlabel,thr=-1.0,maxnum=5)           
         return tr,det,dettime,numhog
     else:
         best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        

@@ -183,6 +183,48 @@ inline ftype refineigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
     return maxval;
 }
 
+inline ftype refineighpr(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,int rady,int radx,int *posedy, int *posedx, ftype *prec,ftype *pr)
+{
+    int iy,ix;  
+    ftype val,maxval=-100;
+    //printf("dy:%d,dx:%d",rady,radx);
+    for (iy=-rady;iy<=rady;iy++)
+    {
+        for (ix=-radx;ix<=radx;ix++)
+        {
+            //val=corr3d(img,imgy,imgx,mask,masky,maskx,dimz,posy+iy,posx+ix,prec);
+            val=corr3dpad(img,imgy,imgx,mask,masky,maskx,dimz,posy+iy,posx+ix,prec,0,0);
+            if (pr!=NULL)
+            {
+                if (posy+iy>=0 && posy+iy<imgy && posx+ix>=0 && posx+ix<imgx)
+                {
+                    if (pr[(posy+iy)*imgx+posx+ix]==0.0)
+                    {
+                        //printf("Not in prior!!\n");
+                        val=-10;
+                    }  
+                    else
+                    {
+                        //printf("Prior in %d %d\n",posy+iy,posx+ix);                 
+                        //val=10;//pr[(posy+iy)*imgx+posx+ix];
+                    }
+                }
+            }
+            else
+            {
+                //val=33;
+                //printf("NULL pointer %f\n",val);
+            }
+            if (val>maxval)
+            {
+                maxval=val;
+                *posedy=iy;
+                *posedx=ix;
+            }
+        }
+    }
+    return maxval;
+}
 
 inline ftype refineighfull(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,ftype dy,ftype dx,int posy,int posx,int rady,int radx,ftype *scr,int *rdy,int *rdx,ftype *prec,int pady,int padx)
 {
@@ -233,6 +275,20 @@ void scaneigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int d
         val[i]=refineigh(img,imgy,imgx,mask,masky,maskx,dimz,posy[i],posx[i],rady,radx,posey++,posex++,NULL);       
     }
 }
+
+void scaneighpr(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int *posy,int *posx,ftype *val,int *posey,int *posex,int rady, int radx,int len,ftype *pr)
+{   
+    //return;
+    int i;
+    for (i=0;i<len;i++)
+    {
+        //if (posy[i]==-1  && posx[i]==-1)
+        //    val[i]=0.0;
+        //else
+        val[i]=refineighpr(img,imgy,imgx,mask,masky,maskx,dimz,posy[i],posx[i],rady,radx,posey++,posex++,NULL,pr);       
+    }
+}
+
 
 /*void scanRCFL(ftype *img,int *imgy,int *imgx,int imglen,ftype *mask,int *masky,int *maskx,int dimz, int masklen,ftype *score,int *defy,int *defx,int initr, int radius)
 {

@@ -207,17 +207,17 @@ if __name__=="__main__":
     fx=cfg.fx
     #lowf1=numpy.random.random((fy,fx,31)).astype(numpy.float32)
     lowf1=numpy.ones((fy,fx,31)).astype(numpy.float32)
-    lowf=lowf1/numpy.sqrt(numpy.sum(lowf1**2))/float(fx*fy)
+    lowf=lowf1/numpy.sqrt(numpy.sum(lowf1**2))/float(fx*fy)*1
     #lowd=numpy.random.random((1,1,4)).astype(numpy.float32)
     lowd=-numpy.ones((1,1,4)).astype(numpy.float32)
     #midf1=numpy.random.random((2*fy,2*fx,31)).astype(numpy.float32)
     midf1=numpy.ones((2*fy,2*fx,31)).astype(numpy.float32)
-    midf=midf1/numpy.sqrt(numpy.sum(midf1**2))/float(4*fx*fy)
+    midf=midf1/numpy.sqrt(numpy.sum(midf1**2))/float(4*fx*fy)*1
     #midd=numpy.random.random((2,2,4)).astype(numpy.float32)
     midd=-numpy.ones((2,2,4)).astype(numpy.float32)
     #higf1=numpy.random.random((4*fy,4*fx,31)).astype(numpy.float32)
     higf1=numpy.ones((4*fy,4*fx,31)).astype(numpy.float32)
-    higf=higf1/numpy.sqrt(numpy.sum(higf1**2))/float(16*fx*fy)
+    higf=higf1/numpy.sqrt(numpy.sum(higf1**2))/float(16*fx*fy)*1
     #higd=numpy.random.random((4,4,4)).astype(numpy.float32)
     higd=-numpy.ones((4,4,4)).astype(numpy.float32)
     vhigf1=numpy.ones((8*fy,8*fx,31)).astype(numpy.float32)
@@ -252,7 +252,7 @@ if __name__=="__main__":
     negratio=[]
     nexratio=[]
     w=None
-    mpos=0.5
+    mpos=0#0.5
     oldprloss=numpy.zeros((0,6))
     for it in range(cfg.numit):
         lenoldtrpos=len(trpos)

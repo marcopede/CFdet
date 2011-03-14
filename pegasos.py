@@ -433,12 +433,12 @@ def trainComp_old(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./s
     #fast_pegasos(ftype *w,int wx,ftype *ex,int exy,ftype *label,ftype lambda,int iter,int part)
     return w,0
 
-def trainComp(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./save/",pc=0.017,path="/home/marcopede/code/c/liblinear-1.7",mintimes=30,maxtimes=200,eps=0.001,bias=100,num_stop_count=5,numthr=1,k=1):
+def trainComp(trpos,trneg,fname="",trposcl=None,trnegcl=None,oldw=None,dir="./save/",pc=0.017,path="/home/marcopede/code/c/liblinear-1.7",mintimes=30,maxtimes=200,eps=0.001,bias=100,num_stop_count=5,numthr=1,k=1):
     """
         The same as trainSVMRaw but it does use files instad of lists:
         it is slower but it needs less memory.
     """
-    ff=open(fname,"a")
+    #ff=open(fname,"a")
     if trposcl==None:
         trposcl=numpy.zeros(len(trpos),dtype=numpy.int)
     if trnegcl==None:
@@ -497,7 +497,7 @@ def trainComp(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./save/
     print "Clusters size:",compx
     print "Clusters elements:",compy
     print "Starting Pegasos SVM training"
-    ff.write("Starting Pegasos SVM training\n")
+    #ff.write("Starting Pegasos SVM training\n")
     #lamd=1/(pc*ntimes)
     lamd=1/(pc*len(trpos))
     #lamd=0.5#1/(pc*len(trpos))
@@ -524,10 +524,10 @@ def trainComp(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./save/
         loss.append([posl,negl,reg,nobj,hpos,hneg])
         print "Objective Function:",nobj
         print "PosLoss:%.6f NegLoss:%.6f Reg:%.6f"%(posl,negl,reg)
-        ff.write("Objective Function:%f\n"%nobj)
+        #ff.write("Objective Function:%f\n"%nobj)
         ratio=abs(abs(obj/nobj)-1)
         print "Ratio:",ratio
-        ff.write("Ratio:%f\n"%ratio)
+        #ff.write("Ratio:%f\n"%ratio)
         if ratio<eps and tt>mintimes:
             if stop_count==0:
                 print "Converging after %d iterations"%tt

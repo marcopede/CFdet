@@ -193,13 +193,18 @@ if __name__=="__main__":
         {"name":"trneg","fnc":"len","txt":"Negative Examples"},
         {"name":"nSupportVectorsPos","txt":"Positive Support Vectors"},
         {"name":"nSupportVectorsNeg","txt":"Negative Support Vectors"},
-        {"name":"doubles","txt":"Double Examples"},
-        {"name":"negratio[-1]","txt":"Ratio Neg loss:"}]
+        {"name":"doubles","txt":"Double Examples"}]
+        #{"name":"negratio[-1]","txt":"Ratio Neg loss:"}]
         )
 
     rpres=stats([{"name":"tinit","txt":"Time from the beginning"},
                 {"name":"tpar","txt":"Time last iteration"},
-                {"name":"ap","txt":"Average precision: "},
+                {"name":"ap","txt":"Average precision: "}])
+                #{"name":"nexratio[-1]","txt":"Ratio Examples: "},
+                #{"name":"posratio[-1]","txt":"Ratio Pos loss: "}])
+
+    stloss=stats([{"name":"output","txt":""},
+                {"name":"negratio[-1]","txt":"Ratio Neg loss:"},
                 {"name":"nexratio[-1]","txt":"Ratio Examples: "},
                 {"name":"posratio[-1]","txt":"Ratio Pos loss: "}])
 
@@ -268,15 +273,15 @@ if __name__=="__main__":
         lenoldtrpos=len(trpos)
         trpos=[]
         newtrneg=[]
+        if it==0:#force to take best overlapping
+            cfg.ratio=0#mpos=10
+        else:
+            cfg.ratio=1#mpos=0.5
         #trneg=[]#only for a test
         cfgpos=copy.copy(cfg)
         cfgpos.numneg=cfg.numneginpos
         partime=time.time()
         print "---Positive Images:----"
-    #    if it==0:#force to take best overlapping
-    #        mpos=10
-    #    else:
-    #        mpos=0.5
         arg=[[i,trPosImages[i]["name"],trPosImages[i]["bbox"],m,cfgpos] for i in range(len(trPosImages))]
         t=time.time()
         #mypool = Pool(numcore)
@@ -324,13 +329,20 @@ if __name__=="__main__":
             #fobj.append(nobj)
             #print "OBj:",fobj
             #raw_input()
+            output="Not converging yet!"
             if posl>prloss[-1][0]:
-                print "Warning increasing positive loss"
+                output="Warning increasing positive loss\n"
+                print output
                 #raw_input()
             if (posratio[-1]<0.001) and nexratio[-1]<0.01:
-                print "Very small positive improvement: convergence at iteration %d!"%it
+                output+="Very small positive improvement: convergence at iteration %d!"%it
+                print output
+                #stloss.report(cfg.testname+".rpt.txt","a","Positive Convergency")
                 #raw_input()
+            stloss.report(cfg.testname+".rpt.txt","a","Positive Convergency")
+            if (posratio[-1]<0.001) and nexratio[-1]<0.01:
                 break
+            
 
 
         #negative retraining
@@ -363,7 +375,7 @@ if __name__=="__main__":
                 for ii,res in enumerate(itr):
                     trpos+=res[3]#not necessary cause no positives
                     newtrneg+=res[4]
-                    if (nit>0 and res[4]!=[]):
+                    if ((nit>0 or it>0) and res[4]!=[]):
                         scr=res[2][0]["scr"]
                         dense=numpy.sum(res[4][0]*w)-r
                         #raw_input()
@@ -406,9 +418,13 @@ if __name__=="__main__":
                 #fobj.append(nobj)
                 #print "OBj:",fobj
                 #raw_input()
+                output="Negative not converging yet!"
                 if (negratio[-1]<1.05):
-                    print "Very small negative newloss: convergence at iteration %d!"%nit
+                    output="Very small negative newloss: convergence at iteration %d!"%nit
+                    print output
                     #raw_input()
+                stloss.report(cfg.testname+".rpt.txt","a","Negative Convergency")
+                if (negratio[-1]<1.05):
                     break
 
             sts.report(cfg.testname+".rpt.txt","a","Before Training")

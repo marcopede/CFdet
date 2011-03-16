@@ -5,6 +5,7 @@
 //gcc -shared -Wl,-soname,libexcorr.so -o libexcorr.so  excorr.o
 #define ftype float
 #define INFINITY 10000
+#define k 0.3
 
 static compHOG=0; //number of HOG computed
 
@@ -238,7 +239,7 @@ inline ftype refineighfull(ftype *img,int imgy,int imgx,ftype *mask,int masky,in
     {
         for (ix=-radx;ix<=radx;ix++)
         {
-            val=corr3dpad(img,imgy,imgx,mask,masky,maskx,dimz,posy+iy,posx+ix,prec,pady,padx)+dy*(iy*iy)+dx*(ix*ix);
+            val=corr3dpad(img,imgy,imgx,mask,masky,maskx,dimz,posy+iy,posx+ix,prec,pady,padx)+k*k*dy*(iy*iy)+k*k*dx*(ix*ix);
             //val=corr3d(img,imgy,imgx,mask,masky,maskx,dimz,posy+iy,posx+ix,prec)+dy*(iy*iy)+dx*(ix*ix);
             scr[(iy+rady)*(2*radx+1)+(ix+radx)]+=-val;
             if (val>maxval)
@@ -397,7 +398,7 @@ void buildef(ftype *def,ftype dfy,ftype dfx,int rad)
             dy1=l1/(2*rad+1);
             dx2=l2%(2*rad+1);
             dy2=l2/(2*rad+1);
-            def[l1*maxl+l2]=dfy*(dy2-dy1)*(dy2-dy1)+dfx*(dx2-dx1)*(dx2-dx1);
+            def[l1*maxl+l2]=k*k*dfy*(dy2-dy1)*(dy2-dy1)+k*k*dfx*(dx2-dx1)*(dx2-dx1);
             //def[l2*maxl+l1]=dfy*(dy2-dy1)*(dy2-dy1)+dfx*(dx2-dx1)*(dx2-dx1);
             //printf("DEF(%d,%d)=%f\n",l1,l2,def[l1*maxl+l2]);
         }

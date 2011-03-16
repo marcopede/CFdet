@@ -105,7 +105,8 @@ def hogflip(feat,obin=9):
     norm2=aux[:,:,last+3].reshape(aux.shape[0],aux.shape[1],1)
     norm3=aux[:,:,last].reshape(aux.shape[0],aux.shape[1],1)
     norm4=aux[:,:,last+1].reshape(aux.shape[0],aux.shape[1],1)
-    aux=numpy.concatenate((oriented,noriented,norm1,norm2,norm3,norm4),2)
+    #aux=numpy.concatenate((oriented,noriented,norm1,norm2,norm3,norm4),2) #remember you have to change this!!!!!!!!
+    aux=numpy.concatenate((noriented,oriented,norm1,norm2,norm3,norm4),2)
     return aux
 
 def defflip(feat):
@@ -1011,7 +1012,7 @@ class Treat:
         if rawdet:
             self.best=self.rawdet(self.best)
             self.worste=self.rawdet(self.worste)
-        #show="Parts"
+        show="Parts"
         if show:
             self.show(self.best,colors=["b"])
             self.show(self.worste,colors=["r"])
@@ -1497,7 +1498,7 @@ class TreatDef(Treat):
                     break
         Treat.show(self,ldet,colors=colors,thr=thr,maxnum=maxnum)        
 
-    def descr(self,det,flip=False,usemrf=True,usefather=True):   
+    def descr(self,det,flip=False,usemrf=True,usefather=True,k=0.3):   
         ld=[]
         for item in det:
             d=numpy.array([])
@@ -1510,11 +1511,11 @@ class TreatDef(Treat):
                     #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten())) 
                     if l>0: #skip deformations level 0
                         if usefather:
-                            d=numpy.concatenate((d, (item["def"]["dy"][l].flatten()**2)  ))
-                            d=numpy.concatenate((d, (item["def"]["dx"][l].flatten()**2)  ))
+                            d=numpy.concatenate((d, k*k*(item["def"]["dy"][l].flatten()**2)  ))
+                            d=numpy.concatenate((d, k*k*(item["def"]["dx"][l].flatten()**2)  ))
                         if usemrf:
-                            d=numpy.concatenate((d,item["def"]["ddy"][l].flatten()))
-                            d=numpy.concatenate((d,item["def"]["ddx"][l].flatten()))
+                            d=numpy.concatenate((d,k*k*item["def"]["ddy"][l].flatten()))
+                            d=numpy.concatenate((d,k*k*item["def"]["ddx"][l].flatten()))
                 else:
                     d=numpy.concatenate((d,hogflip(item["feat"][l]).flatten()))        
                     #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
@@ -1523,14 +1524,14 @@ class TreatDef(Treat):
                     #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten())) 
                     if l>0: #skip deformations level 0
                         if usefather:
-                            aux=(item["def"]["dy"][l][:,::-1]**2)#.copy()
+                            aux=(k*k*(item["def"]["dy"][l][:,::-1]**2))#.copy()
                             d=numpy.concatenate((d,aux.flatten()))
-                            aux=(item["def"]["dx"][l][:,::-1]**2)#.copy()
+                            aux=(k*k*(item["def"]["dx"][l][:,::-1]**2))#.copy()
                             d=numpy.concatenate((d,aux.flatten()))
                         if usemrf:
-                            aux=defflip(item["def"]["ddy"][l])
+                            aux=defflip(k*k*item["def"]["ddy"][l])
                             d=numpy.concatenate((d,aux.flatten()))
-                            aux=defflip(item["def"]["ddx"][l])
+                            aux=defflip(k*k*item["def"]["ddx"][l])
                             d=numpy.concatenate((d,aux.flatten()))
             ld.append(d.astype(numpy.float32))
         return ld

@@ -46,7 +46,7 @@ class config(object):
 #testname="./data/test3_11/CVPR11_usefahter";it=6
 #testname="./data/INRIA/testTDnoMRFright";it=9
 #testname="./data/CVPR/bottomup";it=9
-testname="./data/11_03_13/inria_prior";it=7
+testname="./data/11_03_15/inria_smalldef_debug";it=0
 import sys
 if len(sys.argv)>1:
     it=int(sys.argv[1])
@@ -62,13 +62,13 @@ cfg.loadfeat=True
 cfg.savefeat=False
 #cfg.usemrf=True#False#True#da togliere
 #cfg.ratio=1#datogliere
-cfg.multipr=8
+cfg.multipr=False
 cfg.inclusion=False
 cfg.nms=0.5
 cfg.dbpath="/home/databases/"
 #cfg.auxdir="/state/partition1/marcopede/INRIA/"#InriaPosData(basepath="/home/databases/").getStorageDir()
 cfg.auxdir=InriaPosData(basepath=cfg.dbpath).getStorageDir()
-cfg.show=False
+cfg.show=True
 cfg.mythr=-10
 #cfg.usemrf=False
 #cfg.maxpostest=1000

@@ -394,9 +394,13 @@ if __name__=="__main__":
     posratio=[-1]
     nexratio=[-1]
     fobj=[]
+    last_round=False
     w=None
     oldprloss=numpy.zeros((0,6))
     for it in range(10):
+        if last_round:
+            print "Finished!!!!"
+            break
         numoldtrpos=len(trpos)
         trpos=[]
         #numoldtrposcl=len(trposcl)
@@ -530,7 +534,7 @@ if __name__=="__main__":
             ##pylab.legend("old","new")
             #pylab.show()
             ##raw_input()
-
+            
             lambd=1.0/(len(trpos)*cfg.svmc)
             #trpos,trneg,trposcl,trnegcl,clsize,w,lamda
             posl,negl,reg,nobj,hpos,hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,lambd)
@@ -545,10 +549,10 @@ if __name__=="__main__":
             if posl>prloss[-1][0]:
                 print "Warning increasing positive loss"
                 #raw_input()
-            if (posratio[-1]<0.001) and nexratio[-1]<0.01:
+            if (posratio[-1]<0.0001) and nexratio[-1]<0.01:
                 print "Very small positive improvement: convergence at iteration %d!"%it
-                #raw_input()
-                break
+                last_round=True
+                #continue
 
         #delete doubles
         newtrneg2,newtrnegcl2=myunique(trneg,newtrneg,trnegcl,newtrnegcl,cfg.numcl)
@@ -558,6 +562,8 @@ if __name__=="__main__":
         #negative retraining
         trneglen=1
         newPositives=True
+        if last_round:
+            cfg.maxneg=5000
         for nit in range(10):
             newtrneg=[]
             newtrnegcl=[]
@@ -568,7 +574,8 @@ if __name__=="__main__":
             cfgneg=copy.copy(cfg)
             cfgneg.numneg=10#cfg.numneginpos
             cfgneg.thr=-1
-            nparts=20
+            #nparts=20
+            nparts=5
             t=time.time()
             order=range(nparts)#numpy.random.permutation(range(nparts))
             for rr in order:

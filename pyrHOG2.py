@@ -407,7 +407,8 @@ class pyrHOG:
 
     def buildPrior(self,gt,fy,fx,py=1,px=1,v=1):
         pr=[]
-        print "Len HOG:", len(self.hog)
+        cnt=0
+        #print "Len HOG:", len(self.hog)
         for i in range(len(self.hog)):
             #samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(ctypes.c_int)
             prior=numpy.zeros((self.hog[i].shape[0],self.hog[i].shape[1]),numpy.float32)
@@ -443,6 +444,7 @@ class pyrHOG:
                             if round(cpy)>=0 and round(cpx)>=0 and round(cpy)<prior.shape[0] and round(cpx)<prior.shape[1]:
                                 #print "Prior:",round(cpy),round(cpx)
                                 #print "Distances",dsy1,dsx1,dsy2,dsx2,v*(py-dsy1)/py*(px-dsx1)/px*(py-dsy2)/py*(px-dsx2)/px
+                                cnt+=1
                                 prior[round(cpy),round(cpx)]=v*(py-dsy1)/py*(px-dsx1)/px*(py-dsy2)/py*(px-dsx2)/px
                                 #prior[int(cpy),int(cpx)]=v*(py-dsy)/py*(px-dsx)/px
             pr.append(prior)
@@ -451,6 +453,7 @@ class pyrHOG:
             #    pylab.imshow(prior,interpolation="nearest")
             #    pylab.show()
             #    raw_input()
+        print "Prior Locations:",cnt
         return pr                     
 
 
@@ -994,7 +997,7 @@ class Treat:
             self.show(self.det5,parts=True)
         return self.det5
 
-    def doalltrain(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,posovr=0.5,numpos=1,numneg=10,minnegovr=0,minnegincl=0,cl=0):
+    def doalltrain(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,posovr=0.5,numpos=1,numneg=10,minnegovr=0,minnegincl=0,cl=0,emptybb=False):
         t=time.time()
         self.det=self.select_fast(thr,cl=cl)
         #if gtbbox!=[]:# select only over the positive gtbbox
@@ -1008,7 +1011,7 @@ class Treat:
         #print [x["scr"] for x in self.det]
         #pylab.show()
         #raw_input()
-        self.best,self.worste=self.getbestworste(self.det,gtbbox,numpos=numpos,numneg=numneg,mpos=mpos,posovr=posovr,minnegovr=minnegovr,minnegincl=minnegincl)
+        self.best,self.worste=self.getbestworste(self.det,gtbbox,numpos=numpos,numneg=numneg,mpos=mpos,posovr=posovr,minnegovr=minnegovr,minnegincl=minnegincl,emptybb=emptybb)
         if rawdet:
             self.best=self.rawdet(self.best)
             self.worste=self.rawdet(self.worste)
@@ -1379,45 +1382,6 @@ class Treat:
                     lpos2.append([])#not detected bbox
         return lpos2,lneg
 
-    def getbestworste_arr(self,det,gtbbox,numpos=1,numneg=10,posovr=0.5,negovr=0.2,mpos=0):
-        lpos=[]
-        lneg=[]
-        lnegfull=False
-        import time
-        t=time.time()
-        arr=numpy.array([el["bbox"] for el in det])
-        print time.time()-t
-        dsfs
-        for gt in gtbbox:
-            lpos.append(gt.copy())
-            lpos[-1]["scr"]=-numpy.inf
-            lpos[-1]["ovr"]=1.0
-        goodneg=True
-        for gt in lpos: 
-            ovr=util.overlap(arr,gt["bbox"])
-            if ovr>posovr:
-                if d["scr"]-mpos*(1-ovr)>gt["scr"]-mpos*(1-gt["ovr"]):
-                    gt["scr"]=d["scr"]
-                    gt["ovr"]=ovr
-                    gt["data"]=d.copy()
-            if ovr>negovr:
-                goodneg=False
-        if goodneg and not(lnegfull):
-            noovr=True
-            for n in lneg:
-                ovr=util.overlap(d["bbox"],n["bbox"])
-                if ovr>posovr:
-                    noovr=False
-            if noovr:
-                lneg.append(d)
-                if len(lneg)==numneg:   
-                    lnegfull=True
-        lpos2=[]
-        for gt in lpos:
-            if gt["scr"]>-numpy.inf:
-                lpos2.append(gt["data"])
-                lpos2[-1]["ovr"]=gt["ovr"]
-        return lpos2,lneg
                 
 
 class TreatDef(Treat):
@@ -1590,15 +1554,17 @@ class TreatDef(Treat):
 
 import time
 
-def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1):
+def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=True):
     """Detect objec in images
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
     """
     #f=pyrHOG2.pyrHOG(imname,interv=10,savedir=auxdir+"/hog/",notsave=False,hallucinate=hallucinate,cformat=True)
     #print "Scanning"
-    if gtbbox!=None and gtbbox!=[]:
+    if gtbbox!=None and gtbbox!=[] and useprior:
+        t1=time.time()
         pr=f.buildPrior(gtbbox,m["fy"],m["fx"])
+        print "Prior Time:",time.time()-t1
     else:
         pr=None
     t=time.time()        
@@ -1649,7 +1615,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         tr.show(det,parts=showlabel,thr=-1.0,maxnum=5)           
         return tr,det,dettime,numhog
     else:
-        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
+        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=200,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb)        
         if True:#remember to use it in INRIA
             if deform:
                 ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)

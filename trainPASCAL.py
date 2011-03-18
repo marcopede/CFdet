@@ -230,19 +230,21 @@ if __name__=="__main__":
         [{"name":"it","txt":"Iteration"},
         {"name":"nit","txt":"Negative Iteration"},
         {"name":"trpos","fnc":"len","txt":"Positive Examples"},
-        {"name":"trneg","fnc":"len","txt":"Negative Examples"},
-        {"name":"negratio[-1]","txt":"Ratio Neg loss: "}]
+        {"name":"trneg","fnc":"len","txt":"Negative Examples"}]
         )
 
     rpres=stats([{"name":"tinit","txt":"Time from the beginning"},
                 {"name":"tpar","txt":"Time last iteration"},
-                {"name":"ap","txt":"Average precision: "},
-                {"name":"nexratio[-1]","txt":"Ratio Examples: "},
-                {"name":"posratio[-1]","txt":"Ratio Pos loss: "}])
+                {"name":"ap","txt":"Average precision: "}])
 
     clst=stats([{"name":"l","txt":"Cluster "},
                 {"name":"npcl","txt":"Positive Examples"},
                 {"name":"nncl","txt":"Negative Examples"}])
+
+    stloss=stats([{"name":"output","txt":""},
+                {"name":"negratio[-1]","txt":"Ratio Neg loss:"},
+                {"name":"nexratio[-1]","txt":"Ratio Examples: "},
+                {"name":"posratio[-1]","txt":"Ratio Pos loss: "}])
 
     #trPosImages=InriaPosData(basepath="/home/databases/")
     #trNegImages=InriaNegData(basepath="/home/databases/")
@@ -550,12 +552,18 @@ if __name__=="__main__":
             #fobj.append(nobj)
             #print "OBj:",fobj
             #raw_input()
+            output="Not converging yet!"
             if posl>prloss[-1][0]:
-                print "Warning increasing positive loss"
+                output+="Warning increasing positive loss\n"
+                print output
                 #raw_input()
             if (posratio[-1]<0.0001) and nexratio[-1]<0.01:
-                print "Very small positive improvement: convergence at iteration %d!"%it
+                output+="Very small positive improvement: convergence at iteration %d!"%it
+                print output
+                #print "Very small positive improvement: convergence at iteration %d!"%it
                 last_round=True
+            stloss.report(cfg.testname+".rpt.txt","a","Positive Convergency")
+            #if (posratio[-1]<0.0001) and nexratio[-1]<0.01:
                 #continue
 
         if it==cfg.posit-1:#last iteration
@@ -707,15 +715,16 @@ if __name__=="__main__":
                 print "NIT:",nit,"OLDLOSS",prloss[-1][3],"NEWLOSS:",nobj
                 negratio.append(nobj/(prloss[-1][3]+0.000001))
                 print "RATIO: newobj/oldobj:",negratio
-                #fobj.append(nobj)
-                #print "OBj:",fobj
-                #raw_input()
+                output="Negative not converging yet!"
                 if (negratio[-1]<1.05):
-                    print "Very small negative newloss: convergence at iteration %d!"%nit
+                    output= "Very small negative newloss: convergence at iteration %d!"%nit
                     #raw_input()
+                    #break
+                stloss.report(cfg.testname+".rpt.txt","a","Negative Convergency")
+                if (negratio[-1]<1.05):
                     break
-            else:
-                negl=1
+            #else:
+            #    negl=1
 
             print "SVM learning"
             svmname="%s.svm"%testname

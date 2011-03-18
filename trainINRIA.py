@@ -274,7 +274,7 @@ if __name__=="__main__":
         trpos=[]
         newtrneg=[]
         if it==0:#force to take best overlapping
-            cfg.ratio=0#mpos=10
+            cfg.ratio=1#mpos=10
         else:
             cfg.ratio=1#mpos=0.5
         #trneg=[]#only for a test

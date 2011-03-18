@@ -261,6 +261,8 @@ if __name__=="__main__":
                     annpath="VOC2007/VOCdevkit/VOC2007/Annotations/",
                     local="VOC2007/VOCdevkit/local/VOC2007/",
                     usetr=True,usedf=False),cfg.maxneg)
+    trNegImagesFull=getRecord(VOC07Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
+                    basepath=cfg.dbpath,usetr=True,usedf=False),5000)
     tsImages=getRecord(VOC07Data(select="pos",cl="%s_test.txt"%cfg.cls,
                     basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
                     trainfile="VOC2007/VOCdevkit/VOC2007/ImageSets/Main/",
@@ -397,7 +399,9 @@ if __name__=="__main__":
     last_round=False
     w=None
     oldprloss=numpy.zeros((0,6))
-    for it in range(10):
+
+
+    for it in range(cfg.posit):
         if last_round:
             print "Finished!!!!"
             break
@@ -554,6 +558,8 @@ if __name__=="__main__":
                 last_round=True
                 #continue
 
+        if it==cfg.posit-1:#last iteration
+            last_round=True #use all examples
         #delete doubles
         newtrneg2,newtrnegcl2=myunique(trneg,newtrneg,trnegcl,newtrnegcl,cfg.numcl)
         trneg=trneg+newtrneg2
@@ -563,8 +569,9 @@ if __name__=="__main__":
         trneglen=1
         newPositives=True
         if last_round:
-            cfg.maxneg=5000
-        for nit in range(10):
+            trNegImages=trNegImagesFull
+            #cfg.maxneg=5000
+        for nit in range(cfg.negit):
             newtrneg=[]
             newtrnegcl=[]
             print "Negative Images Iteration %d:"%nit
@@ -574,8 +581,8 @@ if __name__=="__main__":
             cfgneg=copy.copy(cfg)
             cfgneg.numneg=10#cfg.numneginpos
             cfgneg.thr=-1
-            #nparts=20
-            nparts=5
+            nparts=20
+            #nparts=cfg.maxneg/16
             t=time.time()
             order=range(nparts)#numpy.random.permutation(range(nparts))
             for rr in order:

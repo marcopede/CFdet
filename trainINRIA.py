@@ -269,7 +269,7 @@ if __name__=="__main__":
     w=None
     mpos=0#0.5
     oldprloss=numpy.zeros((0,6))
-    for it in range(cfg.numit):
+    for it in range(cfg.posit):
         lenoldtrpos=len(trpos)
         trpos=[]
         newtrneg=[]
@@ -355,7 +355,7 @@ if __name__=="__main__":
         t=time.time()
         nSupportVectorsPos = 0
         nSupportVectorsNeg = 0
-        for nit in range(5):
+        for nit in range(cfg.negit):
             newtrneg=[]
             print "---Negative Images It %d -----"%nit
             limit=False

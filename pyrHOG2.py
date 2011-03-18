@@ -1561,6 +1561,10 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
     """
     #f=pyrHOG2.pyrHOG(imname,interv=10,savedir=auxdir+"/hog/",notsave=False,hallucinate=hallucinate,cformat=True)
     #print "Scanning"
+    if useprior:
+        numrank=200
+    else:
+        numrank=2000
     if gtbbox!=None and gtbbox!=[] and useprior:
         t1=time.time()
         pr=f.buildPrior(gtbbox,m["fy"],m["fx"])
@@ -1605,7 +1609,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             showlabel="Parts"
         else:
             showlabel=False
-        det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)#remember to take away inclusion
+        det=tr.doall(thr=thr,rank=numrank,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)#remember to take away inclusion
         #pylab.gca().set_ylim(0,img.shape[0])
         #pylab.gca().set_xlim(0,img.shape[1])
         #pylab.gca().set_ylim(pylab.gca().get_ylim()[::-1])

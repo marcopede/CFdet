@@ -17,7 +17,7 @@ if __name__=="__main__":
     cfg=config()
 
     cfg.cls="bicycle"
-    it=4
+    it=6
     import sys
     if len(sys.argv)>1:
         cfg.cls=sys.argv[1]
@@ -26,22 +26,25 @@ if __name__=="__main__":
     if len(sys.argv)>2:
         it=int(sys.argv[2])
     #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
-    testname="./data/11_03_12/%s%d_mrf"%(cfg.cls,cfg.numcl)
+    testname="./data/11_03_18/%s%d_debug"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
-    cfg.mpos=1
+    #cfg.mpos=1
     if len(sys.argv)>3:
         cfg.mythr=float(sys.argv[3])
-    cfg.multipr=8
     #cfg.bottomup=False
     #cfg.year="2007"
     cfg.maxtest=5000
     cfg.show=False
+    if cfg.show:
+        cfg.multipr=False
+    else:
+        cfg.multipr=8
     cfg.savefeat=False
     cfg.loadfeat=False
     cfg.thr=-2
     cfg.auxdir="/home/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"
-    cfg.test=True
+    #cfg.test=True
     models=util.load("%s%d.model"%(testname,it))
 
     if cfg.multipr==1:
@@ -83,7 +86,7 @@ if __name__=="__main__":
         #for h in fuse:
         #    h["scr"]+=models[h["cl"]]["ra"]
         rfuse=tr.rank(fuse,maxnum=300)
-        nfuse=tr.cluster(rfuse,ovr=0.5,inclusion=True)
+        nfuse=tr.cluster(rfuse,ovr=0.5,inclusion=False)
         print "----Test Image %d----"%ii
         for l in nfuse:
             detlist.append([tsImages[ii]["name"].split("/")[-1].split(".")[0],l["scr"],l["bbox"][1],l["bbox"][0],l["bbox"][3],l["bbox"][2]])

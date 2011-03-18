@@ -1015,7 +1015,7 @@ class Treat:
         if rawdet:
             self.best=self.rawdet(self.best)
             self.worste=self.rawdet(self.worste)
-        show="Parts"
+        #show="Parts" maybe it produces the increase of memory
         if show:
             self.show(self.best,colors=["b"])
             self.show(self.worste,colors=["r"])
@@ -1225,8 +1225,8 @@ class Treat:
                         #myovr=util.overlap(ls["bbox"],cle["bbox"])
                         myovr=util.overlap(ls["bbox"],cle["bbox"])
                     else:   
-                        #myovr=util.inclusion(cle["bbox"],ls["bbox"])
-                        myovr=util.inclusion(ls["bbox"],cle["bbox"])
+                        myovr=util.inclusion(cle["bbox"],ls["bbox"])
+                        #myovr=util.inclusion(ls["bbox"],cle["bbox"])
                     if myovr>ovr:
                         cl.append(ls)
                         found=True
@@ -1578,11 +1578,11 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
         else:
             #scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
-            #scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
+##            scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
             scr,pos=f.scanRCFLprDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,pr=pr)
         tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"])
     else:
-        #scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
+##        scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
         scr,pos=f.scanRCFLpr(m,initr=initr,ratio=ratio,small=small,pr=pr)
         tr=Treat(f,scr,pos,initr,m["fy"],m["fx"])
     numhog=f.getHOG()

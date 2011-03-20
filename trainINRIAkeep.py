@@ -31,7 +31,7 @@ def detectWrap(a):
     else:
         gtbbox=None
     f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.savedir+"/hog/",notload=not(cfg.loadfeat),notsave=not(cfg.savefeat),hallucinate=cfg.hallucinate,cformat=True)
-    res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,posovr=cfg.posovr,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,inclusion=cfg.inclusion,small=False,show=cfg.show,usefather=cfg.usefather,emptybb=True,useprior=True)
+    res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,posovr=cfg.posovr,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,inclusion=cfg.inclusion,small=False,show=cfg.show,usefather=cfg.usefather,emptybb=True,useprior=cfg.useprior)
     if cfg.show:
         pylab.show()
 #        raw_input()
@@ -294,7 +294,7 @@ if __name__=="__main__":
             newtrneg+=res[4]
             if (it>0 and res[4]!=[]):
                 scr=res[2][0]["scr"]
-                dense=numpy.sum(res[3][0]*w)-r
+                dense=numpy.sum(res[4][0]*w)-r
                 #raw_input()
                 if abs(scr-dense)>0.0001:
                     print "Warning: the two scores must be equal!!!"
@@ -342,7 +342,7 @@ if __name__=="__main__":
                 #raw_input()
             stloss.report(cfg.testname+".rpt.txt","a","Positive Convergency")
             if (posratio[-1]<0.0001) and nexratio[-1]<0.01:
-                break
+                pass#break
             
 
 
@@ -356,7 +356,7 @@ if __name__=="__main__":
         t=time.time()
         nSupportVectorsPos = 0
         nSupportVectorsNeg = 0
-        for nit in range(5):
+        for nit in range(cfg.negit):
             newtrneg=[]
             print "---Negative Images It %d -----"%nit
             limit=False

@@ -31,7 +31,7 @@ def detectWrap(a):
     else:
         gtbbox=None
     f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.savedir+"/hog/",notload=not(cfg.loadfeat),notsave=not(cfg.savefeat),hallucinate=cfg.hallucinate,cformat=True)
-    res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,posovr=cfg.posovr,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,inclusion=cfg.inclusion,small=False,show=cfg.show,usefather=cfg.usefather)
+    res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,posovr=cfg.posovr,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,inclusion=cfg.inclusion,small=False,show=cfg.show,usefather=cfg.usefather,useprior=cfg.useprior)
     if cfg.show:
         pylab.show()
 #        raw_input()
@@ -341,7 +341,7 @@ if __name__=="__main__":
                 #raw_input()
             stloss.report(cfg.testname+".rpt.txt","a","Positive Convergency")
             if (posratio[-1]<0.001) and nexratio[-1]<0.01:
-                break
+                pass#break
             
 
 

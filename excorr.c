@@ -211,8 +211,8 @@ inline ftype refineighpr(ftype *img,int imgy,int imgx,ftype *mask,int masky,int 
                         //val=pr[(posy+iy)*imgx+posx+ix];
                     }
                 }
-                else
-                    val=-10;
+                //else
+                //    val=-10;
             }
             else
             {

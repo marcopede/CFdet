@@ -17,7 +17,7 @@ if __name__=="__main__":
     cfg=config()
 
     cfg.cls="bicycle"
-    it=6
+    it=7
     import sys
     if len(sys.argv)>1:
         cfg.cls=sys.argv[1]
@@ -26,7 +26,7 @@ if __name__=="__main__":
     if len(sys.argv)>2:
         it=int(sys.argv[2])
     #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
-    testname="./data/11_03_22/%s%d_1lev"%(cfg.cls,cfg.numcl)
+    testname="./data/11_03_22/%s%d_3lev_old_initr0"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
     #cfg.mpos=1
@@ -35,6 +35,7 @@ if __name__=="__main__":
     #cfg.bottomup=False
     #cfg.year="2007"
     cfg.maxtest=5000
+    #cfg.initr=1
     cfg.show=False
     if cfg.show:
         cfg.multipr=False

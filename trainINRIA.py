@@ -294,8 +294,8 @@ if __name__=="__main__":
         #res=it.next()
             trpos+=res[3]
             newtrneg+=res[4]
-            if (it>0 and res[4]!=[]):
-                scr=res[2][0]["scr"]
+            if (it>0 and res[3]!=[]):
+                scr=res[1][0]["scr"]
                 dense=numpy.sum(res[3][0]*w)-r
                 #raw_input()
                 if abs(scr-dense)>0.0001:

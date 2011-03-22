@@ -91,7 +91,7 @@ def hogflip_old(feat,obin=18):
     aux=numpy.concatenate((aux[:,:,obin/2::-1],aux[:,:,obin-1:obin/2:-1],aux[:,:,obin].reshape(aux.shape[0],aux.shape[1],1,aux.shape[3]),aux[:,:,last-1:obin:-1],aux[:,:,last:last+2],aux[:,:,last+3:last+1:-1]),2)
     return aux
 
-def hogflip(feat,obin=9):
+def hogflip_last(feat,obin=9):
     """    
     returns the orizontally flipped version of the HOG features
     """
@@ -107,6 +107,16 @@ def hogflip(feat,obin=9):
     norm4=aux[:,:,last+1].reshape(aux.shape[0],aux.shape[1],1)
     #aux=numpy.concatenate((oriented,noriented,norm1,norm2,norm3,norm4),2) #remember you have to change this!!!!!!!!
     aux=numpy.concatenate((noriented,oriented,norm1,norm2,norm3,norm4),2)
+    return aux
+
+def hogflip(feat,obin=9):#pedro
+    """    
+    returns the orizontally flipped version of the HOG features
+    """
+    #feature shape
+    #[9 not oriented][18 oriented][4 normalization]
+    p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,30,31,28,29])-1
+    aux=feat[:,::-1,p]
     return aux
 
 def defflip(feat):
@@ -1241,7 +1251,7 @@ class Treat:
     def rawdet(self,det):
         rdet=det[:]
         for item in det:
-            if item!=[]:
+            if item!=[] and not(item.has_key("notfound")):
                 i=item["i"];cy=item["ny"];cx=item["nx"];
                 fy=self.fy
                 fx=self.fx
@@ -1264,7 +1274,7 @@ class Treat:
     def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf):
         count=0
         for item in ldet:
-            if item!=[]:
+            if item!=[] and not(item.has_key("notfound")):
                 if item["scr"]>thr:
                     bbox=item["bbox"]
                     if parts:
@@ -1286,10 +1296,10 @@ class Treat:
                 if count>maxnum:
                     break
             
-    def descr(self,det,flip=False):   
+    def descr(self,det,flip=False,usemrf=False,usefather=False):   
         ld=[]
         for item in det:
-            if item!=[]:
+            if item!=[] and not(item.has_key("notfound")):
                 d=numpy.array([])
                 for l in range(len(item["feat"])):
                     if not(flip):
@@ -1312,7 +1322,10 @@ class Treat:
     def mixture(self,det):   
         ld=[]
         for item in det:
-            ld.append(item["cl"])
+            if item!=[] and not(item.has_key("notfound")):
+                ld.append(item["cl"])
+            else:
+                ld.append([])
         return ld
 
     def model(self,descr,rho,lev,fsz,fy=[],fx=[],usemrf=False,usefather=False): 
@@ -1376,10 +1389,14 @@ class Treat:
             if gt["scr"]>-numpy.inf:
                 lpos2.append(gt["data"])
                 lpos2[-1]["ovr"]=gt["ovr"]
+                lpos2[-1]["gtbb"]=gt["bbox"]
+                lpos2[-1]["bbid"]=idbbox
+                if gt.has_key("img"):
+                    lpos2[-1]["img"]=gt["img"]
                 #lpos2[-1]["idbbox"]=idbbox
             else:
                 if emptybb:
-                    lpos2.append([])#not detected bbox
+                    lpos2.append({"scr":-10,"bbox":gt["bbox"],"notfound":True})#not detected bbox
         return lpos2,lneg
 
                 
@@ -1423,7 +1440,7 @@ class TreatDef(Treat):
     def rawdet(self,det):
         rdet=det[:]
         for item in det:
-            if item!=[]:
+            if item!=[] and not(item.has_key("notfound")):
                 i=item["i"];cy=item["ny"];cx=item["nx"];
                 fy=self.fy
                 fx=self.fx
@@ -1455,7 +1472,7 @@ class TreatDef(Treat):
         count=0
         if parts:
             for item in ldet:
-                if item!=[]:
+                if item!=[] and not(item.has_key("notfound")):
                     if item["scr"]>thr:
                         scl=item["scl"]
                         for l in range(len(item["def"]["dy"])):
@@ -1476,7 +1493,7 @@ class TreatDef(Treat):
     def descr(self,det,flip=False,usemrf=True,usefather=True,k=0.3):   
         ld=[]
         for item in det:
-            if item!=[]:
+            if item!=[] and not(item.has_key("notfound")):
                 d=numpy.array([])
                 for l in range(len(item["feat"])):
                     if not(flip):
@@ -1609,7 +1626,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             showlabel="Parts"
         else:
             showlabel=False
-        det=tr.doall(thr=thr,rank=numrank,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)#remember to take away inclusion
+        det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)#remember to take away inclusion
         #pylab.gca().set_ylim(0,img.shape[0])
         #pylab.gca().set_xlim(0,img.shape[1])
         #pylab.gca().set_ylim(pylab.gca().get_ylim()[::-1])
@@ -1619,7 +1636,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         tr.show(det,parts=showlabel,thr=-1.0,maxnum=5)           
         return tr,det,dettime,numhog
     else:
-        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=200,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb)        
+        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=numrank,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb)        
         if True:#remember to use it in INRIA
             if deform:
                 ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)

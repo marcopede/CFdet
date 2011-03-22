@@ -26,7 +26,7 @@ if __name__=="__main__":
     if len(sys.argv)>2:
         it=int(sys.argv[2])
     #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
-    testname="./data/11_03_18/%s%d_debug"%(cfg.cls,cfg.numcl)
+    testname="./data/11_03_22/%s%d_1lev"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
     #cfg.mpos=1
@@ -86,7 +86,7 @@ if __name__=="__main__":
         #for h in fuse:
         #    h["scr"]+=models[h["cl"]]["ra"]
         rfuse=tr.rank(fuse,maxnum=300)
-        nfuse=tr.cluster(rfuse,ovr=0.5,inclusion=False)
+        nfuse=tr.cluster(rfuse,ovr=0.3,inclusion=False)
         print "----Test Image %d----"%ii
         for l in nfuse:
             detlist.append([tsImages[ii]["name"].split("/")[-1].split(".")[0],l["scr"],l["bbox"][1],l["bbox"][0],l["bbox"][3],l["bbox"][2]])

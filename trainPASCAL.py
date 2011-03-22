@@ -560,8 +560,8 @@ if __name__=="__main__":
             if (posratio[-1]<0.0001) and nexratio[-1]<0.01:
                 output+="Very small positive improvement: convergence at iteration %d!"%it
                 print output
-                #print "Very small positive improvement: convergence at iteration %d!"%it
-                last_round=True
+## for the moment skip positive convergency
+##                last_round=True                
             stloss.report(cfg.testname+".rpt.txt","a","Positive Convergency")
             #if (posratio[-1]<0.0001) and nexratio[-1]<0.01:
                 #continue

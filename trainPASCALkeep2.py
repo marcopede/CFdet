@@ -200,53 +200,11 @@ if __name__=="__main__":
         cfg.cls=sys.argv[1]
  
     cfg.testname=cfg.testpath+cfg.cls+("%d"%cfg.numcl)+"_"+cfg.testspec
-
+    cfg.train="keep2"
     util.save(cfg.testname+".cfg",cfg)
 
-#    cfg.fy=[3,4]#[7,]#[3,4]
-#    cfg.fx=[6,5]#[11,]#[6,5]
-#    cfg.lev=[3,3,3]
-#    cfg.numcl=2
-    #cfg.interv=10
-    #cfg.ovr=0.45
-    #cfg.sbin=8
-    #cfg.maxpos=1000#120
-    #cfg.maxtest=1000#100
-    #cfg.maxneg=1000#120
-    #cfg.maxexamples=10000
-    #cfg.deform=True
-    #cfg.usemrf=True#True
-    #cfg.usefather=True#Flase
-    #cfg.bottomup=False
-    #cfg.initr=1
-    #cfg.ratio=1
-    #cfg.mpos=1
-    #cfg.hallucinate=1
-    #cfg.numneginpos=6/cfg.numcl
-    #cfg.useflipos=True
-    #cfg.useflineg=True
-    #cfg.multipr=4
-    #cfg.svmc=0.005#0.002#0.004
-    #cfg.cls="bicycle"
-    #cfg.year="2007"
-    #cfg.show=False
-    #cfg.thr=-2
-    #cfg.mythr=-10
-    #cfg.auxdir="/home/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"#InriaPosData(basepath="/home/databases/").getStorageDir()
     cfg.auxdir=cfg.savedir
-    #testname="./data/11_03_01/%s_%d_test"%(cfg.cls,cfg.numcl)
     testname=cfg.testname
-    #util.save(testname+".cfg",cfg)
-
-    #mydebug=False
-    #if mydebug:
-    #    cfg.show=False
-    #    cfg.multipr=4
-    #    cfg.maxpos=10
-    #    cfg.maxneg=10
-    #    cfg.maxtest=10
-    #    cfg.maxexamples=1000
-    #    #testname=testname+"_debug"
 
     if cfg.multipr==1:
         numcore=None
@@ -287,30 +245,26 @@ if __name__=="__main__":
     #trPosImages=InriaPosData(basepath="/home/databases/")
     #trNegImages=InriaNegData(basepath="/home/databases/")
     #tsImages=InriaTestFullData(basepath="/home/databases/")
+    #training
     trPosImages=getRecord(VOC07Data(select="pos",cl="%s_trainval.txt"%cfg.cls,
                     basepath=cfg.dbpath,#"/home/databases/",
-                    trainfile="VOC2007/VOCdevkit/VOC2007/ImageSets/Main/",
-                    imagepath="VOC2007/VOCdevkit/VOC2007/JPEGImages/",
-                    annpath="VOC2007/VOCdevkit/VOC2007/Annotations/",
-                    local="VOC2007/VOCdevkit/local/VOC2007/",
                     usetr=True,usedf=False),cfg.maxpos)
     trNegImages=getRecord(VOC07Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
                     basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
-                    trainfile="VOC2007/VOCdevkit/VOC2007/ImageSets/Main/",
-                    imagepath="VOC2007/VOCdevkit/VOC2007/JPEGImages/",
-                    annpath="VOC2007/VOCdevkit/VOC2007/Annotations/",
-                    local="VOC2007/VOCdevkit/local/VOC2007/",
                     usetr=True,usedf=False),cfg.maxneg)
     trNegImagesFull=getRecord(VOC07Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
                     basepath=cfg.dbpath,usetr=True,usedf=False),5000)
-    tsImages=getRecord(VOC07Data(select="pos",cl="%s_test.txt"%cfg.cls,
+    #test
+    tsPosImages=getRecord(VOC07Data(select="pos",cl="%s_test.txt"%cfg.cls,
                     basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
-                    trainfile="VOC2007/VOCdevkit/VOC2007/ImageSets/Main/",
-                    imagepath="VOC2007/VOCdevkit/VOC2007/JPEGImages/",
-                    annpath="VOC2007/VOCdevkit/VOC2007/Annotations/",
-                    local="VOC2007/VOCdevkit/local/VOC2007/",
                     usetr=True,usedf=False),cfg.maxtest)
-
+    tsNegImages=getRecord(VOC07Data(select="neg",cl="%s_test.txt"%cfg.cls,
+                    basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
+                    usetr=True,usedf=False),cfg.maxneg)
+    tsImages=numpy.concatenate((tsPosImages,tsNegImages),0)
+    tsImagesFull=getRecord(VOC07Data(select="all",cl="%s_test.txt"%cfg.cls,
+                    basepath=cfg.dbpath,
+                    usetr=True,usedf=False),cfg.maxtest)
 
 
     #cluster bounding boxes
@@ -928,6 +882,8 @@ if __name__=="__main__":
             sts.report(testname+".rpt.txt","a","After Filtering")
      
         print "Test"
+        if last_round:
+            tsImages=tsImagesFull
         detlist=[]
         mycfg=copy.copy(cfg)
         mycfg.numneg=0

@@ -26,7 +26,7 @@ if __name__=="__main__":
     if len(sys.argv)>2:
         it=int(sys.argv[2])
     #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
-    testname="./data/11_03_22/%s%d_3lev_old_initr0"%(cfg.cls,cfg.numcl)
+    testname="./data/11_03_23/%s%d_normal"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
     #cfg.mpos=1

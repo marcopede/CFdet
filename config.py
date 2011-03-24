@@ -34,6 +34,7 @@ cfg.thr=-2
 cfg.multipr=4
 cfg.negit=10#10
 cfg.posit=8
+cfg.perc=0.15
 cfg.comment="I shuld get more than 84... hopefully"
 cfg.numneg=0#not used but necessary
 cfg.testname="./data/11_02_28/inria_rightpedro"

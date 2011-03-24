@@ -13,6 +13,8 @@ import time
 #global ccc
 #ccc=0
 
+DENSE=0
+
 from numpy import ctypeslib
 from ctypes import c_int,c_double,c_float
 #libmrf=ctypeslib.load_library("libmyrmf.so.1.0.1","")
@@ -512,7 +514,7 @@ class pyrHOG:
             res[i-self.starti]-=rho
         return res,pparts
 
-    def scanRCFLpr(self,model,initr=1,ratio=1,small=True,pr=None):
+    def scanRCFLpr(self,model,initr=1,ratio=1,small=True,pr=None,dense=DENSE):
         ww=model["ww"]
         rho=model["rho"]
         res=[]#score
@@ -524,6 +526,8 @@ class pyrHOG:
             self.starti=0
         from time import time
         for i in range(self.starti,len(self.hog)):
+            if len(self.hog)-i<dense:
+                initr=0
             samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(ctypes.c_int)
             sshape=samples.shape[1:3]
             res.append(numpy.zeros(sshape,dtype=ctypes.c_float))
@@ -1073,32 +1077,40 @@ class Treat:
         return self.best2,self.worste2,self.trpos,self.trneg
 
 
-    def select(self,thr=0,cl=0):
+    def select(self,thr=0,cl=0,dense=DENSE):
         """
         for each response higher than the threshold execute doitobj.doit
         """
         det=[]
         pylab.ioff()
+        initr=self.sample
         for i in range(len(self.scr)):
+            if len(self.scr)-i<dense:
+                initr=0
             cy,cx=numpy.where(self.scr[i]>thr)
             for l in range(len(cy)):
-                mcy=(cy[l])*(2*self.sample+1)-self.fy+1+self.sample
-                mcx=(cx[l])*(2*self.sample+1)-self.fx+1+self.sample
+                mcy=(cy[l])*(2*initr+1)-self.fy+1+initr#self.sample
+                mcx=(cx[l])*(2*initr+1)-self.fx+1+initr#self.sample
                 det.append({"i":i,"py":cy[l],"px":cx[l],"scr":self.scr[i][cy[l],cx[l]],"ry":mcy,"rx":mcx,"scl":self.scale[i+self.f.starti],"fy":self.fy,"fx":self.fx,"cl":cl})
         return det
 
-    def select_fast(self,thr=0,cl=0):
+    def select_fast(self,thr=0,cl=0,dense=DENSE):
         """
         for each response higher than the threshold execute doitobj.doit
         """
-        det=[];mcy=[];mcx=[];ii=[]
+        det=[];mcy=[];mcx=[];ii=[];ir=[]
         for i in range(len(self.scr)):
+            if len(self.scr)-i<dense:
+                initr=0
+            else:
+                initr=self.sample
             cy,cx=numpy.where(self.scr[i]>thr)
-            mcy+=(cy).tolist()#*(2*self.sample+1)-self.fy+1+self.sample#+self.hy
-            mcx+=(cx).tolist()#*(2*self.sample+1)-self.fx+1+self.sample#+self.hx
+            mcy+=(cy).tolist()
+            mcx+=(cx).tolist()
             ii+=(i*numpy.ones(len(cy),dtype=numpy.int)).tolist()
             det+=self.scr[i][cy,cx].tolist()
-        return det,mcy,mcx,ii
+            ir+=((initr*numpy.ones(len(cy)) ).tolist())
+        return det,mcy,mcx,ii,ir
 
     def filter_pos(self,detx,gtbbox=[]):
         """
@@ -1156,7 +1168,7 @@ class Treat:
             maxnum=len(rdet)
         return rdet[:maxnum]
 
-    def rank_fast(self,detx,maxnum=1000,cl=0):
+    def rank_fast(self,detx,maxnum=1000,cl=0,dense=DENSE):
         """
            rank detections based on score
         """
@@ -1165,11 +1177,14 @@ class Treat:
         cy=detx[1]
         cx=detx[2]
         i=detx[3]
+        initr=numpy.array(detx[4])
+        #initr=self.sample*numpy.ones(len(i))
+        #initr[len(self.scr)-i<dense]=0
         pos=numpy.argsort(-numpy.array(det))      
         if maxnum==numpy.inf:
             maxnum=len(rdet)
-        mcy=numpy.array(cy)*(2*self.sample+1)-self.fy+1+self.sample#+max(self.hy)
-        mcx=numpy.array(cx)*(2*self.sample+1)-self.fx+1+self.sample#+max(self.hx)
+        mcy=numpy.array(cy)*(2*initr+1)-self.fy+1+initr#+max(self.hy)
+        mcx=numpy.array(cx)*(2*initr+1)-self.fx+1+initr#+max(self.hx)
         for l in pos[:maxnum]:
             rdet.append({"i":i[l],"py":cy[l],"px":cx[l],"scr":det[l],"ry":mcy[l],"rx":mcx[l],"scl":self.scale[i[l]+self.f.starti],"fy":self.fy,"fx":self.fx,"cl":cl})
         return rdet

@@ -22,20 +22,23 @@ if __name__=="__main__":
     if len(sys.argv)>1:
         cfg.cls=sys.argv[1]
     cfg.numcl=2
-    cfg.mythr=-10
     if len(sys.argv)>2:
         it=int(sys.argv[2])
     #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
-    testname="./data/11_03_23/%s%d_normal"%(cfg.cls,cfg.numcl)
+    testname="./data/11_03_23/%s%d_keepdef"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
     #cfg.mpos=1
     if len(sys.argv)>3:
         cfg.mythr=float(sys.argv[3])
+    if len(sys.argv)>4:
+        select=sys.argv[4]
+    else:
+        select="all"
     #cfg.bottomup=False
     #cfg.year="2007"
     cfg.maxtest=5000
-    #cfg.initr=1
+    #cfg.initr=0
     cfg.show=False
     if cfg.show:
         cfg.multipr=False
@@ -55,7 +58,7 @@ if __name__=="__main__":
 
     mypool = Pool(numcore)
     
-    tsImages=getRecord(VOC07Data(select="all",cl="%s_test.txt"%cfg.cls,
+    tsImages=getRecord(VOC07Data(select=select,cl="%s_test.txt"%cfg.cls,
                     basepath=cfg.dbpath,#"/home/databases/",
                     trainfile="VOC2007/VOCdevkit/VOC2007/ImageSets/Main/",
                     imagepath="VOC2007/VOCdevkit/VOC2007/JPEGImages/",
@@ -119,7 +122,7 @@ if __name__=="__main__":
     rc,pr,ap=VOCpr.drawPrfast(tp,fp,tot)
     pylab.draw()
     pylab.show()
-    pylab.savefig("%s_ap%d_test%.3f.png"%(testname,it,cfg.mythr))
+    #pylab.savefig("%s_ap%d_test%s%.1f.png"%(testname,it,select,cfg.mythr))
     tottime=((time.time()-initime))
     print "Threshold used:",cfg.mythr
     print "Total number of HOG:",numhog
@@ -128,7 +131,7 @@ if __name__=="__main__":
     results={"det":detlist,"ap":ap,"tp":tp,"fp":fp,"pr":pr,"rc":rc,"numhog":numhog,"mythr":cfg.mythr,"time":tottime}
     #util.savemat("%s_ap%d_test_thr_%.3f.mat"%(testname,it,cfg.mythr),results)
     #util.save("%s_ap%d_test_thr_%.3f.dat"%(testname,it,cfg.mythr),results)
-    fd=open("%s_ap%d_test.txt"%(testname,it),"a")
+    fd=open("%s_ap%d_test%s.txt"%(testname,it,select),"a")
     fd.write("Threshold used:%f\n"%cfg.mythr)
     fd.write("Total number of HOG:%d\n"%numhog)
     fd.write("Average precision:%f\n"%ap)

@@ -246,33 +246,39 @@ if __name__=="__main__":
     #trNegImages=InriaNegData(basepath="/home/databases/")
     #tsImages=InriaTestFullData(basepath="/home/databases/")
     #training
-    trPosImages=getRecord(VOC07Data(select="pos",cl="%s_trainval.txt"%cfg.cls,
-                    basepath=cfg.dbpath,#"/home/databases/",
-                    usetr=True,usedf=False),cfg.maxpos)
-    trNegImages=getRecord(VOC07Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
-                    basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
-                    usetr=True,usedf=False),cfg.maxneg)
-    trNegImagesFull=getRecord(VOC07Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
-                    basepath=cfg.dbpath,usetr=True,usedf=False),5000)
-    #test
-    tsPosImages=getRecord(VOC07Data(select="pos",cl="%s_test.txt"%cfg.cls,
-                    basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
-                    usetr=True,usedf=False),cfg.maxtest)
-    tsNegImages=getRecord(VOC07Data(select="neg",cl="%s_test.txt"%cfg.cls,
-                    basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
-                    usetr=True,usedf=False),cfg.maxneg)
-    tsImages=numpy.concatenate((tsPosImages,tsNegImages),0)
-    tsImagesFull=getRecord(VOC07Data(select="all",cl="%s_test.txt"%cfg.cls,
-                    basepath=cfg.dbpath,
-                    usetr=True,usedf=False),cfg.maxtest)
-
-
+    if cfg.cls!="inria":
+        trPosImages=getRecord(VOC07Data(select="pos",cl="%s_trainval.txt"%cfg.cls,
+                        basepath=cfg.dbpath,#"/home/databases/",
+                        usetr=True,usedf=False),cfg.maxpos)
+        trNegImages=getRecord(VOC07Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
+                        basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
+                        usetr=True,usedf=False),cfg.maxneg)
+        trNegImagesFull=getRecord(VOC07Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
+                        basepath=cfg.dbpath,usetr=True,usedf=False),5000)
+        #test
+        tsPosImages=getRecord(VOC07Data(select="pos",cl="%s_test.txt"%cfg.cls,
+                        basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
+                        usetr=True,usedf=False),cfg.maxtest)
+        tsNegImages=getRecord(VOC07Data(select="neg",cl="%s_test.txt"%cfg.cls,
+                        basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
+                        usetr=True,usedf=False),cfg.maxneg)
+        tsImages=numpy.concatenate((tsPosImages,tsNegImages),0)
+        tsImagesFull=getRecord(VOC07Data(select="all",cl="%s_test.txt"%cfg.cls,
+                        basepath=cfg.dbpath,
+                        usetr=True,usedf=False),5000)
+    else:
+        trPosImages=getRecord(InriaPosData(basepath=cfg.dbpath),cfg.maxpos)
+        trNegImages=getRecord(InriaNegData(basepath=cfg.dbpath),cfg.maxneg)
+        trNegImagesFull=getRecord(InriaNegData(basepath=cfg.dbpath),5000)
+        #test
+        tsImages=etRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
+        tsImagesFull=tsImages
     #cluster bounding boxes
     name,bb,r,a=extractInfo(trPosImages)
     trpos={"name":name,"bb":bb,"ratio":r,"area":a}
     import scipy.cluster.vq as vq
     numcl=cfg.numcl
-    perc=10
+    perc=cfg.perc#10
     minres=10
     minfy=3
     minfx=3
@@ -287,7 +293,7 @@ if __name__=="__main__":
         print "Samples:",len(a[cl==l])
         print "Mean Area:",numpy.mean(a[cl==l])/16.0
         sa=numpy.sort(a[cl==l])
-        print "Min Area:",numpy.mean(sa[len(sa)/perc])/16.0
+        print "Min Area:",numpy.mean(sa[int(len(sa)*perc)])/16.0
         print "Aspect:",numpy.mean(r[cl==l])
         print
     #using same number per cluster
@@ -308,7 +314,7 @@ if __name__=="__main__":
         print "Mean Area:",meanA
         sa=numpy.sort(a[cl==l])
         #minA=numpy.mean(sa[len(sa)/perc])/16.0/(0.5*4**(cfg.lev[l]-1))#4.0
-        minA=numpy.mean(sa[len(sa)/perc])/16.0/(4**(cfg.lev[l]-1))#4.0
+        minA=numpy.mean(sa[int(len(sa)*perc)])/16.0/(4**(cfg.lev[l]-1))#4.0
         print "Min Area:",minA
         aspt=numpy.mean(r[cl==l])
         print "Aspect:",aspt

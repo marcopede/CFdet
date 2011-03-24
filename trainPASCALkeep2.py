@@ -271,7 +271,7 @@ if __name__=="__main__":
         trNegImages=getRecord(InriaNegData(basepath=cfg.dbpath),cfg.maxneg)
         trNegImagesFull=getRecord(InriaNegData(basepath=cfg.dbpath),5000)
         #test
-        tsImages=etRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
+        tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
         tsImagesFull=tsImages
     #cluster bounding boxes
     name,bb,r,a=extractInfo(trPosImages)
@@ -332,7 +332,7 @@ if __name__=="__main__":
         lfx.append(round(fx))
         print
 
-    #raw_input()
+    raw_input()
 
     cfg.fy=lfy#[7,10]#lfy
     cfg.fx=lfx#[11,7]#lfx

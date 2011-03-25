@@ -25,7 +25,7 @@ if __name__=="__main__":
     if len(sys.argv)>2:
         it=int(sys.argv[2])
     #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
-    testname="./data/11_03_23/%s%d_keepdef"%(cfg.cls,cfg.numcl)
+    testname="./data/11_03_24/%s%d_test"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
     #cfg.mpos=1
@@ -39,7 +39,7 @@ if __name__=="__main__":
     #cfg.year="2007"
     cfg.maxtest=5000
     #cfg.initr=0
-    cfg.show=False
+    cfg.show=True
     if cfg.show:
         cfg.multipr=False
     else:
@@ -58,14 +58,13 @@ if __name__=="__main__":
 
     mypool = Pool(numcore)
     
-    tsImages=getRecord(VOC07Data(select=select,cl="%s_test.txt"%cfg.cls,
+    if cfg.cls=="inria":
+        tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),5000)
+    else:
+        tsImages=getRecord(VOC07Data(select=select,cl="%s_test.txt"%cfg.cls,
                     basepath=cfg.dbpath,#"/home/databases/",
-                    trainfile="VOC2007/VOCdevkit/VOC2007/ImageSets/Main/",
-                    imagepath="VOC2007/VOCdevkit/VOC2007/JPEGImages/",
-                    annpath="VOC2007/VOCdevkit/VOC2007/Annotations/",
-                    local="VOC2007/VOCdevkit/local/VOC2007/",
                     usetr=True,usedf=False),cfg.maxtest)
-
+        
     mypool = Pool(numcore)
  
     print "Test"

@@ -249,29 +249,33 @@ if __name__=="__main__":
     #trPosImages=InriaPosData(basepath="/home/databases/")
     #trNegImages=InriaNegData(basepath="/home/databases/")
     #tsImages=InriaTestFullData(basepath="/home/databases/")
-    trPosImages=getRecord(VOC07Data(select="pos",cl="%s_trainval.txt"%cfg.cls,
-                    basepath=cfg.dbpath,#"/home/databases/",
-                    trainfile="VOC2007/VOCdevkit/VOC2007/ImageSets/Main/",
-                    imagepath="VOC2007/VOCdevkit/VOC2007/JPEGImages/",
-                    annpath="VOC2007/VOCdevkit/VOC2007/Annotations/",
-                    local="VOC2007/VOCdevkit/local/VOC2007/",
-                    usetr=True,usedf=False),cfg.maxpos)
-    trNegImages=getRecord(VOC07Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
-                    basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
-                    trainfile="VOC2007/VOCdevkit/VOC2007/ImageSets/Main/",
-                    imagepath="VOC2007/VOCdevkit/VOC2007/JPEGImages/",
-                    annpath="VOC2007/VOCdevkit/VOC2007/Annotations/",
-                    local="VOC2007/VOCdevkit/local/VOC2007/",
-                    usetr=True,usedf=False),cfg.maxneg)
-    trNegImagesFull=getRecord(VOC07Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
-                    basepath=cfg.dbpath,usetr=True,usedf=False),5000)
-    tsImages=getRecord(VOC07Data(select="pos",cl="%s_test.txt"%cfg.cls,
-                    basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
-                    trainfile="VOC2007/VOCdevkit/VOC2007/ImageSets/Main/",
-                    imagepath="VOC2007/VOCdevkit/VOC2007/JPEGImages/",
-                    annpath="VOC2007/VOCdevkit/VOC2007/Annotations/",
-                    local="VOC2007/VOCdevkit/local/VOC2007/",
-                    usetr=True,usedf=False),cfg.maxtest)
+    if cfg.cls!="inria":
+        trPosImages=getRecord(VOC07Data(select="pos",cl="%s_trainval.txt"%cfg.cls,
+                        basepath=cfg.dbpath,#"/home/databases/",
+                        usetr=True,usedf=False),cfg.maxpos)
+        trNegImages=getRecord(VOC07Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
+                        basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
+                        usetr=True,usedf=False),cfg.maxneg)
+        trNegImagesFull=getRecord(VOC07Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
+                        basepath=cfg.dbpath,usetr=True,usedf=False),5000)
+        #test
+        tsPosImages=getRecord(VOC07Data(select="pos",cl="%s_test.txt"%cfg.cls,
+                        basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
+                        usetr=True,usedf=False),cfg.maxtest)
+        tsNegImages=getRecord(VOC07Data(select="neg",cl="%s_test.txt"%cfg.cls,
+                        basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
+                        usetr=True,usedf=False),cfg.maxneg)
+        tsImages=numpy.concatenate((tsPosImages,tsNegImages),0)
+        tsImagesFull=getRecord(VOC07Data(select="all",cl="%s_test.txt"%cfg.cls,
+                        basepath=cfg.dbpath,
+                        usetr=True,usedf=False),5000)
+    else:
+        trPosImages=getRecord(InriaPosData(basepath=cfg.dbpath),cfg.maxpos)
+        trNegImages=getRecord(InriaNegData(basepath=cfg.dbpath),cfg.maxneg)
+        trNegImagesFull=getRecord(InriaNegData(basepath=cfg.dbpath),5000)
+        #test
+        tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
+        tsImagesFull=tsImages
 
 
 
@@ -280,7 +284,7 @@ if __name__=="__main__":
     trpos={"name":name,"bb":bb,"ratio":r,"area":a}
     import scipy.cluster.vq as vq
     numcl=cfg.numcl
-    perc=10
+    perc=cfg.perc#10
     minres=10
     minfy=3
     minfx=3
@@ -295,7 +299,7 @@ if __name__=="__main__":
         print "Samples:",len(a[cl==l])
         print "Mean Area:",numpy.mean(a[cl==l])/16.0
         sa=numpy.sort(a[cl==l])
-        print "Min Area:",numpy.mean(sa[len(sa)/perc])/16.0
+        print "Min Area:",numpy.mean(sa[int(len(sa)*perc)])/16.0
         print "Aspect:",numpy.mean(r[cl==l])
         print
     #using same number per cluster
@@ -316,7 +320,7 @@ if __name__=="__main__":
         print "Mean Area:",meanA
         sa=numpy.sort(a[cl==l])
         #minA=numpy.mean(sa[len(sa)/perc])/16.0/(0.5*4**(cfg.lev[l]-1))#4.0
-        minA=numpy.mean(sa[len(sa)/perc])/16.0/(4**(cfg.lev[l]-1))#4.0
+        minA=numpy.mean(sa[int(len(sa)*perc)])/16.0/(4**(cfg.lev[l]-1))#4.0
         print "Min Area:",minA
         aspt=numpy.mean(r[cl==l])
         print "Aspect:",aspt
@@ -401,7 +405,7 @@ if __name__=="__main__":
     last_round=False
     w=None
     oldprloss=numpy.zeros((0,6))
-
+    cfg.ovrasp=0.3
 
     for it in range(cfg.posit):
         if last_round:
@@ -452,8 +456,8 @@ if __name__=="__main__":
             #    h["scr"]+=models[h["cl"]]["ra"]
             rfuse=tr.rank(fuse,maxnum=1000)
             rfuseneg=tr.rank(fuseneg,maxnum=1000)
-            nfuse=tr.cluster(rfuse,ovr=0.5)
-            nfuseneg=tr.cluster(rfuseneg,ovr=0.5)
+            nfuse=tr.cluster(rfuse,ovr=cfg.ovrasp)
+            nfuseneg=tr.cluster(rfuseneg,ovr=cfg.ovrasp)
             if cfg.deform:
                 trpos+=tr.descr(nfuse,usemrf=cfg.usemrf,usefather=cfg.usefather)         
                 newtrneg+=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather)
@@ -621,8 +625,8 @@ if __name__=="__main__":
                         #    newtrnegcl+=tr.mixture(mix[2])
                     rfuse=tr.rank(fuse,maxnum=1000)
                     rfuseneg=tr.rank(fuseneg,maxnum=1000)
-                    nfuse=tr.cluster(rfuse,ovr=0.5)
-                    nfuseneg=tr.cluster(rfuseneg,ovr=0.5)
+                    nfuse=tr.cluster(rfuse,ovr=cfg.ovrasp)
+                    nfuseneg=tr.cluster(rfuseneg,ovr=cfg.ovrasp)
                     if cfg.deform:
                         trpos+=tr.descr(nfuse,usemrf=cfg.usemrf,usefather=cfg.usefather)         
                         newtrneg+=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather)
@@ -812,7 +816,7 @@ if __name__=="__main__":
             #for h in fuse:
             #    h["scr"]+=models[h["cl"]]["ra"]
             rfuse=tr.rank(fuse,maxnum=300)
-            nfuse=tr.cluster(rfuse,ovr=0.5)
+            nfuse=tr.cluster(rfuse,ovr=cfg.ovrasp)
             print "----Test Image %d----"%ii
             for l in nfuse:
                 detlist.append([tsImages[ii]["name"].split("/")[-1].split(".")[0],l["scr"],l["bbox"][1],l["bbox"][0],l["bbox"][3],l["bbox"][2]])

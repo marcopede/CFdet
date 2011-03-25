@@ -46,7 +46,7 @@ class config(object):
 #testname="./data/test3_11/CVPR11_usefahter";it=6
 #testname="./data/INRIA/testTDnoMRFright";it=9
 #testname="./data/CVPR/bottomup";it=9
-testname="./data/11_03_16/inria_converg";it=8
+testname="./data/11_02_26/inria_both";it=10
 import sys
 if len(sys.argv)>1:
     it=int(sys.argv[1])
@@ -62,14 +62,16 @@ cfg.loadfeat=False
 cfg.savefeat=False
 #cfg.usemrf=True#False#True#da togliere
 #cfg.ratio=1#datogliere
-cfg.multipr=8
+cfg.multipr=2
 cfg.inclusion=False
 cfg.nms=0.5
+cfg.posovr=0
 cfg.dbpath="/home/databases/"
 #cfg.auxdir="/state/partition1/marcopede/INRIA/"#InriaPosData(basepath="/home/databases/").getStorageDir()
 cfg.auxdir=InriaPosData(basepath=cfg.dbpath).getStorageDir()
 cfg.show=True
 cfg.mythr=-10
+cfg.useprior=False
 #cfg.usemrf=False
 #cfg.maxpostest=1000
 
@@ -78,37 +80,9 @@ cfg.mythr=-10
 #cfg.hallucinate=
 #cfg.thr=-2
 
-#trPosImages=InriaPosData(basepath="/home/databases/")
-#trNegImages=InriaNegData(basepath="/home/databases/")
-#tsImages=InriaTestFullData(basepath="/home/databases/")
-#tsImages=DirImages(imagepath="/home/marcopede/Dropbox/Marco/PruebasDemos",ext=".jpg")
-#tsImages=getRecord(InriaTestFullData(basepath="/share/ISE/marcopede/database/"),cfg.maxtest)
 tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
-#tsImages=getRecord(InriaTestData(basepath="/share/ISE/marcopede/database/"),cfg.maxtest)
-
-#svmname="./data/%s.svm"%testname
-#lib="libsvm"
-#w,r=util.loadSvm(svmname,dir="",lib=lib)
-#util.objf(w,r,svmpos,svmneg,pc)
-#m=tr.model(w,r,len(m["ww"]),31)
 
 m=util.load("%s%d.model"%(testname,it))
-#if cfg.deform:
-#    print m["df"]
-#    for id,l in enumerate(m["df"]):
-#        m["df"][id]=numpy.zeros(l.shape,dtype=numpy.float32)
-
-##############################
-####just for the error...
-#for id,l in enumerate(m["df"]):
-#    m["df"][id][:,:,:2]=numpy.zeros((l.shape[0],l.shape[1],2),dtype=numpy.float32)
-#############################
-
-#del m["df"][2]
-#del m["ww"][2]
-#m["df"][0]=numpy.zeros(m["df"][0].shape,dtype=numpy.float32)
-#m["df"][1]=numpy.zeros(m["df"][1].shape,dtype=numpy.float32)
-#m["df"][2]=numpy.zeros(m["df"][2].shape,dtype=numpy.float32)
 
 if 0:
     print "Show model"

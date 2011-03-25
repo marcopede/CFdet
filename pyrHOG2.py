@@ -14,6 +14,7 @@ import time
 #ccc=0
 
 DENSE=0
+K=0.3
 
 from numpy import ctypeslib
 from ctypes import c_int,c_double,c_float
@@ -67,7 +68,8 @@ ff.scanDef2.argtypes = [
     ctypes.POINTER(c_float),c_int,c_int]#ctypeslib.ndpointer(c_float,ndim=3,flags="C_CONTIGUOUS")]
 ff.scanDef2.restype=ctypes.c_float
 
-
+ff.setK.argtypes = [c_float]
+ff.setK(K)
 
 def hog(img,sbin=8):
     """
@@ -107,8 +109,8 @@ def hogflip_last(feat,obin=9):
     norm2=aux[:,:,last+3].reshape(aux.shape[0],aux.shape[1],1)
     norm3=aux[:,:,last].reshape(aux.shape[0],aux.shape[1],1)
     norm4=aux[:,:,last+1].reshape(aux.shape[0],aux.shape[1],1)
-    #aux=numpy.concatenate((oriented,noriented,norm1,norm2,norm3,norm4),2) #remember you have to change this!!!!!!!!
-    aux=numpy.concatenate((noriented,oriented,norm1,norm2,norm3,norm4),2)
+    aux=numpy.concatenate((oriented,noriented,norm1,norm2,norm3,norm4),2) #remember you have to change this!!!!!!!!
+    #aux=numpy.concatenate((noriented,oriented,norm1,norm2,norm3,norm4),2)
     return aux
 
 def hogflip(feat,obin=9):#pedro
@@ -119,7 +121,7 @@ def hogflip(feat,obin=9):#pedro
     #[9 not oriented][18 oriented][4 normalization]
     p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,30,31,28,29])-1
     aux=feat[:,::-1,p]
-    return aux
+    return numpy.ascontiguousarray(aux)
 
 def defflip(feat):
     #print feat
@@ -1505,7 +1507,7 @@ class TreatDef(Treat):
                         break
         Treat.show(self,ldet,colors=colors,thr=thr,maxnum=maxnum)        
 
-    def descr(self,det,flip=False,usemrf=True,usefather=True,k=0.3):   
+    def descr(self,det,flip=False,usemrf=True,usefather=True,k=K):   
         ld=[]
         for item in det:
             if item!=[] and not(item.has_key("notfound")):
@@ -1652,7 +1654,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         return tr,det,dettime,numhog
     else:
         best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=numrank,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb)        
-        if True:#remember to use it in INRIA
+        if 0:#True:#remember to use it in INRIA
             if deform:
                 ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)
                 iposflip=tr.descr(best1,flip=True,usemrf=usemrf,usefather=usefather)

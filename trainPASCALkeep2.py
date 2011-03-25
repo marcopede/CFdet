@@ -349,17 +349,17 @@ if __name__=="__main__":
         fx=cfg.fx[c]
         #lowf1=numpy.random.random((fy,fx,31)).astype(numpy.float32)
         lowf1=numpy.ones((fy,fx,31)).astype(numpy.float32)
-        lowf=lowf1/numpy.sqrt(numpy.sum(lowf1**2))/(fx*fy)
+        lowf=lowf1/(numpy.sum(lowf1**2))#/(fx*fy)
         #lowd=numpy.random.random((1,1,4)).astype(numpy.float32)
         lowd=-numpy.ones((1,1,4)).astype(numpy.float32)
         #midf1=numpy.random.random((2*fy,2*fx,31)).astype(numpy.float32)
         midf1=numpy.ones((2*fy,2*fx,31)).astype(numpy.float32)
-        midf=midf1/numpy.sqrt(numpy.sum(midf1**2))/(4*fx*fy)
+        midf=midf1/(numpy.sum(midf1**2))#/(4*fx*fy)
         #midd=numpy.random.random((2,2,4)).astype(numpy.float32)
         midd=-numpy.ones((2,2,4)).astype(numpy.float32)
         #higf1=numpy.random.random((4*fy,4*fx,31)).astype(numpy.float32)
         higf1=numpy.ones((4*fy,4*fx,31)).astype(numpy.float32)
-        higf=higf1/numpy.sqrt(numpy.sum(higf1**2))/(16*fx*fy)
+        higf=higf1/(numpy.sum(higf1**2))#/(16*fx*fy)
         #higd=numpy.random.random((4,4,4)).astype(numpy.float32)
         higd=-numpy.ones((4,4,4)).astype(numpy.float32)
         ww3=[lowf,midf,higf]
@@ -407,6 +407,7 @@ if __name__=="__main__":
     totPosEx=0
     for i in range(len(trPosImages)):
             totPosEx += len(trPosImages[i]["bbox"])  
+    totPosEx*=2
 
     for it in range(cfg.posit):
         if last_round:
@@ -607,7 +608,7 @@ if __name__=="__main__":
         print "Keep old bbox",cntkeepoldbb
         print "Not used",cntnotused
         print "Total:",cntnochange+cntgoodchnage+cntkeepoldscr+cntkeepoldbb+cntnotused+cntadded
-        #raw_input()
+        raw_input()
 
         if it>0:
             #oldpscr=[]

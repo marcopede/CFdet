@@ -217,49 +217,13 @@ if __name__=="__main__":
     ww=[]
     dd=[]
     for l in range(cfg.lev):
-    #lowf1=numpy.random.random((fy,fx,31)).astype(numpy.float32)
         lowf1=numpy.ones((fy*2**l,fx*2**l,31)).astype(numpy.float32)
-        lowf=lowf1/numpy.sqrt(numpy.sum(lowf1**2))/float(fx*fy)*1
-    #lowd=numpy.random.random((1,1,4)).astype(numpy.float32)
+        lowf=lowf1/(numpy.sum(lowf1**2))#/float(fx*fy)*1
         lowd=-numpy.ones((1*2**l,1*2**l,4)).astype(numpy.float32)
         ww.append(lowf)
         dd.append(lowd)
-    #midf1=numpy.random.random((2*fy,2*fx,31)).astype(numpy.float32)
-    #midf1=numpy.ones((2*fy,2*fx,31)).astype(numpy.float32)
-    #midf=midf1/numpy.sqrt(numpy.sum(midf1**2))/float(4*fx*fy)*0
-    #midd=numpy.random.random((2,2,4)).astype(numpy.float32)
-    #midd=-numpy.ones((2,2,4)).astype(numpy.float32)
-    #higf1=numpy.random.random((4*fy,4*fx,31)).astype(numpy.float32)
-    #higf1=numpy.ones((4*fy,4*fx,31)).astype(numpy.float32)
-    #higf=higf1/numpy.sqrt(numpy.sum(higf1**2))/float(16*fx*fy)*0
-    #higd=numpy.random.random((4,4,4)).astype(numpy.float32)
-    #higd=-numpy.ones((4,4,4)).astype(numpy.float32)
-    #vhigf1=numpy.ones((8*fy,8*fx,31)).astype(numpy.float32)
-    #vhigf=vhigf1/numpy.sqrt(numpy.sum(vhigf1**2))/float(64*fx*fy)
-    #higd=numpy.random.random((4,4,4)).astype(numpy.float32)
-    #vhigd=-numpy.ones((8,8,4)).astype(numpy.float32)
-    #ww3=[lowf,midf,higf]
-    #wwh=[lowf,midf,higf,vhigf]
-    #ww2=[midf,higf]
-    #ww1=[higf]
-    #ww4=[lowf,midf]
-    #ww5=[midf]
-    #ww6=[lowf]
-    #dd1=[lowd]
-    #dd2=[lowd,midd]
-    #dd3=[lowd,midd,higd]
-    #ddh=[lowd,midd,higd,vhigd]
     rho=0
     m={"ww":ww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1]}
-    #model1={"ww":ww1,"rho":rho,"df":dd1,"fy":ww1[0].shape[0],"fx":ww1[0].shape[1]}
-    #model2={"ww":ww2,"rho":rho,"df":dd2,"fy":ww2[0].shape[0],"fx":ww2[0].shape[1]}
-    #model3={"ww":ww3,"rho":rho,"df":dd3,"fy":ww3[0].shape[0],"fx":ww3[0].shape[1]}
-    #modelh={"ww":wwh,"rho":rho,"df":ddh,"fy":wwh[0].shape[0],"fx":wwh[0].shape[1]}
-    #model4={"ww":ww4,"rho":rho,"df":dd2,"fy":ww4[0].shape[0],"fx":ww4[0].shape[1]}
-    #model5={"ww":ww5,"rho":rho,"df":dd1,"fy":ww5[0].shape[0],"fx":ww5[0].shape[1]}
-    #model6={"ww":ww6,"rho":rho,"df":dd1,"fy":ww6[0].shape[0],"fx":ww6[0].shape[1]}
-    #lmodels=[model1,model2,model3]
-    #m=model3#model3
 
     trpos=[]
     trneg=[]
@@ -292,18 +256,24 @@ if __name__=="__main__":
             itr=mypool.imap(detectWrap,arg)
         for ii,res in enumerate(itr):
         #res=it.next()
-            trpos+=res[3]
-            newtrneg+=res[4]
-            if (it>0 and res[3]!=[]):
+            ipos=tr.descr(res[1],usemrf=cfg.usemrf,usefather=cfg.usefather)         
+            trpos+=ipos
+            ineg=tr.descr(res[2],usemrf=cfg.usemrf,usefather=cfg.usefather)
+            newtrneg+=ineg
+            trpos+=tr.descr(res[1],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)         
+            newtrneg+=tr.descr(res[2],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)
+            #trpos+=res[3]
+            #newtrneg+=res[4]
+            if (it>0 and ipos!=[]):
                 scr=res[1][0]["scr"]
-                dense=numpy.sum(res[3][0]*w)-r
+                dense=numpy.sum(ipos[0]*w)-r
                 #raw_input()
                 if abs(scr-dense)>0.0001:
                     print "Warning: the two scores must be equal!!!"
                     print "Scr:",scr,"DesneSCR:",dense,"Diff:",abs(scr-dense)
                     raw_input()
             print "----Pos Image %d----"%ii
-            print "Pos:",len(res[3]),"Neg:",len(res[4])
+            print "Pos:",len(ipos),"Neg:",len(ineg)
             print "Tot Pos:",len(trpos)," Neg:",len(newtrneg)      
         del itr
         newtrneg2,doubles=unique(trneg,newtrneg)
@@ -373,18 +343,23 @@ if __name__=="__main__":
                 else:
                     itr=mypool.imap(detectWrap,arg)
                 for ii,res in enumerate(itr):
-                    trpos+=res[3]#not necessary cause no positives
-                    newtrneg+=res[4]
-                    if ((nit>0 or it>0) and res[4]!=[]):
+                    #trpos+=tr.descr(res[1],usemrf=cfg.usemrf,usefather=cfg.usefather)         
+                    #newtrneg+=tr.descr(res[2],usemrf=cfg.usemrf,usefather=cfg.usefather)
+                    ineg=tr.descr(res[1],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)         
+                    trpos+=ineg
+                    newtrneg+=tr.descr(res[2],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)
+                    #trpos+=res[3]#not necessary cause no positives
+                    #newtrneg+=res[4]
+                    if ((nit>0 or it>0) and ineg!=[]):
                         scr=res[2][0]["scr"]
-                        dense=numpy.sum(res[4][0]*w)-r
+                        dense=numpy.sum(ineg[0]*w)-r
                         #raw_input()
                         if abs(scr-dense)>0.0001:
                             print "Warning: the two scores must be equal!!!"
                             print "Scr:",scr,"DesneSCR:",dense,"Diff:",abs(scr-dense)
                             raw_input()
                     print "----Neg Image %d----"%ii
-                    print "Pos:",len(res[3]),"Neg:",len(res[4])
+                    print "Pos:",0,"Neg:",len(ineg)
                     print "Tot Pos:",len(trpos)," Neg:",len(newtrneg)      
                 if len(trneg)+len(newtrneg)+len(trpos)>cfg.maxexamples:
                     print "Cache Limit Reached!"

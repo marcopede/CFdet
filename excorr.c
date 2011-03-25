@@ -5,7 +5,14 @@
 //gcc -shared -Wl,-soname,libexcorr.so -o libexcorr.so  excorr.o
 #define ftype float
 #define INFINITY 10000
-#define k 0.3
+//#define k 0.3
+
+static k=0.3;
+
+void setK(ftype pk)
+{
+    k=pk;
+}
 
 static compHOG=0; //number of HOG computed
 

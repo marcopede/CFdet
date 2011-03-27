@@ -405,7 +405,8 @@ if __name__=="__main__":
     last_round=False
     w=None
     oldprloss=numpy.zeros((0,6))
-    cfg.ovrasp=0.3
+    pyrHOG2.setK(cfg.k)
+    pyrHOG2.setDENSE(cfg.dense)
 
     for it in range(cfg.posit):
         if last_round:

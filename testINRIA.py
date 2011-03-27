@@ -62,9 +62,9 @@ cfg.loadfeat=False
 cfg.savefeat=False
 #cfg.usemrf=True#False#True#da togliere
 #cfg.ratio=1#datogliere
-cfg.multipr=2
+cfg.multipr=8
 cfg.inclusion=False
-cfg.nms=0.5
+#cfg.nms=0.5
 cfg.posovr=0
 cfg.dbpath="/home/databases/"
 #cfg.auxdir="/state/partition1/marcopede/INRIA/"#InriaPosData(basepath="/home/databases/").getStorageDir()
@@ -72,6 +72,9 @@ cfg.auxdir=InriaPosData(basepath=cfg.dbpath).getStorageDir()
 cfg.show=True
 cfg.mythr=-10
 cfg.useprior=False
+cfg.small=True
+cfg.dense=5
+pyrHOG2.DENSE=0
 #cfg.usemrf=False
 #cfg.maxpostest=1000
 

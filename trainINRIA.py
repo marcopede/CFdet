@@ -31,7 +31,7 @@ def detectWrap(a):
     else:
         gtbbox=None
     f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.savedir+"/hog/",notload=not(cfg.loadfeat),notsave=not(cfg.savefeat),hallucinate=cfg.hallucinate,cformat=True)
-    res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,posovr=cfg.posovr,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,inclusion=cfg.inclusion,small=False,show=cfg.show,usefather=cfg.usefather,useprior=cfg.useprior)
+    res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,posovr=cfg.posovr,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,inclusion=cfg.inclusion,small=cfg.small,show=cfg.show,usefather=cfg.usefather,useprior=cfg.useprior,nms=cfg.ovr)
     if cfg.show:
         pylab.show()
 #        raw_input()
@@ -171,6 +171,8 @@ if __name__=="__main__":
 #        cfg.maxexamples=1000
 
 #    util.save(testname+".cfg",cfg)
+    pyrHOG2.K=cfg.k
+    pyrHOG2.dense=cfg.dense
 
     if cfg.multipr==1:
         numcore=None
@@ -233,6 +235,8 @@ if __name__=="__main__":
     w=None
     mpos=0#0.5
     oldprloss=numpy.zeros((0,6))
+    pyrHOG2.setK(cfg.k)
+    pyrHOG2.setDENSE(cfg.dense)
     for it in range(cfg.posit):
         lenoldtrpos=len(trpos)
         trpos=[]

@@ -41,7 +41,11 @@ cfg.testname="./data/11_02_28/inria_rightpedro"
 cfg.savefeat=False #save precomputed features 
 cfg.loadfeat=True
 cfg.useprior=False
+cfg.ovr=0.5
 cfg.k=1.0
+cfg.small=False
+cfg.dense=0
+cfg.ovrasp=0.3
 #cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save
 #    mydebug=False
 #    if mydebug:

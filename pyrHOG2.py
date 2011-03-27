@@ -14,7 +14,7 @@ import time
 #ccc=0
 
 DENSE=0
-K=0.3
+K=1#0.3
 
 from numpy import ctypeslib
 from ctypes import c_int,c_double,c_float
@@ -70,6 +70,12 @@ ff.scanDef2.restype=ctypes.c_float
 
 ff.setK.argtypes = [c_float]
 ff.setK(K)
+
+def setK(pk):
+    ff.setK(pk)    
+
+def setDENSE(d):
+    DENSE=d    
 
 def hog(img,sbin=8):
     """
@@ -1016,21 +1022,32 @@ class Treat:
     def doalltrain(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,posovr=0.5,numpos=1,numneg=10,minnegovr=0,minnegincl=0,cl=0,emptybb=False):
         t=time.time()
         self.det=self.select_fast(thr,cl=cl)
+        print "Select time:",time.time()-t
         #if gtbbox!=[]:# select only over the positive gtbbox
         #    self.det=self.filter_pos(self.det,gtbbox)
         #    pr=self.f.buildPrior(gtbbox,self.fy,self.fx)
+        t=time.time()
         self.det=self.rank_fast(self.det,rank,cl=cl) 
+        print "Rank time:",time.time()-t
         if refine:
+            t=time.time()
             self.det=self.refine(self.det)
+            print "Refine time:",time.time()-t
+        t=time.time()
         self.det=self.bbox(self.det)
+        print "BBox time:",time.time()-t
         #self.show(self.det,colors=["g"],thr=0.01)
         #print [x["scr"] for x in self.det]
         #pylab.show()
         #raw_input()
+        t=time.time()
         self.best,self.worste=self.getbestworste(self.det,gtbbox,numpos=numpos,numneg=numneg,mpos=mpos,posovr=posovr,minnegovr=minnegovr,minnegincl=minnegincl,emptybb=emptybb)
+        print "Bestworse time:",time.time()-t
         if rawdet:
+            t=time.time()
             self.best=self.rawdet(self.best)
             self.worste=self.rawdet(self.worste)
+            print "Raw Det time:",time.time()-t
         #show="Parts" maybe it produces the increase of memory
         if show:
             self.show(self.best,colors=["b"])
@@ -1268,81 +1285,81 @@ class Treat:
     def rawdet(self,det):
         rdet=det[:]
         for item in det:
-            if item!=[] and not(item.has_key("notfound")):
-                i=item["i"];cy=item["ny"];cx=item["nx"];
-                fy=self.fy
-                fx=self.fx
-                item["feat"]=[]
-                my=0;mx=0;
-                for l in range(len(item["def"]["dy"])):
-                    if i+self.f.starti-(l)*self.interv>=0:
-                        my=2*my+item["def"]["dy"][l]
-                        mx=2*mx+item["def"]["dx"][l]
-                        #print my,mx
-                        aux=util.getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1,cy+my+fy*2**l-1,cx+mx-1,cx+mx+fx*2**l-1)
-                        item["feat"].append(aux)
-                        cy=(cy)*2
-                        cx=(cx)*2
-                    else:
-                        item["feat"].append(numpy.zeros((fy*2**l,fx*2**l,31)))
+            #if item!=[] and not(item.has_key("notfound")):
+            i=item["i"];cy=item["ny"];cx=item["nx"];
+            fy=self.fy
+            fx=self.fx
+            item["feat"]=[]
+            my=0;mx=0;
+            for l in range(len(item["def"]["dy"])):
+                if i+self.f.starti-(l)*self.interv>=0:
+                    my=2*my+item["def"]["dy"][l]
+                    mx=2*mx+item["def"]["dx"][l]
+                    #print my,mx
+                    aux=util.getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1,cy+my+fy*2**l-1,cx+mx-1,cx+mx+fx*2**l-1)
+                    item["feat"].append(aux)
+                    cy=(cy)*2
+                    cx=(cx)*2
+                else:
+                    item["feat"].append(numpy.zeros((fy*2**l,fx*2**l,31)))
         return rdet
 
 
     def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf):
         count=0
         for item in ldet:
-            if item!=[] and not(item.has_key("notfound")):
-                if item["scr"]>thr:
-                    bbox=item["bbox"]
-                    if parts:
-                        d=item["def"]
-                        scl=item["scl"]
-                        mx=0
-                        my=0
-                        for l,val in enumerate(d["dy"]):
-                            my+=d["dy"][l]*2**-l
-                            mx+=d["dx"][l]*2**-l
-                            y1=(item["ny"]+my)*self.f.sbin/scl
-                            x1=(item["nx"]+mx)*self.f.sbin/scl
-                            y2=(item["ny"]+my+item["fy"])*self.f.sbin/scl
-                            x2=(item["nx"]+mx+item["fx"])*self.f.sbin/scl
-                            pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],colors[1+l], alpha=0.15, edgecolor=colors[1+l],lw=2)           
-                    pylab.fill([bbox[1],bbox[1],bbox[3],bbox[3],bbox[1]],[bbox[0],bbox[2],bbox[2],bbox[0],bbox[0]],colors[0], alpha=0.15, edgecolor=colors[0],lw=2)
-                    pylab.text(bbox[1],bbox[0],"%d %.3f"%(item["cl"],item["scr"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
-                count+=1
-                if count>maxnum:
-                    break
+            #if item!=[] and not(item.has_key("notfound")):
+            if item["scr"]>thr:
+                bbox=item["bbox"]
+                if parts:
+                    d=item["def"]
+                    scl=item["scl"]
+                    mx=0
+                    my=0
+                    for l,val in enumerate(d["dy"]):
+                        my+=d["dy"][l]*2**-l
+                        mx+=d["dx"][l]*2**-l
+                        y1=(item["ny"]+my)*self.f.sbin/scl
+                        x1=(item["nx"]+mx)*self.f.sbin/scl
+                        y2=(item["ny"]+my+item["fy"])*self.f.sbin/scl
+                        x2=(item["nx"]+mx+item["fx"])*self.f.sbin/scl
+                        pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],colors[1+l], alpha=0.15, edgecolor=colors[1+l],lw=2)           
+                pylab.fill([bbox[1],bbox[1],bbox[3],bbox[3],bbox[1]],[bbox[0],bbox[2],bbox[2],bbox[0],bbox[0]],colors[0], alpha=0.15, edgecolor=colors[0],lw=2)
+                pylab.text(bbox[1],bbox[0],"%d %.3f"%(item["cl"],item["scr"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
+            count+=1
+            if count>maxnum:
+                break
             
     def descr(self,det,flip=False,usemrf=False,usefather=False):   
         ld=[]
         for item in det:
-            if item!=[] and not(item.has_key("notfound")):
-                d=numpy.array([])
-                for l in range(len(item["feat"])):
-                    if not(flip):
-                        aux=item["feat"][l]
-                        #print "No flip",aux.shape
+            #if item!=[] and not(item.has_key("notfound")):
+            d=numpy.array([])
+            for l in range(len(item["feat"])):
+                if not(flip):
+                    aux=item["feat"][l]
+                    #print "No flip",aux.shape
+                else:
+                    aux=hogflip(item["feat"][l])
+                    #print "Flip",aux.shape
+                d=numpy.concatenate((d,aux.flatten()))
+                if self.occl:
+                    if item["i"]-l*self.interv>=0:
+                        d=nump.concatenate((d,[0.0]))
                     else:
-                        aux=hogflip(item["feat"][l])
-                        #print "Flip",aux.shape
-                    d=numpy.concatenate((d,aux.flatten()))
-                    if self.occl:
-                        if item["i"]-l*self.interv>=0:
-                            d=nump.concatenate((d,[0.0]))
-                        else:
-                            d=nump.concatenate((d,[1.0]))
-                ld.append(d.astype(numpy.float32))
-            else:
-                ld.append([])
+                        d=nump.concatenate((d,[1.0]))
+            ld.append(d.astype(numpy.float32))
+            #else:
+            #    ld.append([])
         return ld
 
     def mixture(self,det):   
         ld=[]
         for item in det:
-            if item!=[] and not(item.has_key("notfound")):
-                ld.append(item["cl"])
-            else:
-                ld.append([])
+            #if item!=[] and not(item.has_key("notfound")):
+            ld.append(item["cl"])
+            #else:
+            #    ld.append([])
         return ld
 
     def model(self,descr,rho,lev,fsz,fy=[],fx=[],usemrf=False,usefather=False): 
@@ -1457,30 +1474,30 @@ class TreatDef(Treat):
     def rawdet(self,det):
         rdet=det[:]
         for item in det:
-            if item!=[] and not(item.has_key("notfound")):
-                i=item["i"];cy=item["ny"];cx=item["nx"];
-                fy=self.fy
-                fx=self.fx
-                item["feat"]=[]
-                mov=numpy.zeros((1,1,2))
-                for l in range(len(item["def"]["party"])):
-                    sz=2**l
-                    aux=numpy.zeros((fy*sz,fx*sz,self.f.hog[i].shape[2]))
-                    if i+self.f.starti-(l)*self.interv>=0:
-                        for py in range(sz):
-                            for px in range(sz):
-                                mov[py,px,0]=2*mov[py,px,0]+item["def"]["dy"][l][py,px]
-                                mov[py,px,1]=2*mov[py,px,1]+item["def"]["dx"][l][py,px]
-                                aux[py*fy:(py+1)*fy,px*fx:(px+1)*fx,:]=util.getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+mov[py,px,0]-1,cy+mov[py,px,0]+fy-1,cx+mov[py,px,1]-1,cx+mov[py,px,1]+fx-1)
-                        cy=(cy)*2
-                        cx=(cx)*2
-                        aux1=numpy.kron(mov.T,[[1,1],[1,1]]).T
-                        aux2=numpy.zeros((2,2,2))
-                        aux2[:,:,0]=numpy.array([[0,0],[self.fy/2.0,self.fy/2.0]])
-                        aux2[:,:,1]=numpy.array([[0,self.fx/2.0],[0,self.fx/2.0]])
-                        aux3=numpy.kron(numpy.ones((2**l,2**l)),aux2.T).T
-                        mov=aux1+aux3
-                    item["feat"].append(aux)
+            #if item!=[] and not(item.has_key("notfound")):
+            i=item["i"];cy=item["ny"];cx=item["nx"];
+            fy=self.fy
+            fx=self.fx
+            item["feat"]=[]
+            mov=numpy.zeros((1,1,2))
+            for l in range(len(item["def"]["party"])):
+                sz=2**l
+                aux=numpy.zeros((fy*sz,fx*sz,self.f.hog[i].shape[2]))
+                if i+self.f.starti-(l)*self.interv>=0:
+                    for py in range(sz):
+                        for px in range(sz):
+                            mov[py,px,0]=2*mov[py,px,0]+item["def"]["dy"][l][py,px]
+                            mov[py,px,1]=2*mov[py,px,1]+item["def"]["dx"][l][py,px]
+                            aux[py*fy:(py+1)*fy,px*fx:(px+1)*fx,:]=util.getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+mov[py,px,0]-1,cy+mov[py,px,0]+fy-1,cx+mov[py,px,1]-1,cx+mov[py,px,1]+fx-1)
+                    cy=(cy)*2
+                    cx=(cx)*2
+                    aux1=numpy.kron(mov.T,[[1,1],[1,1]]).T
+                    aux2=numpy.zeros((2,2,2))
+                    aux2[:,:,0]=numpy.array([[0,0],[self.fy/2.0,self.fy/2.0]])
+                    aux2[:,:,1]=numpy.array([[0,self.fx/2.0],[0,self.fx/2.0]])
+                    aux3=numpy.kron(numpy.ones((2**l,2**l)),aux2.T).T
+                    mov=aux1+aux3
+                item["feat"].append(aux)
         return rdet
 
 
@@ -1489,63 +1506,63 @@ class TreatDef(Treat):
         count=0
         if parts:
             for item in ldet:
-                if item!=[] and not(item.has_key("notfound")):
-                    if item["scr"]>thr:
-                        scl=item["scl"]
-                        for l in range(len(item["def"]["dy"])):
-                            py=item["def"]["party"][l]
-                            px=item["def"]["partx"][l]
-                            for lpy in range(py.shape[0]):
-                                for lpx in range(px.shape[1]):
-                                    y1=py[lpy,lpx]*self.f.sbin/scl
-                                    y2=(py[lpy,lpx]+item["fy"]*2**-l)*self.f.sbin/scl
-                                    x1=px[lpy,lpx]*self.f.sbin/scl
-                                    x2=(px[lpy,lpx]+item["fx"]*2**-l)*self.f.sbin/scl
-                                    pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],colors[1+l], alpha=0.15, edgecolor=colors[1+l],lw=2)                               
-                    count+=1
-                    if count>maxnum:
-                        break
+                #if item!=[] and not(item.has_key("notfound")):
+                if item["scr"]>thr:
+                    scl=item["scl"]
+                    for l in range(len(item["def"]["dy"])):
+                        py=item["def"]["party"][l]
+                        px=item["def"]["partx"][l]
+                        for lpy in range(py.shape[0]):
+                            for lpx in range(px.shape[1]):
+                                y1=py[lpy,lpx]*self.f.sbin/scl
+                                y2=(py[lpy,lpx]+item["fy"]*2**-l)*self.f.sbin/scl
+                                x1=px[lpy,lpx]*self.f.sbin/scl
+                                x2=(px[lpy,lpx]+item["fx"]*2**-l)*self.f.sbin/scl
+                                pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],colors[1+l], alpha=0.15, edgecolor=colors[1+l],lw=2)                               
+                count+=1
+                if count>maxnum:
+                    break
         Treat.show(self,ldet,colors=colors,thr=thr,maxnum=maxnum)        
 
     def descr(self,det,flip=False,usemrf=True,usefather=True,k=K):   
         ld=[]
         for item in det:
-            if item!=[] and not(item.has_key("notfound")):
-                d=numpy.array([])
-                for l in range(len(item["feat"])):
-                    if not(flip):
-                        d=numpy.concatenate((d,item["feat"][l].flatten()))       
-                        #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
-                        #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
-                        #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
-                        #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten())) 
-                        if l>0: #skip deformations level 0
-                            if usefather:
-                                d=numpy.concatenate((d, k*k*(item["def"]["dy"][l].flatten()**2)  ))
-                                d=numpy.concatenate((d, k*k*(item["def"]["dx"][l].flatten()**2)  ))
-                            if usemrf:
-                                d=numpy.concatenate((d,k*k*item["def"]["ddy"][l].flatten()))
-                                d=numpy.concatenate((d,k*k*item["def"]["ddx"][l].flatten()))
-                    else:
-                        d=numpy.concatenate((d,hogflip(item["feat"][l]).flatten()))        
-                        #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
-                        #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
-                        #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
-                        #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten())) 
-                        if l>0: #skip deformations level 0
-                            if usefather:
-                                aux=(k*k*(item["def"]["dy"][l][:,::-1]**2))#.copy()
-                                d=numpy.concatenate((d,aux.flatten()))
-                                aux=(k*k*(item["def"]["dx"][l][:,::-1]**2))#.copy()
-                                d=numpy.concatenate((d,aux.flatten()))
-                            if usemrf:
-                                aux=defflip(k*k*item["def"]["ddy"][l])
-                                d=numpy.concatenate((d,aux.flatten()))
-                                aux=defflip(k*k*item["def"]["ddx"][l])
-                                d=numpy.concatenate((d,aux.flatten()))
-                ld.append(d.astype(numpy.float32))
-            else:
-                ld.append([])
+            #if item!=[] and not(item.has_key("notfound")):
+            d=numpy.array([])
+            for l in range(len(item["feat"])):
+                if not(flip):
+                    d=numpy.concatenate((d,item["feat"][l].flatten()))       
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten())) 
+                    if l>0: #skip deformations level 0
+                        if usefather:
+                            d=numpy.concatenate((d, k*k*(item["def"]["dy"][l].flatten()**2)  ))
+                            d=numpy.concatenate((d, k*k*(item["def"]["dx"][l].flatten()**2)  ))
+                        if usemrf:
+                            d=numpy.concatenate((d,k*k*item["def"]["ddy"][l].flatten()))
+                            d=numpy.concatenate((d,k*k*item["def"]["ddx"][l].flatten()))
+                else:
+                    d=numpy.concatenate((d,hogflip(item["feat"][l]).flatten()))        
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten()))
+                    #d=numpy.concatenate((d,numpy.zeros((2**l,2**l),dtype=numpy.float32).flatten())) 
+                    if l>0: #skip deformations level 0
+                        if usefather:
+                            aux=(k*k*(item["def"]["dy"][l][:,::-1]**2))#.copy()
+                            d=numpy.concatenate((d,aux.flatten()))
+                            aux=(k*k*(item["def"]["dx"][l][:,::-1]**2))#.copy()
+                            d=numpy.concatenate((d,aux.flatten()))
+                        if usemrf:
+                            aux=defflip(k*k*item["def"]["ddy"][l])
+                            d=numpy.concatenate((d,aux.flatten()))
+                            aux=defflip(k*k*item["def"]["ddx"][l])
+                            d=numpy.concatenate((d,aux.flatten()))
+            ld.append(d.astype(numpy.float32))
+            #else:
+            #    ld.append([])
         return ld
 
     def model(self,descr,rho,lev,fsz,fy=[],fx=[],mindef=0.001,usemrf=True,usefather=True): 
@@ -1598,7 +1615,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
     if useprior:
         numrank=200
     else:
-        numrank=2000
+        numrank=1000
     if gtbbox!=None and gtbbox!=[] and useprior:
         t1=time.time()
         pr=f.buildPrior(gtbbox,m["fy"],m["fx"])
@@ -1632,7 +1649,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         #pylab.imshow(pr[h+f.starti],interpolation="nearest")
         #pylab.show()
         #raw_input()
-    #print "Scan:",time.time()-t    
+    print "Scan:",time.time()-t    
     #dettime=time.time()-t
     #print "Elapsed Time:",dettime
     #print "Number HOG:",numhog
@@ -1653,6 +1670,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         tr.show(det,parts=showlabel,thr=-1.0,maxnum=5)           
         return tr,det,dettime,numhog
     else:
+        t2=time.time()
         best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=numrank,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb)        
         if 0:#True:#remember to use it in INRIA
             if deform:
@@ -1671,6 +1689,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
                 ineg=ineg+inegflip
         else:
             ipos=[];ineg=[]
+        print "Treat Time:",time.time()-t2
         print "Detect:",time.time()-t    
         return tr,best1,worste1,ipos,ineg
 

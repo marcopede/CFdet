@@ -614,6 +614,28 @@ def viewDet(gtImages,detfile,opt="all",usetr=True,usedf=False,stop=True,t=0.5):
             else:
                 time.sleep(t)
 
+def VOCap(rec,prec):
+    mrec=numpy.concatenate(([0],rec,[1]))
+    mpre=numpy.concatenate(([0],prec,[0]))
+    for i in range(len(mpre)-2,0,-1):
+        mpre[i]=max(mpre[i],mpre[i+1]);
+    i=numpy.where(mrec[1:]!=mrec[0:-1])[0]+1;
+    ap=numpy.sum((mrec[i]-mrec[i-1])*mpre[i]);
+    return ap
+
+def VOColdap(rec,prec):
+    rec=numpy.array(rec)
+    prec=numpy.array(prec)
+    ap=0.0
+    for t in numpy.linspace(0,1,11):
+        pr=prec[rec>=t]
+        if pr.size==0:
+            pr=0
+        p=numpy.max(pr);
+        print pr,p,t
+        ap=ap+p/11.0;
+    return ap
+
 def drawPrfast(tp,fp,tot,show=True):
     tp=numpy.cumsum(tp)
     fp=numpy.cumsum(fp)
@@ -626,9 +648,10 @@ def drawPrfast(tp,fp,tot,show=True):
             pr=0
         p=numpy.max(pr);
         ap=ap+p/11;
+    ap1=VOCap(rec,prec)
     if show:    
         pylab.plot(rec,prec,'-g')
-        pylab.title("AP=%.3f"%(ap))
+        pylab.title("AP=%.1f 11pt(%.1f)"%(ap1*100,ap*100))
         pylab.xlabel("Recall")
         pylab.ylabel("Precision")
         pylab.grid()

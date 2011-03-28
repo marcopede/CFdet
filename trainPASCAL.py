@@ -115,7 +115,7 @@ def detectWrap(a):
     f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.auxdir+"/hog/",notsave=not(cfg.savefeat),notload=not(cfg.loadfeat),hallucinate=cfg.hallucinate,cformat=True)
     res=[]
     for clm,m in enumerate(models):
-        res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,minnegincl=0,small=False,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,usefather=cfg.usefather,useprior=cfg.useprior))
+        res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,usefather=cfg.usefather,useprior=cfg.useprior))
     if cfg.show:
         pylab.show()
     return res
@@ -422,10 +422,10 @@ if __name__=="__main__":
         #clear()
         partime=time.time()
         print "Positive Images:"
-        if it==0:#force to take best overlapping
-            cfg.mpos=10
-        else:
-            cfg.mpos=0#0.5
+        #if it==0:#force to take best overlapping
+        #    cfg.mpos=10
+        #else:
+        #    cfg.mpos=0#0.5
         cfgpos=copy.copy(cfg)
         cfgpos.numneg=cfg.numneginpos
         arg=[[i,trPosImages[i]["name"],trPosImages[i]["bbox"],models,cfgpos] for i in range(len(trPosImages))]

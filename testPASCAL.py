@@ -25,7 +25,7 @@ if __name__=="__main__":
     if len(sys.argv)>2:
         it=int(sys.argv[2])
     #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
-    testname="./data/11_03_24/%s%d_test"%(cfg.cls,cfg.numcl)
+    testname="./data/11_03_23/%s%d_keepdef"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
     #cfg.mpos=1
@@ -39,7 +39,7 @@ if __name__=="__main__":
     #cfg.year="2007"
     cfg.maxtest=5000
     #cfg.initr=0
-    cfg.show=True
+    cfg.show=False
     if cfg.show:
         cfg.multipr=False
     else:
@@ -130,6 +130,7 @@ if __name__=="__main__":
     results={"det":detlist,"ap":ap,"tp":tp,"fp":fp,"pr":pr,"rc":rc,"numhog":numhog,"mythr":cfg.mythr,"time":tottime}
     #util.savemat("%s_ap%d_test_thr_%.3f.mat"%(testname,it,cfg.mythr),results)
     #util.save("%s_ap%d_test_thr_%.3f.dat"%(testname,it,cfg.mythr),results)
+    util.savedetVOC(detlist,"%s_ap%d_test_thr_%.3f.txt"%(testname,it,cfg.mythr))
     fd=open("%s_ap%d_test%s.txt"%(testname,it,select),"a")
     fd.write("Threshold used:%f\n"%cfg.mythr)
     fd.write("Total number of HOG:%d\n"%numhog)

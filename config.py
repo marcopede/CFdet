@@ -46,6 +46,7 @@ cfg.k=1.0
 cfg.small=False
 cfg.dense=0
 cfg.ovrasp=0.3
+cfg.minnegincl=0
 #cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save
 #    mydebug=False
 #    if mydebug:

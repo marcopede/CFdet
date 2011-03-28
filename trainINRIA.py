@@ -260,6 +260,7 @@ if __name__=="__main__":
             itr=mypool.imap(detectWrap,arg)
         for ii,res in enumerate(itr):
         #res=it.next()
+            tr=res[0]
             ipos=tr.descr(res[1],usemrf=cfg.usemrf,usefather=cfg.usefather)         
             trpos+=ipos
             ineg=tr.descr(res[2],usemrf=cfg.usemrf,usefather=cfg.usefather)
@@ -347,10 +348,11 @@ if __name__=="__main__":
                 else:
                     itr=mypool.imap(detectWrap,arg)
                 for ii,res in enumerate(itr):
+                    tr=res[0]
                     #trpos+=tr.descr(res[1],usemrf=cfg.usemrf,usefather=cfg.usefather)         
                     #newtrneg+=tr.descr(res[2],usemrf=cfg.usemrf,usefather=cfg.usefather)
-                    ineg=tr.descr(res[1],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)         
-                    trpos+=ineg
+                    ineg=tr.descr(res[2],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather)         
+                    newtrneg+=ineg
                     newtrneg+=tr.descr(res[2],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)
                     #trpos+=res[3]#not necessary cause no positives
                     #newtrneg+=res[4]

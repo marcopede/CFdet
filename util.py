@@ -16,13 +16,24 @@ part=numpy.dtype([("itr", i32),("oct",i32),("y",i32),("x",i32),("sy",i32),("sx",
 colors=["r","g","c",'m','w']                    
      
    
-def myimread(imgname):
+def myimread(imgname,flip=False):
     img=None
     if imgname.split(".")[-1]=="png":
         img=pylab.imread(imgname)
     else:
-        img=pil.imread(imgname)        
+        img=numpy.ascontiguousarray(pylab.imread(imgname)[::-1])
+    if flip:
+        img=numpy.ascontiguousarray(img[:,::-1,:])        
     return img
+
+def flipBBox(img,oldbbox):
+    sizey = img.shape[0]
+    sizex = img.shape[1]
+    bbox = []
+    for x in oldbbox:
+        #bbox.append((x[0],sizex-x[1]-x[3],x[2],x[3],x[4],x[5]))
+        bbox.append((x[0],sizex-x[3],x[2],sizex-x[1],x[4],x[5]))
+    return bbox
 
 def gaussian(sigma=0.5, shape=None):
   """

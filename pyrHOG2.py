@@ -146,7 +146,7 @@ class container(object):
         self.ptr=ptrarray
 
 class pyrHOG:
-    def __init__(self,im,interv=10,sbin=8,savedir="./",compress=False,notload=False,notsave=False,hallucinate=0,cformat=False):
+    def __init__(self,im,interv=10,sbin=8,savedir="./",compress=False,notload=False,notsave=False,hallucinate=0,cformat=False,flip=False):
         """
         Compute the HOG pyramid of an image
         if im is a string call precomputed
@@ -159,6 +159,7 @@ class pyrHOG:
         self.interv=interv
         self.oct=0
         self.sbin=sbin#number of pixels per spatial bin
+        self.flip=flip
         if isinstance(im,pyrHOG):#build a copy
             self.__copy(im)
             #return
@@ -266,6 +267,8 @@ class pyrHOG:
             if notload:
                 #generate an error to pass to computing hog
                 error
+            else:
+                "Warning: image flip do not work with preload!!!"
             f=[]
             if compress:
                 f=gzip.open(savedir+imname.split("/")[-1]+".zhog%d_%d_%d"%(interv,sbin,hallucinate),"rb")
@@ -286,7 +289,14 @@ class pyrHOG:
             #    img=pylab.imread(imname)
             #else:
             #    img=scipy.misc.pilutil.imread(imname)
-            img=util.myimread(imname)
+            img=util.myimread(imname,self.flip)
+            #pylab.figure(22)
+            #pylab.clf()
+            #pylab.imshow(img)
+            #pylab.show()
+            #pylab.draw()
+            #print "self.Flip",self.flip
+            #raw_input()
             if img.ndim<3:
                 aux=numpy.zeros((img.shape[0],img.shape[1],3))
                 aux[:,:,0]=img
@@ -486,7 +496,10 @@ class pyrHOG:
         if not(small):
             self.starti=self.interv*(len(ww)-1)
         else:
-            self.starti=0
+            if type(small)==bool:
+                self.starti=0
+            else:
+                self.starti=self.interv*(len(ww)-1-small)
         from time import time
         for i in range(self.starti,len(self.hog)):
             samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(ctypes.c_int)
@@ -531,7 +544,10 @@ class pyrHOG:
         if not(small):
             self.starti=self.interv*(len(ww)-1)
         else:
-            self.starti=0
+            if type(small)==bool:
+                self.starti=0
+            else:
+                self.starti=self.interv*(len(ww)-1-small)
         from time import time
         for i in range(self.starti,len(self.hog)):
             if len(self.hog)-i<dense:
@@ -587,7 +603,10 @@ class pyrHOG:
         if not(small):
             self.starti=self.interv*(len(ww)-1)
         else:
-            self.starti=0
+            if type(small)==bool:
+                self.starti=0
+            else:
+                self.starti=self.interv*(len(ww)-1-small)
         from time import time
         for i in range(self.starti,len(self.hog)):
             samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(c_int)
@@ -631,7 +650,10 @@ class pyrHOG:
         if not(small):
             self.starti=self.interv*(len(ww)-1)
         else:
-            self.starti=0
+            if type(small)==bool:
+                self.starti=0
+            else:
+                self.starti=self.interv*(len(ww)-1-small)
         from time import time
         for i in range(self.starti,len(self.hog)):
             samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(c_int)
@@ -714,7 +736,10 @@ class pyrHOG:
         if not(small):
             self.starti=self.interv*(len(ww)-1)
         else:
-            self.starti=0
+            if type(small)==bool:
+                self.starti=0
+            else:
+                self.starti=self.interv*(len(ww)-1-small)
         from time import time
         for i in range(self.starti,len(self.hog)):
             samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(c_int)
@@ -802,7 +827,10 @@ class pyrHOG:
         if not(small):
             self.starti=self.interv*(len(ww)-1)
         else:
-            self.starti=0
+            if type(small)==bool:
+                self.starti=0
+            else:
+                self.starti=self.interv*(len(ww)-1-small)
         from time import time
         #self.starti=19 #just for debug!!!!!!!
         for i in range(self.starti,len(self.hog)):

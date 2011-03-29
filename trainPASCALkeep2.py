@@ -236,11 +236,11 @@ if __name__=="__main__":
                 {"name":"nexratio[-1]","txt":"Ratio Examples: "},
                 {"name":"posratio[-1]","txt":"Ratio Pos loss: "}])
 
-    stpos=stats([{"name":"output","txt":"Not changed"},
-                {"name":"negratio[-1]","txt":"Good Change"},
-                {"name":"nexratio[-1]","txt":"Keep old scr"},
-                {"name":"posratio[-1]","txt":"Keep old bbox"},
-                {"name":"posratio[-1]","txt":"Not used"}])
+    stpos=stats([{"name":"cntadded","txt":"Added"},
+                {"name":"cntnochange","txt":"No Change"},
+                {"name":"cntgoodchnage","txt":"Good Change"},
+                {"name":"cntkeepoldscr","txt":"Keep old scr"}])
+
 
     #trPosImages=InriaPosData(basepath="/home/databases/")
     #trNegImages=InriaNegData(basepath="/home/databases/")
@@ -485,7 +485,7 @@ if __name__=="__main__":
                 if nfuse!=[]:
                     print "Added %d examples!"%(len(nfuse))
                     dtrpos[imname]=nfuse
-                    cntadded+=1
+                    cntadded+=len(nfuse)
                 else:
                     print "Example not used!"
                 #else:
@@ -609,6 +609,7 @@ if __name__=="__main__":
         print "Keep old bbox",cntkeepoldbb
         print "Not used",cntnotused
         print "Total:",cntnochange+cntgoodchnage+cntkeepoldscr+cntkeepoldbb+cntnotused+cntadded
+        stpos.report(cfg.testname+".rpt.txt","a","Positive Datamaining")
         #raw_input()
 
         if it>0:
@@ -877,10 +878,29 @@ if __name__=="__main__":
                         pylab.savefig("%s_def%d_cl%d.png"%(testname,it,idm))
 
             sts.report(testname+".rpt.txt","a","Before Filtering")
+            #sort based on score
+            #sort=True
+            if cfg.sortneg:
+                order=[]
+                for p,d in enumerate(trneg):
+                    order.append(numpy.dot(buildense([d],[trnegcl[p]],cumsize)[0],w))
+                order=numpy.array(order)
+                sorder=numpy.argsort(order)
+            strneg=[]
+            strnegcl=[]
+            for p in sorder:
+                strneg.append(trneg[p])
+                strnegcl.append(trnegcl[p])
+            trneg=strneg
+            trnegcl=strnegcl
+            #else:
+            #    sorder=range(len(trneg))
+
             print "Filter Data"
             print "Length before:",len(trneg)
             for p,d in enumerate(trneg):
-                aux=buildense([d],[trnegcl[p]],cumsize)[0]
+            #for p in sorder:
+                aux=buildense([trneg[p]],[trnegcl[p]],cumsize)[0]
                 if numpy.sum(aux*w)<-1:
                     if len(trneg)+len(trpos)>(cfg.maxexamples)/2:
                         trneg.pop(p)

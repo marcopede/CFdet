@@ -7,7 +7,7 @@
 #define INFINITY 10000
 //#define k 0.3
 
-static k=0.3;
+static k=1.0;
 
 void setK(ftype pk)
 {

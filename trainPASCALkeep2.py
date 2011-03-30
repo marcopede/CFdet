@@ -159,11 +159,11 @@ def myunique(old,new,oldcl,newcl,numcl):
 def extract_feat(tr,dtrpos,cumsize):
     ls=[];lscl=[]
     for el in dtrpos:
-        aux=(tr.descr(dtrpos[el],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather))
+        aux=(tr.descr(dtrpos[el],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k))
         ls+=aux
         auxcl=tr.mixture(dtrpos[el])
         lscl+=auxcl
-        ls+=(tr.descr(dtrpos[el],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather))
+        ls+=(tr.descr(dtrpos[el],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k))
         lscl+=tr.mixture(dtrpos[el])
         if cumsize!=None:
             dns=buildense(aux,auxcl,cumsize)
@@ -471,15 +471,15 @@ if __name__=="__main__":
             nfuse=tr.cluster(rfuse,ovr=cfg.ovrasp)
             nfuseneg=tr.cluster(rfuseneg,ovr=cfg.ovrasp)
             imname=arg[ii][1].split("/")[-1]
-            ineg=tr.descr(nfuseneg,flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather)
-            inegflip=tr.descr(nfuseneg,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)
+            ineg=tr.descr(nfuseneg,flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
+            inegflip=tr.descr(nfuseneg,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
             newtrneg+=ineg
             newtrneg+=inegflip
             newtrnegcl+=tr.mixture(nfuseneg)     
             newtrnegcl+=tr.mixture(nfuseneg)     
             if it==0:
-                ipos=tr.descr(nfuse,flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather)
-                iposflip=tr.descr(nfuse,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)
+                ipos=tr.descr(nfuse,flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
+                iposflip=tr.descr(nfuse,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
                 poscl=tr.mixture(nfuse)
                 #if trpos.has_key(imname):
                 if nfuse!=[]:
@@ -509,7 +509,7 @@ if __name__=="__main__":
                             for idold,dtold in enumerate(dtrpos[imname]):
                                 if dt["bbid"]==dtold["bbid"]:
                                     exmatch=True
-                                    aux=tr.descr([dtold],usemrf=cfg.usemrf,usefather=cfg.usefather)[0]
+                                    aux=tr.descr([dtold],usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
                                     auxcl=tr.mixture([dtold])[0]
                                     dns=buildense([aux],[auxcl],cumsize)
                                     oldscr=numpy.sum(dns*w)-r
@@ -550,7 +550,7 @@ if __name__=="__main__":
             #check score
             if (nfuse!=[] and not(nfuse[0].has_key("notfound")) and it>0):
                 #if cfg.deform:
-                aux=tr.descr(nfuse,usemrf=cfg.usemrf,usefather=cfg.usefather)[0]
+                aux=tr.descr(nfuse,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
                 #else:
                 #    aux=tr.descr(nfuse)[0]
                 auxcl=tr.mixture(nfuse)[0]
@@ -564,7 +564,7 @@ if __name__=="__main__":
             #check score
             if (nfuseneg!=[] and it>0):
                 if cfg.deform:
-                    aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather)[0]
+                    aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
                 else:
                     aux=tr.descr(nfuseneg)[0]
                 auxcl=tr.mixture(nfuseneg)[0]
@@ -574,7 +574,7 @@ if __name__=="__main__":
                 if abs(nfuseneg[0]["scr"]-dscr)>0.0001:
                     print "Warning: the two scores must be the same!!!"
                     print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
-                    #raw_input()
+                    raw_input()
             if cfg.show:
                 pylab.figure(20)
                 pylab.ioff()
@@ -722,7 +722,7 @@ if __name__=="__main__":
                     nfuseneg=tr.cluster(rfuseneg,ovr=cfg.ovrasp)
                     #if cfg.deform:
                     #trpos+=tr.descr(nfuse,usemrf=cfg.usemrf,usefather=cfg.usefather)         
-                    newtrneg+=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather)
+                    newtrneg+=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
                     #else:
                     #trpos+=tr.descr(nfuse)         
                     #    newtrneg+=tr.descr(nfuseneg)
@@ -737,7 +737,7 @@ if __name__=="__main__":
                     #    trposcl+=tr.mixture(nfuse)
                     if cfg.useflineg:
                         if cfg.deform:
-                            inegflip=tr.descr(nfuseneg,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)
+                            inegflip=tr.descr(nfuseneg,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
                         else:
                             inegflip=tr.descr(nfuseneg,flip=True)
                         newtrneg+=inegflip
@@ -745,7 +745,7 @@ if __name__=="__main__":
                     #check score
                     if (nfuseneg!=[] and nit>0):
                         if cfg.deform:
-                            aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather)[0]
+                            aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
                         else:
                             aux=tr.descr(nfuseneg)[0]
                         auxcl=tr.mixture(nfuseneg)[0]
@@ -754,7 +754,7 @@ if __name__=="__main__":
                         if abs(nfuseneg[0]["scr"]-dscr)>0.0001:
                             print "Warning: the two scores must be the same!!!"
                             print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
-                            #raw_input()
+                            raw_input()
 
                     print "----Neg Image %d----"%ii
                     print "Pos:",0,"Neg:",len(nfuseneg)

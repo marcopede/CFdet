@@ -74,8 +74,8 @@ ff.setK(K)
 def setK(pk):
     ff.setK(pk)    
 
-def setDENSE(d):
-    DENSE=d    
+#def setDENSE(d):
+#    DENSE=d    
 
 def hog(img,sbin=8):
     """
@@ -1129,7 +1129,7 @@ class Treat:
         for each response higher than the threshold execute doitobj.doit
         """
         det=[]
-        pylab.ioff()
+        #pylab.ioff()
         initr=self.sample
         for i in range(len(self.scr)):
             if len(self.scr)-i<dense:
@@ -1695,7 +1695,8 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         dettime=time.time()-t
         #print "Elapsed Time:",dettime
         #print "Number HOG:",numhog
-        tr.show(det,parts=showlabel,thr=-1.0,maxnum=5)           
+        if show==True:
+            tr.show(det,parts=showlabel,thr=-1.0,maxnum=5)           
         return tr,det,dettime,numhog
     else:
         t2=time.time()

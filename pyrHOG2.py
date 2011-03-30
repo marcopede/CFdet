@@ -14,7 +14,7 @@ import time
 #ccc=0
 
 DENSE=0
-K=1#0.3
+K=1.0#0.3
 
 from numpy import ctypeslib
 from ctypes import c_int,c_double,c_float

@@ -409,7 +409,7 @@ if __name__=="__main__":
     totPosEx*=2
     
     pyrHOG2.setK(cfg.k)
-    pyrHOG2.setDENSE(cfg.dense)
+    #pyrHOG2.setDENSE(cfg.dense)
     for it in range(cfg.posit):
         if last_round:
             print "Finished!!!!"

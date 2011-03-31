@@ -121,7 +121,7 @@ def detectWrap(a):
     f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.auxdir+"/hog/",notsave=not(cfg.savefeat),notload=not(cfg.loadfeat),hallucinate=cfg.hallucinate,cformat=True)
     res=[]
     for clm,m in enumerate(models):
-        res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,usefather=cfg.usefather,useprior=cfg.useprior,emptybb=False))
+        res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,usefather=cfg.usefather,useprior=cfg.useprior,emptybb=False,K=cfg.k))
     if cfg.show:
         pylab.show()
     return res
@@ -332,7 +332,7 @@ if __name__=="__main__":
         lfx.append(round(fx))
         print
 
-    raw_input()
+    #raw_input()
 
     cfg.fy=lfy#[7,10]#lfy
     cfg.fx=lfx#[11,7]#lfx
@@ -653,7 +653,7 @@ if __name__=="__main__":
             if newloss>oldloss:
                 output+="Warning increasing positive loss\n"
                 print output
-                ##raw_input()
+                raw_input()
             if (posratio[-1]<0.0001) and nexratio[-1]<0.01:
                 output+="Very small positive improvement: convergence at iteration %d!"%it
                 print output
@@ -886,13 +886,13 @@ if __name__=="__main__":
                     order.append(numpy.dot(buildense([d],[trnegcl[p]],cumsize)[0],w))
                 order=numpy.array(order)
                 sorder=numpy.argsort(order)
-            strneg=[]
-            strnegcl=[]
-            for p in sorder:
-                strneg.append(trneg[p])
-                strnegcl.append(trnegcl[p])
-            trneg=strneg
-            trnegcl=strnegcl
+                strneg=[]
+                strnegcl=[]
+                for p in sorder:
+                    strneg.append(trneg[p])
+                    strnegcl.append(trnegcl[p])
+                trneg=strneg
+                trnegcl=strnegcl
             #else:
             #    sorder=range(len(trneg))
 

@@ -71,6 +71,10 @@ ff.scanDef2.restype=ctypes.c_float
 ff.setK.argtypes = [c_float]
 ff.setK(K)
 
+ff.getK.argtypes = []
+ff.getK.restype = ctypes.c_float
+ff.setK(K)
+
 def setK(pk):
     ff.setK(pk)    
 
@@ -1633,13 +1637,14 @@ class TreatDef(Treat):
 
 import time
 
-def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False):
+def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0):
     """Detect objec in images
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
     """
     #f=pyrHOG2.pyrHOG(imname,interv=10,savedir=auxdir+"/hog/",notsave=False,hallucinate=hallucinate,cformat=True)
     #print "Scanning"
+    ff.setK(K)#set the degree of deformation
     if useprior:
         numrank=200
     else:

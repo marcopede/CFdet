@@ -31,7 +31,7 @@ def detectWrap(a):
     else:
         gtbbox=None
     f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.savedir+"/hog/",notload=not(cfg.loadfeat),notsave=not(cfg.savefeat),hallucinate=cfg.hallucinate,cformat=True)
-    res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,posovr=cfg.posovr,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,inclusion=cfg.inclusion,small=cfg.small,show=cfg.show,usefather=cfg.usefather,useprior=cfg.useprior,nms=cfg.ovr)
+    res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,posovr=cfg.posovr,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,inclusion=cfg.inclusion,small=cfg.small,show=cfg.show,usefather=cfg.usefather,useprior=cfg.useprior,nms=cfg.ovr,K=cfg.k)
     if cfg.show:
         pylab.show()
 #        raw_input()

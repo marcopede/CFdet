@@ -14,6 +14,11 @@ void setK(ftype pk)
     k=pk;
 }
 
+ftype getK()
+{
+    return k;
+}
+
 static compHOG=0; //number of HOG computed
 
 void resetHOG()
@@ -242,6 +247,7 @@ inline ftype refineighfull(ftype *img,int imgy,int imgx,ftype *mask,int masky,in
     int iy,ix;  
     ftype val,maxval=-1000;
     //printf("dy:%d,dx:%d",rady,radx);
+    //printf("k=%f",k);
     for (iy=-rady;iy<=rady;iy++)
     {
         for (ix=-radx;ix<=radx;ix++)

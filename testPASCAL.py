@@ -25,7 +25,7 @@ if __name__=="__main__":
     if len(sys.argv)>2:
         it=int(sys.argv[2])
     #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
-    testname="./data/11_03_23/%s%d_keepdef"%(cfg.cls,cfg.numcl)
+    testname="./data/11_03_29/%s%d_noneginpos"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
     #cfg.mpos=1
@@ -46,6 +46,7 @@ if __name__=="__main__":
         cfg.multipr=8
     cfg.savefeat=False
     cfg.loadfeat=False
+    #cfg.inclusion=True
     cfg.thr=-2
     cfg.auxdir="/home/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"
     #cfg.test=True
@@ -121,7 +122,7 @@ if __name__=="__main__":
     rc,pr,ap=VOCpr.drawPrfast(tp,fp,tot)
     pylab.draw()
     pylab.show()
-    #pylab.savefig("%s_ap%d_test%s%.1f.png"%(testname,it,select,cfg.mythr))
+    pylab.savefig("%s_ap%d_test%s%.1f.png"%(testname,it,select,cfg.mythr))
     tottime=((time.time()-initime))
     print "Threshold used:",cfg.mythr
     print "Total number of HOG:",numhog

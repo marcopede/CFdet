@@ -5,20 +5,22 @@ import config
 
 cfg=config.cfg
 
-cfg.multipr=4
+cfg.multipr=5
 cfg.savefeat=False
-cfg.savedir=""#"/state/partition1/marcopede/INRIA/hog/"
+cfg.loadfeat=False
+cfg.savedir="Nothing"#"/state/partition1/marcopede/INRIA/hog/"
 
-#cfg.dbpath = "/share/ISE/marcopede/database/" #database path
-cfg.dbpath = "/home/databases/" #database path
-cfg.maxpos=100 #maximum number of positive images
-cfg.maxtest=100 #maximum number of test images
-cfg.maxneg=100 #maximum number of negative images
-cfg.maxexamples=1000 #maximum number of examples
+#cfg.dbpath = "/state/partition1/marcopede/"#"/share/ISE/marcopede/database/" #database path
+cfg.dbpath = "/share/ISE/marcopede/database/" #database path
+#cfg.dbpath = "/home/databases/" #database path
+cfg.maxpos=2000 #maximum number of positive images
+cfg.maxtest=2000 #maximum number of test images
+cfg.maxneg=200 #maximum number of negative images
+cfg.maxexamples=20000 #maximum number of examples
 
 cfg.deform=True
 cfg.usemrf=True
-cfg.usefather=True
+cfg.usefather=True#True
 cfg.bottomup=False
 cfg.initr=1
 cfg.ratio=1
@@ -26,24 +28,34 @@ cfg.ratio=1
 #additional for pascal
 cfg.lev=[3,3,3]
 cfg.numcl=2
-cfg.numneginpos=6/cfg.numcl #reduce the number of negatives
-cfg.svmc=0.005#0.002#0.004
+cfg.numneginpos=0#6/cfg.numcl #reduce the number of negatives
+cfg.svmc=0.005#0.005#0.002#0.004
 cfg.cls="bicycle"
 cfg.year="2007"
-cfg.thr=-2      #threshold positives
+cfg.thr=-3      #threshold positives
 cfg.mythr=-10   #threshold cascade
+cfg.posovr=0.65#0.5#0.65#0.65 
+cfg.posit=8
+cfg.negit=10
+cfg.useprior=False
+cfg.perc=0.10
+cfg.k=0.3
+cfg.small=False
+cfg.dense=0
+cfg.ovrasp=0.3
+cfg.sortneg=True
 
-cfg.comment    ="Nothing to say"
+cfg.comment    ="nothing"
 #cfg.testname="./data/11_02_28/iria_full" #location of the current test
-#cfg.testname="./data/11_03_02/%s_%d_test"%(cfg.cls,cfg.numcl)
-cfg.testpath="./data/11_03_10/"
-cfg.testspec="hres"
+#cfg.testname="./data/11_03_11/%s_%d_2levnodef"%(cfg.cls,cfg.numcl)
+cfg.testpath="./data/final3/"
+cfg.testspec="test"
 
-cfg.debug = True #debug mode
+cfg.debug = False#debug mode
 
 if cfg.debug:
     cfg.show=True
-    cfg.multipr=False#2
+    cfg.multipr=8#2
     cfg.maxpos=10#120
     cfg.maxtest=10#100
     cfg.maxneg=10#120

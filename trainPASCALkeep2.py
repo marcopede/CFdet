@@ -497,6 +497,13 @@ if __name__=="__main__":
             else:
                 nb=len(nfuse)
                 #dns=buildense(ipos,poscl,cumsize)
+                print "Old scores:"
+                if dtrpos.has_key(imname):
+                    print [(x["bbid"],x["scr"]) for x in dtrpos[imname]]
+                else:
+                    print "No example in image"
+                print "Detection scores:"
+                print [(x["bbid"],x["scr"]) for x in nfuse]
                 for idel,dt in enumerate(nfuse):
                     #print "BBox:",numbb
                     if dt!=[] and not(dt.has_key("notfound")): #if got a detection for the bbox
@@ -516,6 +523,7 @@ if __name__=="__main__":
                                     print "New:",dt["scr"],"Old",oldscr
                                     if abs(dt["scr"]-oldscr)<0.0001:
                                         print "No change between old and new labeling! (%f)"%(dt["scr"])
+                                        dtrpos[imname][idold]["scr"]=oldscr
                                         cntnochange+=1
                                     elif dt["scr"]-oldscr>0:
                                         print "New score (%f) higher than previous (%f)!"%(dt["scr"],oldscr)
@@ -524,6 +532,7 @@ if __name__=="__main__":
                                         dtrpos[imname][idold]=dt
                                     else:
                                         print "Keep old example (%f) because better score than new (%f)!"%(oldscr,dt["scr"])                      
+                                        dtrpos[imname][idold]["scr"]=oldscr                                        
                                         cntkeepoldscr+=1     
                                     
                             if not(exmatch):    
@@ -544,6 +553,12 @@ if __name__=="__main__":
                             cntnotused+=1
                 numbb+=len(nfuse)*2
                 #raw_input()    
+                print "New Scores:"
+                if dtrpos.has_key(imname):
+                    print [(x["bbid"],x["scr"]) for x in dtrpos[imname]]
+                else:
+                    print "No example in image"
+                #raw_input()
             print "----Pos Image %d(%s)----"%(ii,imname)
             print "Pos:",len(nfuse),"Neg:",len(nfuseneg)
             print "Tot Pos:",len(dtrpos)," Neg:",len(trneg)+len(newtrneg)
@@ -965,7 +980,7 @@ if __name__=="__main__":
         tinit=((time.time()-initime)/3600.0)
         tpar=((time.time()-partime)/3600.0)
         print "AP(it=",it,")=",ap
-        print "Training Time: %.3f h"%((tinit)/3600.0)
+        print "Training Time: %.3f h"%(tinit)
         rpres.report(testname+".rpt.txt","a","Results")
 
 

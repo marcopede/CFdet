@@ -1054,32 +1054,32 @@ class Treat:
     def doalltrain(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,posovr=0.5,numpos=1,numneg=10,minnegovr=0,minnegincl=0,cl=0,emptybb=False):
         t=time.time()
         self.det=self.select_fast(thr,cl=cl)
-        print "Select time:",time.time()-t
+        #print "Select time:",time.time()-t
         #if gtbbox!=[]:# select only over the positive gtbbox
         #    self.det=self.filter_pos(self.det,gtbbox)
         #    pr=self.f.buildPrior(gtbbox,self.fy,self.fx)
         t=time.time()
         self.det=self.rank_fast(self.det,rank,cl=cl) 
-        print "Rank time:",time.time()-t
+        #print "Rank time:",time.time()-t
         if refine:
             t=time.time()
             self.det=self.refine(self.det)
-            print "Refine time:",time.time()-t
+        #    print "Refine time:",time.time()-t
         t=time.time()
         self.det=self.bbox(self.det)
-        print "BBox time:",time.time()-t
+        #print "BBox time:",time.time()-t
         #self.show(self.det,colors=["g"],thr=0.01)
         #print [x["scr"] for x in self.det]
         #pylab.show()
         #raw_input()
         t=time.time()
         self.best,self.worste=self.getbestworste(self.det,gtbbox,numpos=numpos,numneg=numneg,mpos=mpos,posovr=posovr,minnegovr=minnegovr,minnegincl=minnegincl,emptybb=emptybb)
-        print "Bestworse time:",time.time()-t
+        #print "Bestworse time:",time.time()-t
         if rawdet:
             t=time.time()
             self.best=self.rawdet(self.best)
             self.worste=self.rawdet(self.worste)
-            print "Raw Det time:",time.time()-t
+        #    print "Raw Det time:",time.time()-t
         #show="Parts" maybe it produces the increase of memory
         if show:
             self.show(self.best,colors=["b"])

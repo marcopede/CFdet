@@ -172,7 +172,7 @@ if __name__=="__main__":
 
 #    util.save(testname+".cfg",cfg)
     pyrHOG2.K=cfg.k
-    pyrHOG2.dense=cfg.dense
+    #pyrHOG2.dense=cfg.dense
 
     if cfg.multipr==1:
         numcore=None
@@ -236,7 +236,7 @@ if __name__=="__main__":
     mpos=0#0.5
     oldprloss=numpy.zeros((0,6))
     pyrHOG2.setK(cfg.k)
-    pyrHOG2.setDENSE(cfg.dense)
+    #pyrHOG2.setDENSE(cfg.dense)
     for it in range(cfg.posit):
         lenoldtrpos=len(trpos)
         trpos=[]
@@ -261,12 +261,12 @@ if __name__=="__main__":
         for ii,res in enumerate(itr):
         #res=it.next()
             tr=res[0]
-            ipos=tr.descr(res[1],usemrf=cfg.usemrf,usefather=cfg.usefather)         
+            ipos=tr.descr(res[1],usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)         
             trpos+=ipos
-            ineg=tr.descr(res[2],usemrf=cfg.usemrf,usefather=cfg.usefather)
+            ineg=tr.descr(res[2],usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
             newtrneg+=ineg
-            trpos+=tr.descr(res[1],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)         
-            newtrneg+=tr.descr(res[2],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)
+            trpos+=tr.descr(res[1],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)         
+            newtrneg+=tr.descr(res[2],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
             #trpos+=res[3]
             #newtrneg+=res[4]
             if (it>0 and ipos!=[]):
@@ -351,9 +351,9 @@ if __name__=="__main__":
                     tr=res[0]
                     #trpos+=tr.descr(res[1],usemrf=cfg.usemrf,usefather=cfg.usefather)         
                     #newtrneg+=tr.descr(res[2],usemrf=cfg.usemrf,usefather=cfg.usefather)
-                    ineg=tr.descr(res[2],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather)         
+                    ineg=tr.descr(res[2],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)         
                     newtrneg+=ineg
-                    newtrneg+=tr.descr(res[2],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather)
+                    newtrneg+=tr.descr(res[2],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
                     #trpos+=res[3]#not necessary cause no positives
                     #newtrneg+=res[4]
                     if ((nit>0 or it>0) and ineg!=[]):

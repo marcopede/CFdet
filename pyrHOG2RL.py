@@ -83,9 +83,11 @@ class TreatRL(pyrHOG2.Treat):
         for item in det:
             d=numpy.array([])
             if item["rl"]==1:
-                flip=not(flip)
+                auxflip=not(flip)
+            else:
+                auxflip=flip
             for l in range(len(item["feat"])):
-                if not(flip):
+                if not(auxflip):
                     aux=item["feat"][l]
                     #print "No flip",aux.shape
                 else:
@@ -156,10 +158,12 @@ class TreatDefRL(pyrHOG2.TreatDef):#not complete
         for item in det:
             #if item!=[] and not(item.has_key("notfound")):
             if item["rl"]==1:
-                flip=not(flip)
+                auxflip=not(flip)
+            else:
+                auxflip=flip
             d=numpy.array([])
             for l in range(len(item["feat"])):
-                if not(flip):
+                if not(auxflip):
                     d=numpy.concatenate((d,item["feat"][l].flatten()))       
                     if l>0: #skip deformations level 0
                         if usefather:

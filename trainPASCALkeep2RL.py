@@ -213,11 +213,13 @@ def extract_feat2(tr,dtrpos,cumsize,useRL):
 def loss_pos(trpos,trposcl,cumsize):
     dns=buildense(trpos,trposcl,cumsize)
     loss=0
+    lscr=[]
     for l in dns:
         scr=numpy.sum(l*w)
         print "Scr:",scr
         loss+=max(0,1-scr)
-    return loss
+        lscr.append(scr)
+    return loss,lscr
 
 if __name__=="__main__":
 
@@ -513,7 +515,7 @@ if __name__=="__main__":
             if not(cfg.useRL):
                 inegflip=tr.descr(nfuseneg,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
                 newtrneg+=inegflip
-            newtrnegcl+=tr.mixture(nfuseneg)     
+                newtrnegcl+=tr.mixture(nfuseneg)     
             newtrnegcl+=tr.mixture(nfuseneg)     
             if it==0:
                 #ipos=tr.descr(nfuse,flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
@@ -523,7 +525,7 @@ if __name__=="__main__":
                 #if trpos.has_key(imname):
                 if nfuse!=[]:
                     print "Added %d examples!"%(len(nfuse))
-                    dtrpos[imname]=nfuse
+                    dtrpos[imname]=nfuse#[:]
                     cntadded+=len(nfuse)
                 else:
                     print "Example not used!"
@@ -541,34 +543,46 @@ if __name__=="__main__":
                     if dt!=[] and not(dt.has_key("notfound")): #if got a detection for the bbox
                         if not(dtrpos.has_key(dt["img"])): 
                             print "Added example previuosly empty!"
-                            dtrpos[imname]=[dt]
+                            dtrpos[imname]=[dt]#copy.deepcopy(dt)]
                             cntadded+=1
                         else:
                             exmatch=False
+                            print "DET BB ID:",dt["bbid"]
                             for idold,dtold in enumerate(dtrpos[imname]):
                                 if dt["bbid"]==dtold["bbid"]:
+                                    print "OLD BB ID:",dtold["bbid"]
                                     exmatch=True
-                                    aux=tr.descr([dtold],usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
+                                    aux=tr.descr([dtold],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
                                     auxcl=tr.mixture([dtold])[0]
                                     dns=buildense([aux],[auxcl],cumsize)
-                                    oldscr=numpy.sum(dns*w)-r
+                                    oldscr=numpy.sum(dns*w)#-r
+                                    dtaux=tr.descr([dt],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
+                                    dtauxcl=tr.mixture([dt])[0]
+                                    dtdns=buildense([dtaux],[dtauxcl],cumsize)
+                                    newscr=numpy.sum(dtdns*w)#-r
+                                    if abs(newscr-dt["scr"])>0.0001:
+                                        print "Warning dense score and scan score are different!!!!"
+                                        raw_input() 
                                     print "New:",dt["scr"],"Old",oldscr
                                     if abs(dt["scr"]-oldscr)<0.0001:
                                         print "No change between old and new labeling! (%f)"%(dt["scr"])
                                         cntnochange+=1
+                                        dtrpos[imname][idold]["scr"]=oldscr
                                     elif dt["scr"]-oldscr>0:
                                         print "New score (%f) higher than previous (%f)!"%(dt["scr"],oldscr)
                                         cntgoodchnage+=1
                                         #dtold=dt
-                                        dtrpos[imname][idold]=dt
+                                        dtrpos[imname][idold]=dt#copy.deepcopy(dt)
+                                        #dtrpos[imname][idold]["dns"]=dtdns
                                     else:
                                         print "Keep old example (%f) because better score than new (%f)!"%(oldscr,dt["scr"])                      
                                         cntkeepoldscr+=1     
+                                        dtrpos[imname][idold]["scr"]=oldscr
                                     
                             if not(exmatch):    
                                 print "Added example!"
                                 cntadded=0
-                                dtrpos[imname].append(dt)
+                                dtrpos[imname].append(dt)#copy.deepcopy(dt))
                     else: #or skip and keep the old
                         if dtrpos.has_key(imname):
                             for ll in dtrpos[imanme]:
@@ -632,15 +646,23 @@ if __name__=="__main__":
         #trposcl=remove_empty(fulltrposcl)
         numoldtrpos=len(trpos)
         if it>0:
-            moldloss=loss_pos(trpos,trposcl,cumsize)
+            moldloss,oldscr=loss_pos(trpos,trposcl,cumsize)
         else:
             moldloss=1
         oldtrpos=trpos;oldtrposcl=trposcl
         trpos,trposcl=extract_feat(tr,dtrpos,cumsize,cfg.useRL)
         if it>0:
-            mnewloss=loss_pos(trpos,trposcl,cumsize)
+            mnewloss,newscr=loss_pos(trpos,trposcl,cumsize)
         else:
             mnewloss=0
+        if it>0:
+            oldscr=numpy.array(oldscr)
+            newscr=numpy.array(newscr)
+            if len(oldscr)==len(newscr):
+                if numpy.any(newscr-oldscr)<0:
+                    print "Error, score is decreasing"
+                    print newscr-oldscr
+
         print "Added",cntadded
         print "No change",cntnochange
         print "Good change",cntgoodchnage
@@ -653,6 +675,7 @@ if __name__=="__main__":
 
         #if it==0 and cfg.kmeans:#clustering for LR
         if it==0 and cfg.kmeans:#clustering for LR
+            trpos=[];trposcl=[]
             trpos2,trposcl2=extract_feat2(tr,dtrpos,cumsize,False)
             for l in range(numcl):
                 mytrpos=[]            
@@ -662,7 +685,7 @@ if __name__=="__main__":
                 mytrpos=numpy.array(mytrpos)
                 cl1=range(0,len(mytrpos),2)
                 cl2=range(1,len(mytrpos),2)
-                for rr in range(10*len(mytrpos)):
+                for rr in range(3*len(mytrpos)):
                     #print "Clustering iteration ",rr
                     oldvar=numpy.sum(numpy.var(mytrpos[cl1],0))+numpy.sum(numpy.var(mytrpos[cl2],0))
                     #print "Variance",oldvar
@@ -681,10 +704,10 @@ if __name__=="__main__":
                         cl2[rel]=tmp
                     else:
                         print "Variance",newvar
+                print "Elements Cluster ",l,": ",len(cl1)
                 trpos+=(mytrpos[cl1]).tolist()
                 trposcl+=([l]*len(cl1))
                     
-
         if it>0:
             
             lambd=1.0/(len(trpos)*cfg.svmc)
@@ -788,7 +811,7 @@ if __name__=="__main__":
                     #        iposflip=tr.descr(nfuse,flip=True)
                     #    trpos+=iposflip
                     #    trposcl+=tr.mixture(nfuse)
-                    if cfg.useflineg and cfg.useRL:
+                    if cfg.useflineg and not(cfg.useRL):
                         if cfg.deform:
                             inegflip=tr.descr(nfuseneg,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
                         else:

@@ -21,11 +21,11 @@ if __name__=="__main__":
     import sys
     if len(sys.argv)>1:
         cfg.cls=sys.argv[1]
-    cfg.numcl=2
+    cfg.numcl=1
     if len(sys.argv)>2:
         it=int(sys.argv[2])
     #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
-    testname="./data/11_03_23/%s%d_keepdef"%(cfg.cls,cfg.numcl)
+    testname="./data/11_03_28/%s%d_1aspect_last_sort"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
     #cfg.mpos=1
@@ -36,6 +36,7 @@ if __name__=="__main__":
     else:
         select="all"
     #cfg.bottomup=False
+    cfg.small=1
     #cfg.year="2007"
     cfg.maxtest=5000
     #cfg.initr=0
@@ -59,7 +60,10 @@ if __name__=="__main__":
     mypool = Pool(numcore)
     
     if cfg.cls=="inria":
-        tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),5000)
+        if select=="pos":
+            tsImages=getRecord(InriaTestData(basepath=cfg.dbpath),5000)
+        else:
+            tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),5000)
     else:
         tsImages=getRecord(VOC07Data(select=select,cl="%s_test.txt"%cfg.cls,
                     basepath=cfg.dbpath,#"/home/databases/",
@@ -128,9 +132,9 @@ if __name__=="__main__":
     print "AP(it=",it,")=",ap
     print "Testing Time: %.3f s"%tottime#/3600.0)
     results={"det":detlist,"ap":ap,"tp":tp,"fp":fp,"pr":pr,"rc":rc,"numhog":numhog,"mythr":cfg.mythr,"time":tottime}
-    #util.savemat("%s_ap%d_test_thr_%.3f.mat"%(testname,it,cfg.mythr),results)
+    util.savemat("%s_ap%d_test_thr_%.3f.mat"%(testname,it,cfg.mythr),results)
     #util.save("%s_ap%d_test_thr_%.3f.dat"%(testname,it,cfg.mythr),results)
-    util.savedetVOC(detlist,"%s_ap%d_test_thr_%.3f.txt"%(testname,it,cfg.mythr))
+    #util.savedetVOC(detlist,"%s_ap%d_test_thr_%.3f.txt"%(testname,it,cfg.mythr))
     fd=open("%s_ap%d_test%s.txt"%(testname,it,select),"a")
     fd.write("Threshold used:%f\n"%cfg.mythr)
     fd.write("Total number of HOG:%d\n"%numhog)

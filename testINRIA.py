@@ -46,8 +46,8 @@ class config(object):
 #testname="./data/test3_11/CVPR11_usefahter";it=6
 #testname="./data/INRIA/testTDnoMRFright";it=9
 #testname="./data/CVPR/bottomup";it=9
-#testname="./data/11_02_26/inria_both";it=10
-testname="./data/11_03_28/inria_normal";it=7
+testname="./data/11_02_26/inria_both";it=10
+#testname="./data/11_03_28/inria1_1aspect_last_sort";it=6
 import sys
 if len(sys.argv)>1:
     it=int(sys.argv[1])
@@ -57,13 +57,14 @@ cfg.maxtest=1000#100
 cfg.numneg=1000
 cfg.ovr=0.5
 cfg.thr=-2
+cfg.k=1.0
 #cfg.deform=True
 #cfg.bottomup=True
 cfg.loadfeat=False
 cfg.savefeat=False
 #cfg.usemrf=True#False#True#da togliere
 #cfg.ratio=1#datogliere
-cfg.multipr=4
+cfg.multipr=8
 cfg.inclusion=False
 #cfg.nms=0.5
 cfg.posovr=0
@@ -84,7 +85,8 @@ pyrHOG2.DENSE=0
 #cfg.hallucinate=
 #cfg.thr=-2
 
-tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
+#tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
+tsImages=getRecord(InriaTestData(basepath=cfg.dbpath),cfg.maxtest)
 
 m=util.load("%s%d.model"%(testname,it))
 
@@ -129,7 +131,7 @@ mypool.close()
 tp,fp,scr,tot=VOCpr.VOCprRecord(tsImages,detlist,show=False,ovr=0.5)#solved a problem that was giving around 1-2 point less
 pylab.figure(16)
 pylab.clf()
-fppi,miss,ap=VOCpr.drawMissRatePerImage(tp,fp,tot,740)
+fppi,miss,ap=VOCpr.drawMissRatePerImage(tp,fp,tot,len(tsImages))
 pylab.draw()
 pylab.show()
 pylab.figure(15)

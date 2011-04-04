@@ -686,7 +686,8 @@ if __name__=="__main__":
                 cl1=range(0,len(mytrpos),2)
                 cl2=range(1,len(mytrpos),2)
                 for rr in range(3*len(mytrpos)):
-                    #print "Clustering iteration ",rr
+                #for rr in range(1000):
+                    print "Clustering iteration ",rr
                     oldvar=numpy.sum(numpy.var(mytrpos[cl1],0))+numpy.sum(numpy.var(mytrpos[cl2],0))
                     #print "Variance",oldvar
                     #print "Var1",numpy.sum(numpy.var(mytrpos[cl1],0))

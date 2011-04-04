@@ -44,11 +44,14 @@ cfg.small=False
 cfg.dense=0
 cfg.ovrasp=0.3
 cfg.sortneg=True
+cfg.bestovr=False
+cfg.kmeans=True
+cfg.useRL=True
 
 cfg.comment    ="nothing"
 #cfg.testname="./data/11_02_28/iria_full" #location of the current test
 #cfg.testname="./data/11_03_11/%s_%d_2levnodef"%(cfg.cls,cfg.numcl)
-cfg.testpath="./data/final3/"
+cfg.testpath="./data/finalRL/"
 cfg.testspec="test"
 
 cfg.debug = False#debug mode

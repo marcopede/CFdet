@@ -1661,13 +1661,13 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         if bottomup:
             scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
         else:
-            #scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
+            scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
 ##            scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
-            scr,pos=f.scanRCFLprDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,pr=pr)
+            #scr,pos=f.scanRCFLprDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,pr=pr)
         tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"])
     else:
-##        scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
-        scr,pos=f.scanRCFLpr(m,initr=initr,ratio=ratio,small=small,pr=pr)
+        scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
+        #scr,pos=f.scanRCFLpr(m,initr=initr,ratio=ratio,small=small,pr=pr)
         tr=Treat(f,scr,pos,initr,m["fy"],m["fx"])
     numhog=f.getHOG()
     #for h in range(18,len(scr)):

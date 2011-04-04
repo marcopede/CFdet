@@ -11,40 +11,35 @@ import copy
 import itertools
 from trainPASCAL import *
 
-
-if __name__=="__main__":
-
+def loadcfg(place,name,cls,select):
     cfg=config()
-
-    cfg.cls="bicycle"
-    it=7
-    import sys
-    if len(sys.argv)>1:
-        cfg.cls=sys.argv[1]
-    cfg.numcl=1#2
-    if len(sys.argv)>2:
-        it=int(sys.argv[2])
+    #cfg.cls=cls#"bicycle"
+    cfg.numcl=2
+    #if len(sys.argv)>2:
+    #    it=int(sys.argv[2])
     #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
-    testname="./data/11_03_28/%s%d_1aspect_last_sort"%(cfg.cls,cfg.numcl)
-    #testname="./data/11_04_02/%s%d_RLrigth"%(cfg.cls,cfg.numcl)
+    #testname="./data/11_03_28/%s%d_1aspect_last_sort"%(cfg.cls,cfg.numcl)
+    testname="%s/%s%d_%s"%(place,cls,cfg.numcl,name)
+    cfg.testname=testname
+    import util
     cfg=util.load(testname+".cfg")
-    cfg.mythr=-10
+    try:
+        num=int(select)
+        cfg.maxtest=num
+        select="pos"
+    except (ValueError):
+        pass  
+  
+    cfg.select=select
+    #cfg.mythr=-10
     #cfg.mpos=1
-    estimate=False
-    if len(sys.argv)>3:
-        if cfg.mythr=="estimate":
-            cfg.mythr=-10
-            estimate=True
-        else:
-            cfg.mythr=float(sys.argv[3])
-    if len(sys.argv)>4:
-        select=sys.argv[4]
-    else:
-        select="all"
+    #if len(sys.argv)>3:
+    #    cfg.mythr=float(sys.argv[3])
+    #cfg.mythr=thr
     #cfg.bottomup=False
     cfg.small=1
     #cfg.year="2007"
-    cfg.maxtest=16#5000
+    #cfg.maxtest=16#5000
     #cfg.initr=0
     cfg.show=False
     if cfg.show:
@@ -55,17 +50,23 @@ if __name__=="__main__":
     cfg.loadfeat=False
     cfg.thr=-2
     cfg.auxdir="/home/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"
+    return cfg
+
+def test(thr,cfg):
+    
     #cfg.test=True
-    models=util.load("%s%d.model"%(testname,it))
     import util
+    it=7
+    models=util.load("%s%d.model"%(cfg.testname,it))
     w=[]
     rho=[]
-    for l in range(cfg.numcl):
-        w.append(util.ModeltoW(models[l],cfg.usemrf,cfg.usefather,cfg.k,lastlev=1))
-        rho.append(models[l]["rho"])
-    cfg.mythr=cfg.mythr*numpy.mean([numpy.sum(x**2) for x in w])#-numpy.mean(rho)
+    cfg.mythr=thr
+    #for l in range(cfg.numcl):
+    #    w.append(util.ModeltoW(models[l],cfg.usemrf,cfg.usefather,cfg.k,lastlev=1))
+    #    rho.append(models[l]["rho"])
+    #cfg.mythr=cfg.mythr*numpy.mean([numpy.sum(x**2) for x in w])#-numpy.mean(rho)
     #raw_input()    
-    cfg.mythr=cfg.mythr#-numpy.mean(rho)
+    #cfg.mythr=cfg.mythr#-numpy.mean(rho)
 
     if cfg.multipr==1:
         numcore=None
@@ -75,18 +76,19 @@ if __name__=="__main__":
     mypool = Pool(numcore)
     
     if cfg.cls=="inria":
-        if select=="pos":
+        if cfg.select=="pos":
             tsImages=getRecord(InriaTestData(basepath=cfg.dbpath),cfg.maxtest)
         else:
             tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
     else:
-        tsImages=getRecord(VOC07Data(select=select,cl="%s_test.txt"%cfg.cls,
+        tsImages=getRecord(VOC07Data(select=cfg.select,cl="%s_test.txt"%cfg.cls,
                     basepath=cfg.dbpath,#"/home/databases/",
                     usetr=True,usedf=False),cfg.maxtest)
         
     mypool = Pool(numcore)
  
     print "Test"
+    print "Pruning Threshold:",cfg.mythr
     numhog=0
     initime=time.time()
     detlist=[]
@@ -146,16 +148,75 @@ if __name__=="__main__":
     print "Total number of HOG:",numhog
     print "AP(it=",it,")=",ap
     print "Testing Time: %.3f s"%tottime#/3600.0)
-    results={"det":detlist,"ap":ap,"tp":tp,"fp":fp,"pr":pr,"rc":rc,"numhog":numhog,"mythr":cfg.mythr,"time":tottime}
-    util.savemat("%s_ap%d_test_thr_%.3f.mat"%(testname,it,cfg.mythr),results)
+    #results={"det":detlist,"ap":ap,"tp":tp,"fp":fp,"pr":pr,"rc":rc,"numhog":numhog,"mythr":cfg.mythr,"time":tottime}
+    #util.savemat("%s_ap%d_test_thr_%.3f.mat"%(cfg.testname,it,cfg.mythr),results)
     #util.save("%s_ap%d_test_thr_%.3f.dat"%(testname,it,cfg.mythr),results)
     #util.savedetVOC(detlist,"%s_ap%d_test_thr_%.3f.txt"%(testname,it,cfg.mythr))
-    fd=open("%s_ap%d_test%s.txt"%(testname,it,select),"a")
-    fd.write("Threshold used:%f\n"%cfg.mythr)
-    fd.write("Total number of HOG:%d\n"%numhog)
-    fd.write("Average precision:%f\n"%ap)
-    fd.write("Testing Time: %.3f s\n\n"%tottime)
-    fd.close()
+    #fd=open("%s_ap%d_test%s.txt"%(cfg.testname,it,select),"a")
+    #fd.write("Threshold used:%f\n"%cfg.mythr)
+    #fd.write("Total number of HOG:%d\n"%numhog)
+    #fd.write("Average precision:%f\n"%ap)
+    #fd.write("Testing Time: %.3f s\n\n"%tottime)
+    #fd.close()
+    return ap,numhog
 
 
+if __name__=="__main__":
+
+    import sys
+    if len(sys.argv)>1:
+        cls=sys.argv[1]
+
+    if len(sys.argv)>2:
+        select=sys.argv[2]
+    else:
+        select="all"
+    
+    cfg=loadcfg("./data/11_04_02","RLrigth",cls,select)
+    
+    lthr=[-2,2]
+    dap=[]
+    speed=[]
+    pmin=0
+    pmax=1
+    ap1,hog1=test(lthr[pmin],cfg)
+    ap2,hog2=test(lthr[pmax],cfg)
+    lap=[ap1,ap2]
+    lhog=[hog1,hog2]
+    nlhog=[]
+    gap=ap1-ap2
+    it=0
+    while (gap>(ap1-ap2)*0.1) and it<30:
+        it+=1
+        athr=(lthr[pmin]+lthr[pmax])/2.0
+        print "AP",lap
+        print "DELATAP",dap
+        print "THR",lthr
+        print "NHOG",nlhog
+        print "HOG",lhog
+        print "SPEEED",speed
+        print "New Thr",athr 
+        #raw_input()
+        ap,hog=test(athr,cfg)
+        lhog.insert(pmin+1,hog)
+        lap.insert(pmin+1,ap)
+        lthr.insert(pmin+1,athr)
+        pylab.figure(30)
+        nlhog=numpy.array(lhog)/float(lhog[0])
+        pylab.clf()
+        pylab.plot(lhog,lap,"-",lw=2)
+        pylab.figure(31)
+        speed=1.0/(nlhog)
+        pylab.clf()
+        pylab.semilogx(speed*12,lap,"-",lw=2)
+        pylab.xlim(0,200)
+        pylab.show()
+        print "Thr",athr 
+        #dap=[lap[idx-1]-x for idx,x in enumerate(lap[1:])]
+        dap=[lhog[idx-1]-x for idx,x in enumerate(lhog[1:])]
+        gap=numpy.max(dap)
+        pmin=numpy.argmax(dap)
+        pmax=pmin+1
+    
+    util.savemat(cfg.testname+"_speed.mat",{"AP":lap,"DAP":dap,"THR":lthr,"NHOG":nlhog,"HOG":lhog,"SPEED":speed})
 

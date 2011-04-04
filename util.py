@@ -181,6 +181,18 @@ def callproc(cfg,name,func,args=[],force=False,verbose=False):
     #return results
         return False
 
+def ModeltoW(model,usemrf,usefather,k,lastlev=0):
+    w=numpy.zeros(0,dtype=numpy.float32)
+    for l in range(len(model["ww"])-lastlev):
+        #print "here"#,item
+        w=numpy.concatenate((w,model["ww"][l].flatten()))
+        if usefather:
+            w=numpy.concatenate((w,model["df"][l][:,:,0].flatten()))        
+            w=numpy.concatenate((w,model["df"][l][:,:,1].flatten()))        
+        if usemrf:
+            w=numpy.concatenate((w,model["df"][l][:,:,2].flatten()))                
+            w=numpy.concatenate((w,model["df"][l][:,:,3].flatten()))                
+    return w
 
 def showresult(cfg,name,func,args=[],force=False,verbose=False):
     modname=cfg.tname+"."+name

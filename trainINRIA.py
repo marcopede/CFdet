@@ -241,10 +241,10 @@ if __name__=="__main__":
         lenoldtrpos=len(trpos)
         trpos=[]
         newtrneg=[]
-        if it==0:#force to take best overlapping
-            cfg.ratio=1#mpos=10
-        else:
-            cfg.ratio=1#mpos=0.5
+        #if it==0:#force to take best overlapping
+        #    cfg.ratio=1#mpos=10
+        #else:
+        #    cfg.ratio=1#mpos=0.5
         #trneg=[]#only for a test
         cfgpos=copy.copy(cfg)
         cfgpos.numneg=cfg.numneginpos

@@ -21,22 +21,18 @@ if __name__=="__main__":
     import sys
     if len(sys.argv)>1:
         cfg.cls=sys.argv[1]
-    cfg.numcl=1#2
+    cfg.numcl=2#2
     if len(sys.argv)>2:
         it=int(sys.argv[2])
     #testname="./data/11_02_26/%s_%d_comp_bias2"%(cfg.cls,cfg.numcl)
-    testname="./data/11_03_28/%s%d_1aspect_last_sort"%(cfg.cls,cfg.numcl)
+    testname="./data/finalRL/%s%d_test"%(cfg.cls,cfg.numcl)
     #testname="./data/11_04_02/%s%d_RLrigth"%(cfg.cls,cfg.numcl)
     cfg=util.load(testname+".cfg")
     cfg.mythr=-10
     #cfg.mpos=1
     estimate=False
     if len(sys.argv)>3:
-        if cfg.mythr=="estimate":
-            cfg.mythr=-10
-            estimate=True
-        else:
-            cfg.mythr=float(sys.argv[3])
+        cfg.mythr=float(sys.argv[3])
     if len(sys.argv)>4:
         select=sys.argv[4]
     else:
@@ -44,9 +40,10 @@ if __name__=="__main__":
     #cfg.bottomup=False
     cfg.small=1
     #cfg.year="2007"
-    cfg.maxtest=16#5000
+    #cfg.maxtest=16#5000
     #cfg.initr=0
     cfg.show=False
+    select="pos"
     if cfg.show:
         cfg.multipr=False
     else:
@@ -64,9 +61,9 @@ if __name__=="__main__":
     for l in range(cfg.numcl):
         w.append(util.ModeltoW(models[l],cfg.usemrf,cfg.usefather,cfg.k,lastlev=1))
         rho.append(models[l]["rho"])
-    cfg.mythr=cfg.mythr*numpy.mean([numpy.sum(x**2) for x in w])#-numpy.mean(rho)
+    #cfg.mythr=cfg.mythr*numpy.mean([numpy.sum(x**2) for x in w])#-numpy.mean(rho)
     #raw_input()    
-    cfg.mythr=cfg.mythr#-numpy.mean(rho)
+    #cfg.mythr=cfg.mythr#-numpy.mean(rho)
 
     if cfg.multipr==1:
         numcore=None

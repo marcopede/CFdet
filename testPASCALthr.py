@@ -9,7 +9,7 @@ import VOCpr
 import time
 import copy
 import itertools
-from trainPASCAL import *
+from trainPASCALkeep2RL import *
 
 def loadcfg(place,name,cls,select):
     cfg=config()
@@ -37,7 +37,8 @@ def loadcfg(place,name,cls,select):
     #    cfg.mythr=float(sys.argv[3])
     #cfg.mythr=thr
     #cfg.bottomup=False
-    cfg.small=1
+    cfg.maxtest=5000
+    cfg.small=False
     #cfg.year="2007"
     #cfg.maxtest=16#5000
     #cfg.initr=0
@@ -172,9 +173,16 @@ if __name__=="__main__":
     else:
         select="all"
     
-    cfg=loadcfg("./data/11_04_02","RLrigth",cls,select)
+    cfg=loadcfg("./data/finalRL","test",cls,select)
     
-    lthr=[-2,2]
+    if len(sys.argv)>3:
+        tmin=float(sys.argv[3])
+        tmax=float(sys.argv[4])
+    else:
+        tmin=-2
+        tmax=2        
+
+    lthr=[tmin,tmax]
     dap=[]
     speed=[]
     pmin=0
@@ -186,6 +194,10 @@ if __name__=="__main__":
     nlhog=[]
     gap=ap1-ap2
     it=0
+    bound1=lthr[0]
+    bound2=lthr[1]
+    bpos1=1
+    bpos2=1
     while (gap>(ap1-ap2)*0.1) and it<30:
         it+=1
         athr=(lthr[pmin]+lthr[pmax])/2.0
@@ -198,6 +210,12 @@ if __name__=="__main__":
         print "New Thr",athr 
         #raw_input()
         ap,hog=test(athr,cfg)
+        if ap>=ap1:
+            bound1=athr
+            bpos1=pmin
+        if ap<=ap2:
+            bound2=athr     
+            bpos2=pmin+1
         lhog.insert(pmin+1,hog)
         lap.insert(pmin+1,ap)
         lthr.insert(pmin+1,athr)
@@ -208,15 +226,21 @@ if __name__=="__main__":
         pylab.figure(31)
         speed=1.0/(nlhog)
         pylab.clf()
-        pylab.semilogx(speed*12,lap,"-",lw=2)
+        #pylab.semilogx(speed*12,lap,"-",lw=2)
+        pylab.plot(speed*12,lap,"-",lw=2)
         pylab.xlim(0,200)
         pylab.show()
         print "Thr",athr 
-        #dap=[lap[idx-1]-x for idx,x in enumerate(lap[1:])]
-        dap=[lhog[idx-1]-x for idx,x in enumerate(lhog[1:])]
-        gap=numpy.max(dap)
+        dap=[lap[idx]-lap[idx+1] for idx,x in enumerate(lap[1:])]
+        #dap=[lhog[idx-1]-x for idx,x in enumerate(lhog[1:])]
+        #dap=[lhog[idx]-x for idx,x in enumerate(lhog[1:])]
+        #dap=[]
+        #for idx,x in enumerate(lhog[1:]):
+        #    dap.append(lhog[idx-1]-lhog[idx])
+        #gap=numpy.max(dap[bpos1-1:bpos2])
         pmin=numpy.argmax(dap)
         pmax=pmin+1
-    
-    util.savemat(cfg.testname+"_speed.mat",{"AP":lap,"DAP":dap,"THR":lthr,"NHOG":nlhog,"HOG":lhog,"SPEED":speed})
+        print "Saving partial results!"
+        util.savemat(cfg.testname+"_speed.mat",{"AP":lap,"DAP":dap,"THR":lthr,"NHOG":nlhog,"HOG":lhog,"SPEED":speed,"BOUND":[bound1,bound2]})
+    print bound1,bound2
 

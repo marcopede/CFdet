@@ -46,8 +46,9 @@ class config(object):
 #testname="./data/test3_11/CVPR11_usefahter";it=6
 #testname="./data/INRIA/testTDnoMRFright";it=9
 #testname="./data/CVPR/bottomup";it=9
-testname="./data/11_02_26/inria_both";it=10
+#testname="./data/11_02_26/inria_both";it=10
 #testname="./data/11_03_28/inria1_1aspect_last_sort";it=6
+testname="./data/INRIA/inria_bothfull";it=6
 import sys
 if len(sys.argv)>1:
     it=int(sys.argv[1])
@@ -68,7 +69,7 @@ cfg.multipr=8
 cfg.inclusion=False
 #cfg.nms=0.5
 cfg.posovr=0
-cfg.dbpath="/home/databases/"
+cfg.dbpath="/home/marcopede/databases/"
 #cfg.auxdir="/state/partition1/marcopede/INRIA/"#InriaPosData(basepath="/home/databases/").getStorageDir()
 cfg.auxdir=InriaPosData(basepath=cfg.dbpath).getStorageDir()
 cfg.show=True

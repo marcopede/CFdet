@@ -1,20 +1,7 @@
+#include <stdio.h> //for printf
 #include <math.h> //for the definition of INFINITY
 #include "dynamic.h"
-//#ifndef INFINITY
-//   #define INFINITY 10000
-//#endif
-
-//#define maxlab 100
-//#define maxnodes 10
-//#define ftype float
-
-//static ftype scr[maxnodes*maxlab]; //score for each location
-//static ftype sumscr[maxnodes*maxlab]; //sum score for each location
-//static int auxpos[maxnodes*maxlab]; //position for each location
-//static ftype def[maxnodes*maxlab*maxlab]; //cost of deformation for each location if it is a "good" function distance transform can be used
-//static float maxmarg[maxlab]; //max marginals
-//static int numlab;
-//static int maxnode;
+//library for dynamic programming in chains
 
 void compute(int node,int *pos)//here maxnode=4
 {

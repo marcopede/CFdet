@@ -32,75 +32,6 @@ long getHOG()
 }
 
 //compute 3d correlation between an image feature img and a mask 
-inline ftype corr3d_old(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx)
-{
-    //img[y,x,z]
-    ftype sum=0.0;
-    int x,y,z,posi;
-    //posy=posy//-(masky)/2;
-    //posx=posx//-(maskx)/2;
-    for (x=0;x<maskx;x++)
-        for (y=0;y<masky;y++)
-        {
-            compHOG++;
-            for (z=0;z<dimz;z++)
-            {   
-                posi=z+(x+posx)*dimz+(y+posy)*dimz*imgx;
-                if (((x+posx)>=0 && (x+posx<imgx)) && ((y+posy)>=0 && (y+posy<imgy)))//((posi>=0) && (posi<imgy*imgx*dimz))
-                {
-                    sum=sum+img[posi]*mask[z+x*dimz+y*dimz*maskx];      
-                }
-            }
-        }
-    return sum;
-}
-
-
-//compute 3d correlation between an image feature img and a mask 
-inline ftype corr3d(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec)
-{
-    //pady=10;
-    //padx=10;
-    //printf("Value of prec:%d\n",prec==NULL);
-    if (prec!=NULL)
-    {
-        if (posy>=0 && posy<imgy && posx>=0 && posx<imgx)
-            if (prec[posy*imgx+posx]>-INFINITY)
-            {
-                //printf("Value Already Computed at location:(%d,%d)\n",posy,posx);
-                return prec[posy*imgx+posx];
-            }
-    }    
-    //img[y,x,z]
-    ftype sum=0.0;
-    int x,y,z,posi;
-    //posy=posy//-(masky)/2;
-    //posx=posx//-(maskx)/2;
-    for (x=0;x<maskx;x++)
-        for (y=0;y<masky;y++)
-        {
-            compHOG++;
-            for (z=0;z<dimz;z++)
-            {   
-                posi=z+(x+posx)*dimz+(y+posy)*dimz*imgx;
-                if (((x+posx)>=0 && (x+posx<imgx)) && ((y+posy)>=0 && (y+posy<imgy)))//((posi>=0) && (posi<imgy*imgx*dimz))
-                {
-                    sum=sum+img[posi]*mask[z+x*dimz+y*dimz*maskx];      
-                }
-            }
-        }
-    if (prec!=NULL)
-    {
-        if (posy>=0 && posy<imgy && posx>=0 && posx<imgx)
-        {
-            //printf("Writing location:(%d,%d)\n",posy,posx);
-            prec[posy*imgx+posx]=sum;
-        }
-    }
-    return sum;
-}
-
-//compute 3d correlation between an image feature img and a mask 
 inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx)
 {
     //pady=0;
@@ -145,33 +76,6 @@ inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
         }
     }
     return sum;
-}
-
-
-static int d[][2]={0,0,
-        -1,-1,
-        -1,0,
-        -1,1,
-        0,-1,
-        0,1,
-        1,-1,
-        1,0,
-        1,1,};
-
-inline ftype refine(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,int *pose)
-{
-    int i;  
-    ftype val,maxval=-1000;
-    for (i=0;i<9;i++)
-    {
-        val=corr3d(img,imgy,imgx,mask,masky,maskx,dimz,posy+d[i][0],posx+d[i][1],NULL);
-        if (val>maxval)
-        {
-            maxval=val;
-            *pose=i;
-        }
-    }
-    return maxval;
 }
 
 inline ftype refineigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,int rady,int radx,int *posedy, int *posedx, ftype *prec)
@@ -319,85 +223,8 @@ void scaneighpr(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int
 
 #define maxrad 5
 static ftype scr[4*(2*maxrad+1)*(2*maxrad+1)];
-/*extern ftype minimize(ftype *D,ftype *pd1,ftype *pd2,ftype *pd3,ftype *pd4,int *result, int sizeX,int sizeY,int ry,int rx);
 
-void scanDef(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz,ftype *df1,ftype *df2,ftype *df3,ftype *df4,ftype *img,int imgy,int imgx,int *posy,int *posx,int *parts,ftype *res,int rad,int len,int usemrf,ftype *uscr,int useusrc,ftype *prec,int pady,int padx)
-{
-    int sizedf=4;
-    ftype maxscr1,maxscr2,maxscr3,maxscr4;
-    ftype aux;
-    int i,c,p,rdef[4],dy[4],dx[4];
-    //if (!usemrf)
-    //    printf("Warning:Not using MRF!!");
-    for (i=0;i<len;i++)
-    {
-        if (posy[i]<-100) 
-        {
-            //printf("Skip for thr!\n");
-            continue;
-        }
-        if (useusrc)
-        { 
-            for (p=0;p<4;p++)
-                for (c=0;c<(2*rad+1)*(2*rad+1);c++)
-                    scr[p*(2*rad+1)*(2*rad+1)+c]=-uscr[p*len*(2*rad+1)*(2*rad+1)+c*len+i];
-        }
-        else
-        {
-            for (c=0;c<4*(2*rad+1)*(2*rad+1);c++)
-                scr[c]=0;
-        }          
-        ftype *prec1=NULL,*prec2=NULL,*prec3=NULL,*prec4=NULL;
-        //printf("Initial velue of prec:%d\n",prec==NULL);
-        //printf("USE src:%d\n",useusrc);
-        if (prec!=NULL)//use buffer
-        {
-            prec1=prec;
-            prec2=prec+(imgy+2*pady)*(imgx+2*padx);
-            prec3=prec+2*(imgy+2*pady)*(imgx+2*padx);
-            prec4=prec+3*(imgy+2*pady)*(imgx+2*padx);
-        }
-        maxscr1 = refineighfull(img,imgy,imgx,ww1,fy,fx,dimz,df1[0],df1[1],posy[i],posx[i],rad,rad,scr,dy,dx,prec1,pady,padx);
-        maxscr2 = refineighfull(img,imgy,imgx,ww2,fy,fx,dimz,df2[0],df2[1],posy[i],posx[i]+fx,rad,rad,scr+(2*rad+1)*(2*rad+1),dy+1,dx+1,prec2,pady,padx);
-        maxscr3 = refineighfull(img,imgy,imgx,ww3,fy,fx,dimz,df3[0],df3[1],posy[i]+fy,posx[i],rad,rad,scr+2*(2*rad+1)*(2*rad+1),dy+2,dx+2,prec3,pady,padx);
-        maxscr4 = refineighfull(img,imgy,imgx,ww4,fy,fx,dimz,df4[0],df4[1],posy[i]+fy,posx[i]+fx,rad,rad,scr+3*(2*rad+1)*(2*rad+1),dy+3,dx+3,prec4,pady,padx);
-        //printf("Part LOCAL:%d %d %d %d \n",dy[0],dy[1],dy[2],dy[3]);
-        if (usemrf)
-        {
-            res[i] = -minimize(scr,df1+2,df2+2,df3+2,df4+2,rdef,2,2,(2*rad+1),(2*rad+1));        
-            for (c=0;c<4;c++)
-            {
-                dy[c]=rdef[c]/(2*rad+1)-rad;
-                dx[c]=rdef[c]%(2*rad+1)-rad;
-            }
-        }
-        else
-            res[i]=maxscr1+maxscr2+maxscr3+maxscr4;
-        //printf("Part MRF:%d %d %d %d \n",dy[0],dy[1],dy[2],dy[3]);
-        //printf("Scr: MRF %.3f, LOCAL %.3f\n",res[i],maxscr1+maxscr2+maxscr3+maxscr4);
-        //mydef is referered to the next part in clockwise way
-        parts[0*len*sizedf+0*len+i]=dy[0]; //felz dy
-        parts[0*len*sizedf+1*len+i]=dx[0]; //felz dx
-        parts[0*len*sizedf+2*len+i]=(dy[0]-dy[1])*(dy[0]-dy[1]); //my defy
-        parts[0*len*sizedf+3*len+i]=(dx[0]-dx[1])*(dx[0]-dx[1]); //my defx
-        parts[1*len*sizedf+0*len+i]=dy[1]; //felz dy
-        parts[1*len*sizedf+1*len+i]=dx[1]; //felz dx
-        parts[1*len*sizedf+2*len+i]=(dy[1]-dy[3])*(dy[1]-dy[3]); //my defy
-        parts[1*len*sizedf+3*len+i]=(dx[1]-dx[3])*(dx[1]-dx[3]); //my defx
-        parts[2*len*sizedf+0*len+i]=dy[2]; //felz dy
-        parts[2*len*sizedf+1*len+i]=dx[2]; //felz dx
-        parts[2*len*sizedf+2*len+i]=(dy[2]-dy[0])*(dy[2]-dy[0]); //my defy
-        parts[2*len*sizedf+3*len+i]=(dx[2]-dx[0])*(dx[2]-dx[0]); //my defx
-        parts[3*len*sizedf+0*len+i]=dy[3]; //felz dy
-        parts[3*len*sizedf+1*len+i]=dx[3]; //felz dx
-        parts[3*len*sizedf+2*len+i]=(dy[3]-dy[2])*(dy[3]-dy[2]); //my defy
-        parts[3*len*sizedf+3*len+i]=(dx[3]-dx[2])*(dx[3]-dx[2]); //my defx
-       
-    }
-}
-*/
-
-//compute the same as before but using dinamic programming
+//compute the score using dinamic programming
 #include"dynamic.h"
 
 void buildef(ftype *def,ftype dfy,ftype dfx,int rad)
@@ -426,16 +253,6 @@ void scanDef2(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz
     ftype aux,aux0,aux1,aux2,aux3;
     int i,c,p,rdef[4],rdef1[4],dy[4],dx[4];
     ftype maxm[(2*maxrad+1)*(2*maxrad+1)];
-    //if (!usemrf)
-    //    printf("Warning:Not using MRF!!");
-    /*df1[2]=-0.0;
-    df1[3]=-0.0;
-    df2[2]=-0.0;
-    df2[3]=-0.0;
-    df3[2]=-0.0;
-    df3[3]=-0.0;
-    df4[2]=-10.0;
-    df4[3]=-10.0;*/
     buildef(def,df3[2],df3[3],rad);
     buildef(def+(2*rad+1)*(2*rad+1)*(2*rad+1)*(2*rad+1),df1[2],df1[3],rad);
     buildef(def+2*(2*rad+1)*(2*rad+1)*(2*rad+1)*(2*rad+1),df2[2],df2[3],rad);
@@ -474,16 +291,8 @@ void scanDef2(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz
         maxscr4 = refineighfull(img,imgy,imgx,ww4,fy,fx,dimz,df4[0],df4[1],posy[i]+fy,posx[i]+fx,rad,rad,scr+2*(2*rad+1)*(2*rad+1),dy+3,dx+3,prec4,pady,padx);
         if (usemrf)
         {
-            //aux1 = -minimize(scr,df1+2,df2+2,df4+2,df3+2,rdef1,2,2,(2*rad+1),(2*rad+1));            
             for (c=0;c<4*(2*rad+1)*(2*rad+1);c++)
                 scr[c]=-scr[c];//invert the score to keep compatibility
-            //switch 3 with 2 to use oredered things
-            /*for (c=0;c<(2*rad+1)*(2*rad+1);c++)
-            {
-                aux=*(scr+2*(2*rad+1)*(2*rad+1)+c);
-                *(scr+2*(2*rad+1)*(2*rad+1)+c)=*(scr+3*(2*rad+1)*(2*rad+1)+c);
-                *(scr+3*(2*rad+1)*(2*rad+1)+c)=aux;
-            }*/
             filltables(scr,def,4,(2*rad+1)*(2*rad+1));
             aux0=map(rdef,0,maxm);  
             /*aux1=map(rdef,1,maxm);  

@@ -8,7 +8,6 @@ CFLAGS = -O3 -march=nocona -ffast-math -fomit-frame-pointer -fopenmp
 #CFLAGS = -xP -fast
 #OMPFLAGS = -openmp
 
-#LIB_TARGETS = libresize32.so
 LIB_TARGETS = libresize.so libdynamic.so libexcorr.so libhog.so libfastpegasos.so
 all:	$(LIB_TARGETS)
 
@@ -28,6 +27,6 @@ libhog.so:	features2.c Makefile
 	$(CC) $(CFLAGS) -shared -Wl,-soname=libhog.so -fPIC features2.c -o libhog.so
 
 clean:
-	rm -f *.o $(EXE_TARGETS) $(LIB_TARGETS)
+	rm -f *.o *.pyc $(EXE_TARGETS) $(LIB_TARGETS)
 
 

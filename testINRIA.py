@@ -176,7 +176,7 @@ for i,im in enumerate(itr):
     dettime.append(im[2])
     numhog+=im[3]
     print im[3]
-    raw_input()   
+    #raw_input()   
     for l in im[1]:
         detlist.append([tsImages[i]["name"].split("/")[-1].split(".")[0],l["scr"],l["bbox"][1],l["bbox"][0],l["bbox"][3],l["bbox"][2]])
 del itr
@@ -199,6 +199,7 @@ pylab.show()
 #pylab.savefig("%s_ap%d_test.png"%(testname,it))
 #pylab.savefig("%s_miss%d_test.png"%(testname,it))
 tinit=((time.time()-initime))#/3600.0)
+print "Total Time:",numpy.sum(dettime)
 print "Average Detection Time:",numpy.mean(dettime)
 print "Number of Computed HOGS",numhog
 print "AP(it=",it,")=",ap

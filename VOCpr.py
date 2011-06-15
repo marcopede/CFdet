@@ -338,7 +338,7 @@ def VOCprRecord_old(gtImages,detlist,show=False,usetr=True,usedf=False,ovr=0.5):
 
     return tp,fp,thr,tot
 
-def VOCprRecord(gtImages,detlist,show=False,usetr=True,usedf=False,ovr=0.5):
+def VOCprRecord(gtImages,detlist,show=False,ovr=0.5):
     """
         calculate the precision recall curve
     """
@@ -351,7 +351,10 @@ def VOCprRecord(gtImages,detlist,show=False,usetr=True,usedf=False,ovr=0.5):
         if rect!=[]:
             #print gtImages.getImageName(idx).split("/")[-1].split(".")[0]
             dimg[gtImages[idx]["name"].split("/")[-1].split(".")[0]]={"bbox":rect,"det":[False]*len(rect)}
-        tot=tot+len(rect)
+            for i, recti in enumerate(rect):
+                if recti[5] == 0:
+                    tot=tot+1
+
     imname=[]
     cnt=0
     tp=numpy.zeros(len(detlist))
@@ -379,14 +382,34 @@ def VOCprRecord(gtImages,detlist,show=False,usetr=True,usedf=False,ovr=0.5):
                     #dimg[detbb[0]].remove(r)
                     #found=True
                     #break
+
         if maxovr>ovr:
-            if not(dimg[detbb[0]]["det"][gt]):
-                tp[idx]=1
-                dimg[detbb[0]]["det"][gt]=True
-            else:
-                fp[idx]=1
+            if dimg[detbb[0]]["bbox"][gt][5] == 0:
+                if not(dimg[detbb[0]]["det"][gt]):
+                    tp[idx]=1
+                    dimg[detbb[0]]["det"][gt]=True
+                else:
+                    fp[idx]=1
         else:
             fp[idx]=1
+
+########### PASCAL 2010
+#    if ovmax>=VOCopts.minoverlap
+#        if ~gt(i).diff(jmax)
+#            if ~gt(i).det(jmax)
+#                tp(d)=1;            % true positive
+#		        gt(i).det(jmax)=true;
+#            else
+#                fp(d)=1;            % false positive (multiple detection)
+#            end
+#        end
+#    else
+#        fp(d)=1;                    % false positive
+#    end
+########################
+
+
+
         thr[idx]=detbb[1]
         if show:
             prec=numpy.sum(tp)/float(numpy.sum(tp)+numpy.sum(fp))
@@ -413,6 +436,92 @@ def VOCprRecord(gtImages,detlist,show=False,usetr=True,usedf=False,ovr=0.5):
                 rect=[]
 
     return tp,fp,thr,tot
+
+def VOCanalysis(gtImages,detlist,show=False,usetr=True,usedf=False,ovr=0.5):
+    """
+        calculate the precision recall curve
+    """
+    dimg={}
+    tot=0
+    for idx in range(len(gtImages)):
+        rect=gtImages[idx]["bbox"][:]
+        #if idx>288:
+        #    print idx,rect
+        if rect!=[]:
+            #print gtImages.getImageName(idx).split("/")[-1].split(".")[0]
+            dimg[gtImages[idx]["name"].split("/")[-1].split(".")[0]]={"bbox":rect,"det":[False]*len(rect)}
+        tot=tot+len(rect)
+    imname=[]
+    cnt=0
+    tp=numpy.zeros(len(detlist))
+    fp=numpy.zeros(len(detlist))
+    thr=numpy.zeros(len(detlist))
+
+    tplist=[]
+    fplist=[]
+    fp2list=[]
+    fnlist=[]
+
+    detlist.sort(cmpscore)
+    for idx,detbb in enumerate(detlist):
+        #print detbb[1]
+        found=False
+        maxovr=0
+        #gtdet=[False]
+        gt=0
+        if dimg.has_key(detbb[0]):
+            rect=dimg[detbb[0]]["bbox"]
+            found=False
+            for ir,r in enumerate(rect):
+                #gtdet.append(False)
+                rb=(float(detbb[3]),float(detbb[2]),float(detbb[5]),float(detbb[4]))
+                #print "GT:",r
+                #print "DET:",rb
+                covr=overlap(rb,r)
+                if covr>=maxovr:
+                    maxovr=covr
+                    gt=ir
+                    #dimg[detbb[0]].remove(r)
+                    #found=True
+                    #break
+        if maxovr>ovr:
+            if not(dimg[detbb[0]]["det"][gt]):
+                tp[idx]=1
+                dimg[detbb[0]]["det"][gt]=True
+                tplist.append(detbb)
+            else:
+                fp[idx]=1
+                fplist.append(detbb)
+        else:
+            fp[idx]=1
+            fp2list.append(detbb)
+
+    totalDetected  =0
+    totalnoDetected=0
+
+    for idx in range(len(gtImages)):
+        rect=gtImages[idx]["bbox"][:]
+        if rect!=[]:
+            name = gtImages[idx]["name"].split("/")[-1].split(".")[0]
+            bboxgt = dimg[name]
+            for i in range(len(bboxgt["det"])):
+                if bboxgt["det"][i]:
+                    #bbox FOUND, it's ok
+                    totalDetected += 1
+                else:
+                    #bbox not FOUND, add to FN
+                    gtbb = [name,0,bboxgt["bbox"][i][0:4]]
+                    fnlist.append(gtbb)
+                    totalnoDetected += 1
+
+
+    print "total Detected %d, total no Detected %d"%(totalDetected,totalnoDetected)
+
+    #tplist.sort(key=lambda det: -det[1])
+    #fplist.sort(key=lambda det: -det[1])
+    #fnlist.sort(key=lambda det: -det[1])
+
+    return tplist,fplist,fp2list,fnlist
 
 def VOCprRecord_wrong(gtImages,detlist,show=False,usetr=True,usedf=False,ovr=0.5):
     """

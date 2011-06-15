@@ -1301,8 +1301,8 @@ class Treat:
                         #myovr=util.overlap(ls["bbox"],cle["bbox"])
                         myovr=util.overlap(ls["bbox"],cle["bbox"])
                     else:   
-                        myovr=util.inclusion(cle["bbox"],ls["bbox"])
-                        #myovr=util.inclusion(ls["bbox"],cle["bbox"])
+                        #myovr=util.inclusion(cle["bbox"],ls["bbox"])
+                        myovr=util.inclusion(ls["bbox"],cle["bbox"])
                     if myovr>ovr:
                         cl.append(ls)
                         found=True
@@ -1337,7 +1337,7 @@ class Treat:
         return rdet
 
 
-    def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf):
+    def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf,scr=True):
         count=0
         for item in ldet:
             #if item!=[] and not(item.has_key("notfound")):
@@ -1356,8 +1356,12 @@ class Treat:
                         y2=(item["ny"]+my+item["fy"])*self.f.sbin/scl
                         x2=(item["nx"]+mx+item["fx"])*self.f.sbin/scl
                         pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],colors[1+l], alpha=0.15, edgecolor=colors[1+l],lw=2)           
-                pylab.fill([bbox[1],bbox[1],bbox[3],bbox[3],bbox[1]],[bbox[0],bbox[2],bbox[2],bbox[0],bbox[0]],colors[0], alpha=0.15, edgecolor=colors[0],lw=2)
-                pylab.text(bbox[1],bbox[0],"%d %.3f"%(item["cl"],item["scr"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
+                #pylab.fill([bbox[1],bbox[1],bbox[3],bbox[3],bbox[1]],[bbox[0],bbox[2],bbox[2],bbox[0],bbox[0]],colors[0], alpha=0.15, edgecolor=colors[0],lw=2)
+                #pylab.text(bbox[1],bbox[0],"%d %.3f"%(item["cl"],item["scr"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
+                util.box(bbox[0],bbox[1],bbox[2],bbox[3],colors[0],lw=2)
+                scr=False
+                if scr:
+                    pylab.text(bbox[1],bbox[0],"%d %.3f"%(item["cl"],item["scr"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
             count+=1
             if count>maxnum:
                 break
@@ -1533,7 +1537,7 @@ class TreatDef(Treat):
         return rdet
 
 
-    def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf):
+    def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf,scr=True):
         
         count=0
         if parts:
@@ -1554,7 +1558,7 @@ class TreatDef(Treat):
                 count+=1
                 if count>maxnum:
                     break
-        Treat.show(self,ldet,colors=colors,thr=thr,maxnum=maxnum)        
+        Treat.show(self,ldet,colors=colors,thr=thr,maxnum=maxnum,scr=scr)        
 
     def descr(self,det,flip=False,usemrf=True,usefather=True,k=K):   
         ld=[]

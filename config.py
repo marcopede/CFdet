@@ -51,6 +51,7 @@ cfg.sortneg=False
 cfg.bestovr=False
 cfg.useRL=False
 cfg.kmeans=False
+cfg.resize=None
 #cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save
 #    mydebug=False
 #    if mydebug:

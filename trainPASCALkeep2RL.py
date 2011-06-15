@@ -109,8 +109,9 @@ def detectWrap(a):
         imageflip=False
     else:
         imageflip=a[5]
+    img=util.myimread(imname,resize=cfg.resize)
     if imageflip:
-        img=util.myimread(imname,True)
+        img=util.myimread(imname,True,resize=cfg.resize)
         if bbox!=None:
              bbox = util.flipBBox(img,bbox)
     if bbox!=None:
@@ -118,7 +119,7 @@ def detectWrap(a):
     else:
         gtbbox=None
     if cfg.show:
-        img=util.myimread(imname,imageflip)
+        img=util.myimread(imname,imageflip,resize=cfg.resize)
         pylab.figure(10)
         pylab.ioff()
         pylab.clf()
@@ -127,7 +128,8 @@ def detectWrap(a):
     notsave=False
     #if cfg.__dict__.has_key("test"):
     #    notsave=cfg.test
-    f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.auxdir+"/hog/",notsave=not(cfg.savefeat),notload=not(cfg.loadfeat),hallucinate=cfg.hallucinate,cformat=True,flip=imageflip)
+    #f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.auxdir+"/hog/",notsave=not(cfg.savefeat),notload=not(cfg.loadfeat),hallucinate=cfg.hallucinate,cformat=True,flip=imageflip,resize=cfg.resize)
+    f=pyrHOG2.pyrHOG(img,interv=10,savedir=cfg.auxdir+"/hog/",notsave=not(cfg.savefeat),notload=not(cfg.loadfeat),hallucinate=cfg.hallucinate,cformat=True)#,flip=imageflip,resize=cfg.resize)
     res=[]
     for clm,m in enumerate(models):
         if cfg.useRL:
@@ -135,6 +137,7 @@ def detectWrap(a):
         else:
             res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,usefather=cfg.usefather,useprior=cfg.useprior,emptybb=False,K=cfg.k))
     if cfg.show:
+        pylab.draw()
         pylab.show()
     return res
 

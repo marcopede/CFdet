@@ -50,7 +50,7 @@ def loadcfg(place,name,cls,select):
     cfg.savefeat=False
     cfg.loadfeat=False
     cfg.thr=-2
-    cfg.auxdir="/home/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"
+    cfg.auxdir="/home/marcopede/databases/VOC2007/VOCdevkit/local/VOC2007/"#"/state/partition1/marcopede/"
     return cfg
 
 def test(thr,cfg):

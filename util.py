@@ -16,7 +16,7 @@ part=numpy.dtype([("itr", i32),("oct",i32),("y",i32),("x",i32),("sy",i32),("sx",
 colors=["r","g","c",'m','w']                    
      
    
-def myimread(imgname,flip=False):
+def myimread_old(imgname,flip=False):
     img=None
     if imgname.split(".")[-1]=="png":
         img=pylab.imread(imgname)
@@ -24,6 +24,19 @@ def myimread(imgname,flip=False):
         img=numpy.ascontiguousarray(pylab.imread(imgname)[::-1])
     if flip:
         img=numpy.ascontiguousarray(img[:,::-1,:])        
+    return img
+
+def myimread(imgname,flip=False,resize=None):
+    img=None
+    if imgname.split(".")[-1]=="png":
+        img=pylab.imread(imgname)
+    else:
+        img=numpy.ascontiguousarray(pylab.imread(imgname)[::-1])
+    if flip:
+        img=numpy.ascontiguousarray(img[:,::-1,:])        
+    if resize!=None:
+        from scipy.misc import imresize
+        img=imresize(img,resize)
     return img
 
 def flipBBox(img,oldbbox):

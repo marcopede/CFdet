@@ -7,11 +7,11 @@ import util
 import pyrHOG2
 import VOCpr
 import time
-#import trainINRIA
+import trainINRIA
 import itertools
+from scipy.misc import imresize
 
-class config(object):
-    pass
+RSZ=1.0
 
 def detectWrap(a):
     t=time.time()
@@ -31,14 +31,18 @@ def detectWrap(a):
         gtbbox=[{"bbox":x} for x in bbox]   
     else:
         gtbbox=None
-    f=pyrHOG2.pyrHOG(imname,interv=10,savedir=cfg.savedir+"/hog/",notload=not(cfg.loadfeat),notsave=not(cfg.savefeat),hallucinate=cfg.hallucinate,cformat=True)
+    img=util.myimread(imname,resize=RSZ)
+    f=pyrHOG2.pyrHOG(img,interv=10,savedir=cfg.savedir+"/hog/",notload=not(cfg.loadfeat),notsave=not(cfg.savefeat),hallucinate=cfg.hallucinate,cformat=True)
     res=pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,posovr=cfg.posovr,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,inclusion=cfg.inclusion,small=cfg.small,show=cfg.show,usefather=cfg.usefather,useprior=cfg.useprior,nms=cfg.ovr,K=cfg.k)
     if cfg.show:
-        pylab.draw()
         pylab.show()
-        #raw_input()
+#        raw_input()
     print "Detect Wrap:",time.time()-t
     return res
+
+
+class config(object):
+    pass
 
 #cfg.fy=7
 #cfg.fx=3
@@ -73,35 +77,42 @@ def detectWrap(a):
 #testname="./data/test3_11/CVPR11_usefahter";it=6
 #testname="./data/INRIA/testTDnoMRFright";it=9
 #testname="./data/CVPR/bottomup";it=9
-#testname="./data/11_03_16/inria_converg";it=8
+#testname="./data/11_02_26/inria_both";it=10
+#testname="./data/11_03_28/inria1_1aspect_last_sort";it=6
 testname="./data/INRIA/inria_bothfull";it=6
 import sys
 if len(sys.argv)>1:
     it=int(sys.argv[1])
+if len(sys.argv)>2:
+    select=sys.argv[2]
 #testname="./data/INRIA/testTDnoMRF";it=6
 cfg=util.load(testname+".cfg")
 cfg.maxtest=1000#100
 cfg.numneg=1000
 cfg.ovr=0.5
-cfg.posovr=0.7
 cfg.thr=-2
-#cfg.deform=True
-cfg.bottomup=True
+cfg.k=1.0
+#cfg.deform=False
+#cfg.bottomup=True
 cfg.loadfeat=False
 cfg.savefeat=False
-#cfg.usemrf=True#False#True#da togliere
+#cfg.usemrf=False#False#True#da togliere
+#cfg.usefather=False
 #cfg.ratio=1#datogliere
-cfg.multipr=4
+cfg.multipr=False
 cfg.inclusion=False
-#cfg.nms=0.4
+#cfg.nms=0.5
+cfg.posovr=0
 cfg.dbpath="/home/marcopede/databases/"
 #cfg.auxdir="/state/partition1/marcopede/INRIA/"#InriaPosData(basepath="/home/databases/").getStorageDir()
 cfg.auxdir=InriaPosData(basepath=cfg.dbpath).getStorageDir()
 cfg.show=False
 cfg.mythr=-10
-cfg.small=False
 cfg.useprior=False
-cfg.k=1.0
+cfg.small=False
+cfg.dense=0
+pyrHOG2.DENSE=0
+#cfg.deform=False
 #cfg.usemrf=False
 #cfg.maxpostest=1000
 
@@ -110,39 +121,24 @@ cfg.k=1.0
 #cfg.hallucinate=
 #cfg.thr=-2
 
-#trPosImages=InriaPosData(basepath="/home/databases/")
-#trNegImages=InriaNegData(basepath="/home/databases/")
-#tsImages=InriaTestFullData(basepath="/home/databases/")
-#tsImages=DirImages(imagepath="/home/marcopede/Dropbox/Marco/PruebasDemos",ext=".jpg")
-#tsImages=getRecord(InriaTestFullData(basepath="/share/ISE/marcopede/database/"),cfg.maxtest)
-tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
-#tsImages=getRecord(InriaTestData(basepath="/share/ISE/marcopede/database/"),cfg.maxtest)
-
-#svmname="./data/%s.svm"%testname
-#lib="libsvm"
-#w,r=util.loadSvm(svmname,dir="",lib=lib)
-#util.objf(w,r,svmpos,svmneg,pc)
-#m=tr.model(w,r,len(m["ww"]),31)
+#tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
+if select=="dir":#"." or select[0]=="/"
+    import glob
+    #lst=glob.glob("/home/marcopede/ivan/zebra/CVC_Zebra1/*.jpeg")[150:]
+    lst=glob.glob("./video/*.jpeg")
+    lst.sort()
+    total=len(lst)
+    tsImages=numpy.zeros(total,dtype=[("id",numpy.int32),("name",object),("bbox",list)])
+    for idl,l in enumerate(lst):
+        tsImages[idl]["id"]=idl
+        tsImages[idl]["name"]=l#l.split("/")[-1]
+        tsImages[idl]["bbox"]=None             
+else:
+    tsImages=getRecord(InriaTestData(basepath=cfg.dbpath),cfg.maxtest)
 
 m=util.load("%s%d.model"%(testname,it))
-#if cfg.deform:
-#    print m["df"]
-#    for id,l in enumerate(m["df"]):
-#        m["df"][id]=numpy.zeros(l.shape,dtype=numpy.float32)
 
-##############################
-####just for the error...
-#for id,l in enumerate(m["df"]):
-#    m["df"][id][:,:,:2]=numpy.zeros((l.shape[0],l.shape[1],2),dtype=numpy.float32)
-#############################
-
-#del m["df"][2]
-#del m["ww"][2]
-#m["df"][0]=numpy.zeros(m["df"][0].shape,dtype=numpy.float32)
-#m["df"][1]=numpy.zeros(m["df"][1].shape,dtype=numpy.float32)
-#m["df"][2]=numpy.zeros(m["df"][2].shape,dtype=numpy.float32)
-
-if 0:
+if False:
     print "Show model"
     pylab.figure(100)
     pylab.clf()
@@ -175,20 +171,32 @@ for i,im in enumerate(itr):
     print "Detections:", len(im[1]) 
     dettime.append(im[2])
     numhog+=im[3]
-    print im[3]
+    tr=im[0]
+    f=pylab.figure(11,figsize=(9,5))
+    pylab.ioff()
+    pylab.clf()
+    axes=pylab.Axes(f, [.0,.0,1.0,1.0]) # [left, bottom, width, height] where each value is between 0 and 1
+    f.add_axes(axes) 
+    img=util.myimread(tsImages[i]["name"],resize=RSZ)
+    pylab.imshow(img,interpolation="nearest",animated=True)
+    pylab.axis("off")
+    tr.show(im[1],parts=True,thr=-0.5,scr=True,maxnum=0)
+    pylab.axis((0,img.shape[1],img.shape[0],0))
+    pylab.ion()
+    pylab.draw()
+    pylab.show()  
+    raw_input()
+    if False:
+        pylab.savefig("./video/detNOPEDRO/"+tsImages[i]["name"].split("/")[-1].split(".")[0]+".png")  
     #raw_input()   
     for l in im[1]:
         detlist.append([tsImages[i]["name"].split("/")[-1].split(".")[0],l["scr"],l["bbox"][1],l["bbox"][0],l["bbox"][3],l["bbox"][2]])
 del itr
 mypool.close()
 tp,fp,scr,tot=VOCpr.VOCprRecord(tsImages,detlist,show=False,ovr=0.5)#solved a problem that was giving around 1-2 point less
-
-tplist,fplist,fplist2,fnlist=VOCpr.VOCanalysis(tsImages,detlist,show=False,ovr=0.5)
-util.save("%s_anal_%d.dat"%(testname,it),{"tplist":tplist,"fplist":fplist,"fplist2":fplist2,"fnlist":fnlist})
-
 pylab.figure(16)
 pylab.clf()
-fppi,miss,ap=VOCpr.drawMissRatePerImage(tp,fp,tot,288)
+fppi,miss,ap=VOCpr.drawMissRatePerImage(tp,fp,tot,len(tsImages))
 pylab.draw()
 pylab.show()
 pylab.figure(15)
@@ -199,7 +207,6 @@ pylab.show()
 #pylab.savefig("%s_ap%d_test.png"%(testname,it))
 #pylab.savefig("%s_miss%d_test.png"%(testname,it))
 tinit=((time.time()-initime))#/3600.0)
-print "Total Time:",numpy.sum(dettime)
 print "Average Detection Time:",numpy.mean(dettime)
 print "Number of Computed HOGS",numhog
 print "AP(it=",it,")=",ap

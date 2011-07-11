@@ -1359,7 +1359,7 @@ class Treat:
                 #pylab.fill([bbox[1],bbox[1],bbox[3],bbox[3],bbox[1]],[bbox[0],bbox[2],bbox[2],bbox[0],bbox[0]],colors[0], alpha=0.15, edgecolor=colors[0],lw=2)
                 #pylab.text(bbox[1],bbox[0],"%d %.3f"%(item["cl"],item["scr"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
                 util.box(bbox[0],bbox[1],bbox[2],bbox[3],colors[0],lw=2)
-                scr=False
+                #scr=False
                 if scr:
                     pylab.text(bbox[1],bbox[0],"%d %.3f"%(item["cl"],item["scr"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
             count+=1
@@ -1538,7 +1538,7 @@ class TreatDef(Treat):
 
 
     def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf,scr=True):
-        
+        ar=[5,4,2]
         count=0
         if parts:
             for item in ldet:
@@ -1554,7 +1554,8 @@ class TreatDef(Treat):
                                 y2=(py[lpy,lpx]+item["fy"]*2**-l)*self.f.sbin/scl
                                 x1=px[lpy,lpx]*self.f.sbin/scl
                                 x2=(px[lpy,lpx]+item["fx"]*2**-l)*self.f.sbin/scl
-                                pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],colors[1+l], alpha=0.15, edgecolor=colors[1+l],lw=2)                               
+                                #pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],colors[1+l], alpha=0.15, edgecolor=colors[1+l],lw=2)                        
+                                pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],colors[1+l], alpha=0.1, edgecolor=colors[1+l],lw=ar[l],fill=False)                               
                 count+=1
                 if count>maxnum:
                     break

@@ -281,3 +281,61 @@ ftype objective_comp(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsampl
     return totloss;
 }
 
+void fast_pegasos_noproj(ftype *w,int wx,ftype *ex,int exy,ftype *label,ftype lambda,int iter,int part)
+{
+    srand48(3);
+    int c,y,t,pex;
+    ftype *x,n,scr,norm,val;
+    printf("Parts:%d \n Lambda:%g\n",part,lambda);
+    //#pragma omp parallel for
+    for (c=0;c<iter;c++)
+    {
+        t=c+part*iter+1;
+        pex=(int)(drand48()*(exy-0.5));
+        x=ex+pex*wx;
+        y=label[pex];
+        n=1.0/(lambda*t);
+        scr=score(x,w,wx);
+        //printf("rnd:%d y=%d scr=%g eta=%g\n",pex,y,scr,n);
+        mul(w,1-n*lambda,wx);
+        if (scr*y<1.0)
+        {
+            //mul(x,y*n,wx)
+            addmul(w,x,y*n,wx);            
+        }
+        //printf("W0:%g",w[0]);
+        /*norm=sqrt(score(w,w,wx));
+        val=1/(sqrt(lambda)*(norm+0.0001));
+        if (val<1.0)
+            mul(w,val,wx);*/
+    }
+    printf("N:%g t:%d\n",n,t);
+}
+
+ftype objective(ftype *w,int wx,ftype *ex, int exy,ftype *label,ftype lambda)
+{
+    int c,y;
+    ftype val,err=0,errpos=0,errneg=0,norm;
+    for (c=0;c<exy;c++)
+    {
+        y=label[c];
+        val=score(w,ex+c*wx,wx);
+        if (val*y<1)
+        {
+            err+=1-y*val;
+            if (y>0)
+                errpos+=err;
+            else
+                errneg+=err;
+        }
+    } 
+    err=err/exy;
+    errpos=errpos/exy;
+    errneg=errneg/exy;
+    norm=lambda/2.0*score(w,w,wx);
+    printf("lambda/2*|w|**2=%g Loss=%g \n", norm, err);
+    printf("Pos Loss=%g Neg Loss=%g \n", errpos, errneg);
+    return norm+err;
+}
+
+

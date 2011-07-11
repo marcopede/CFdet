@@ -170,20 +170,6 @@ inline ftype refineighfull(ftype *img,int imgy,int imgx,ftype *mask,int masky,in
     return maxval;
 }
 
-
-void scan(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int *posy,int *posx,ftype *val,int *pose,int len)
-{   
-    //return;
-    int i;
-    for (i=0;i<len;i++)
-    {
-        if (posy[i]==-1  && posx[i]==-1)
-            val[i]=0.0;
-        else
-            val[i]=refine(img,imgy,imgx,mask,masky,maskx,dimz,posy[i],posx[i],pose++);       
-    }
-}
-
 void scaneigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int *posy,int *posx,ftype *val,int *posey,int *posex,int rady, int radx,int len)
 {   
     //return;

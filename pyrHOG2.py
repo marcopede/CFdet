@@ -18,7 +18,7 @@ K=1.0#0.3
 
 from numpy import ctypeslib
 from ctypes import c_int,c_double,c_float
-#libmrf=ctypeslib.load_library("libmyrmf.so.1.0.1","")
+libmrf=ctypeslib.load_library("libmyrmf.so.1.0.1","")
 
 import ctypes
 ctypes.cdll.LoadLibrary("./libexcorr.so")
@@ -44,17 +44,17 @@ ff.scaneighpr.argtypes=[numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_
 (dtype=c_int,flags="C_CONTIGUOUS"),c_int,c_int,c_int,ctypes.POINTER(c_float)]
 
 
-#ff.scanDef.argtypes = [
-#    ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
-#    c_int,c_int,c_int,
-#    ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
-#    ctypeslib.ndpointer(c_float),
-#    c_int,c_int,ctypeslib.ndpointer(c_int),ctypeslib.ndpointer(c_int),
-#    ctypeslib.ndpointer(c_int),
-#    ctypeslib.ndpointer(c_float),
-#    c_int,c_int,c_int,ctypeslib.ndpointer(c_float),c_int,
-#    ctypes.POINTER(c_float),c_int,c_int]#ctypeslib.ndpointer(c_float,ndim=3,flags="C_CONTIGUOUS")]
-#ff.scanDef.restype=ctypes.c_float
+ff.scanDef.argtypes = [
+    ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
+    c_int,c_int,c_int,
+    ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
+    ctypeslib.ndpointer(c_float),
+    c_int,c_int,ctypeslib.ndpointer(c_int),ctypeslib.ndpointer(c_int),
+    ctypeslib.ndpointer(c_int),
+    ctypeslib.ndpointer(c_float),
+    c_int,c_int,c_int,ctypeslib.ndpointer(c_float),c_int,
+    ctypes.POINTER(c_float),c_int,c_int]#ctypeslib.ndpointer(c_float,ndim=3,flags="C_CONTIGUOUS")]
+ff.scanDef.restype=ctypes.c_float
 
 ff.scanDef2.argtypes = [
     ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
@@ -1669,6 +1669,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
 ##            scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
             #scr,pos=f.scanRCFLprDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,pr=pr)
+        dsfsd
         tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"])
     else:
         scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)

@@ -210,6 +210,79 @@ void scaneighpr(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int
 #define maxrad 5
 static ftype scr[4*(2*maxrad+1)*(2*maxrad+1)];
 
+extern ftype minimize(ftype *D,ftype *pd1,ftype *pd2,ftype *pd3,ftype *pd4,int *result, int sizeX,int sizeY,int ry,int rx);
+
+void scanDef(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz,ftype *df1,ftype *df2,ftype *df3,ftype *df4,ftype *img,int imgy,int imgx,int *posy,int *posx,int *parts,ftype *res,int rad,int len,int usemrf,ftype *uscr,int useusrc,ftype *prec,int pady,int padx)
+{
+    int sizedf=4;
+    ftype maxscr1,maxscr2,maxscr3,maxscr4;
+    ftype aux;
+    int i,c,p,rdef[4],dy[4],dx[4];
+    //if (!usemrf)
+    //    printf("Warning:Not using MRF!!");
+    for (i=0;i<len;i++)
+    {
+        if (useusrc)
+        { 
+            for (p=0;p<4;p++)
+                for (c=0;c<(2*rad+1)*(2*rad+1);c++)
+                    scr[p*(2*rad+1)*(2*rad+1)+c]=-uscr[p*len*(2*rad+1)*(2*rad+1)+c*len+i];
+        }
+        else
+        {
+            for (c=0;c<4*(2*rad+1)*(2*rad+1);c++)
+                scr[c]=0;
+        }          
+        ftype *prec1=NULL,*prec2=NULL,*prec3=NULL,*prec4=NULL;
+        //printf("Initial velue of prec:%d\n",prec==NULL);
+        //printf("USE src:%d\n",useusrc);
+        if (prec!=NULL)//use buffer
+        {
+            prec1=prec;
+            prec2=prec+(imgy+2*pady)*(imgx+2*padx);
+            prec3=prec+2*(imgy+2*pady)*(imgx+2*padx);
+            prec4=prec+3*(imgy+2*pady)*(imgx+2*padx);
+        }
+        maxscr1 = refineighfull(img,imgy,imgx,ww1,fy,fx,dimz,df1[0],df1[1],posy[i],posx[i],rad,rad,scr,dy,dx,prec1,pady,padx);
+        maxscr2 = refineighfull(img,imgy,imgx,ww2,fy,fx,dimz,df2[0],df2[1],posy[i],posx[i]+fx,rad,rad,scr+(2*rad+1)*(2*rad+1),dy+1,dx+1,prec2,pady,padx);
+        maxscr3 = refineighfull(img,imgy,imgx,ww3,fy,fx,dimz,df3[0],df3[1],posy[i]+fy,posx[i],rad,rad,scr+2*(2*rad+1)*(2*rad+1),dy+2,dx+2,prec3,pady,padx);
+        maxscr4 = refineighfull(img,imgy,imgx,ww4,fy,fx,dimz,df4[0],df4[1],posy[i]+fy,posx[i]+fx,rad,rad,scr+3*(2*rad+1)*(2*rad+1),dy+3,dx+3,prec4,pady,padx);
+        //printf("Part LOCAL:%d %d %d %d \n",dy[0],dy[1],dy[2],dy[3]);
+        if (usemrf)
+        {
+            res[i] = -minimize(scr,df1+2,df2+2,df3+2,df4+2,rdef,2,2,(2*rad+1),(2*rad+1));        
+            for (c=0;c<4;c++)
+            {
+                dy[c]=rdef[c]/(2*rad+1)-rad;
+                dx[c]=rdef[c]%(2*rad+1)-rad;
+            }
+        }
+        else
+            res[i]=maxscr1+maxscr2+maxscr3+maxscr4;
+        //printf("Part MRF:%d %d %d %d \n",dy[0],dy[1],dy[2],dy[3]);
+        //printf("Scr: MRF %.3f, LOCAL %.3f\n",res[i],maxscr1+maxscr2+maxscr3+maxscr4);
+        //mydef is referered to the next part in clockwise way
+        parts[0*len*sizedf+0*len+i]=dy[0]; //felz dy
+        parts[0*len*sizedf+1*len+i]=dx[0]; //felz dx
+        parts[0*len*sizedf+2*len+i]=(dy[0]-dy[1])*(dy[0]-dy[1]); //my defy
+        parts[0*len*sizedf+3*len+i]=(dx[0]-dx[1])*(dx[0]-dx[1]); //my defx
+        parts[1*len*sizedf+0*len+i]=dy[1]; //felz dy
+        parts[1*len*sizedf+1*len+i]=dx[1]; //felz dx
+        parts[1*len*sizedf+2*len+i]=(dy[1]-dy[3])*(dy[1]-dy[3]); //my defy
+        parts[1*len*sizedf+3*len+i]=(dx[1]-dx[3])*(dx[1]-dx[3]); //my defx
+        parts[2*len*sizedf+0*len+i]=dy[2]; //felz dy
+        parts[2*len*sizedf+1*len+i]=dx[2]; //felz dx
+        parts[2*len*sizedf+2*len+i]=(dy[2]-dy[0])*(dy[2]-dy[0]); //my defy
+        parts[2*len*sizedf+3*len+i]=(dx[2]-dx[0])*(dx[2]-dx[0]); //my defx
+        parts[3*len*sizedf+0*len+i]=dy[3]; //felz dy
+        parts[3*len*sizedf+1*len+i]=dx[3]; //felz dx
+        parts[3*len*sizedf+2*len+i]=(dy[3]-dy[2])*(dy[3]-dy[2]); //my defy
+        parts[3*len*sizedf+3*len+i]=(dx[3]-dx[2])*(dx[3]-dx[2]); //my defx
+       
+    }
+}
+
+
 //compute the score using dinamic programming
 #include"dynamic.h"
 
@@ -236,7 +309,7 @@ void scanDef2(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz
 {
     int sizedf=4;
     ftype maxscr1,maxscr2,maxscr3,maxscr4;
-    ftype aux,aux0,aux1,aux2,aux3;
+    ftype aux,aux0,aux1,aux2,aux3,myaux;
     int i,c,p,rdef[4],rdef1[4],dy[4],dx[4];
     ftype maxm[(2*maxrad+1)*(2*maxrad+1)];
     buildef(def,df3[2],df3[3],rad);
@@ -250,11 +323,12 @@ void scanDef2(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz
             //printf("Skip for thr!\n");
             continue;
         }
+        int aord[]={0,1,3,2};
         if (useusrc)
         { 
             for (p=0;p<4;p++)
                 for (c=0;c<(2*rad+1)*(2*rad+1);c++)
-                    scr[p*(2*rad+1)*(2*rad+1)+c]=-uscr[p*len*(2*rad+1)*(2*rad+1)+c*len+i];
+                    scr[aord[p]*(2*rad+1)*(2*rad+1)+c]=-uscr[p*len*(2*rad+1)*(2*rad+1)+c*len+i];
         }
         else
         {
@@ -290,7 +364,21 @@ void scanDef2(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz
                 printf("Error aux1(%.3f) different than aux2(%.3f)\n",aux1,aux2);
             if ((aux2-aux3>0.001 || aux3-aux2>0.001))
                 printf("Error aux2(%.3f) different than aux3(%.3f)\n",aux2,aux3);*/
+            //myaux = -minimize(scr,df1+2,df2+2,df3+2,df4+2,rdef,2,2,(2*rad+1),(2*rad+1));  
+            //to remove   
+            /*for (c=0;c<4*(2*rad+1)*(2*rad+1);c++)
+                scr[c]=0;   
+            maxscr1 = refineighfull(img,imgy,imgx,ww1,fy,fx,dimz,df1[0],df1[1],posy[i],posx[i],rad,rad,scr,dy,dx,prec1,pady,padx);
+            maxscr2 = refineighfull(img,imgy,imgx,ww2,fy,fx,dimz,df2[0],df2[1],posy[i],posx[i]+fx,rad,rad,scr+(2*rad+1)*(2*rad+1),dy+1,dx+1,prec2,pady,padx);
+            maxscr3 = refineighfull(img,imgy,imgx,ww3,fy,fx,dimz,df3[0],df3[1],posy[i]+fy,posx[i],rad,rad,scr+2*(2*rad+1)*(2*rad+1),dy+2,dx+2,prec3,pady,padx);
+            maxscr4 = refineighfull(img,imgy,imgx,ww4,fy,fx,dimz,df4[0],df4[1],posy[i]+fy,posx[i]+fx,rad,rad,scr+3*(2*rad+1)*(2*rad+1),dy+3,dx+3,prec4,pady,padx);
+            myaux = -minimize(scr,df1+2,df2+2,df3+2,df4+2,rdef,2,2,(2*rad+1),(2*rad+1));        */
+            //to remove
             res[i]=aux0;
+            //if (abs(myaux-res[i])>0.0001)
+            //    printf("Different dp:%f mrf:%f\n",res[i],myaux);
+            //else
+            //    printf("Equal\n");
             /*if (res[i]!=0)
             {
                 //printf("RES:%.3f\n",res[i]);
@@ -298,7 +386,6 @@ void scanDef2(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz
                 //for (c=0;c<4*(2*rad+1)*(2*rad+1);c++)
                 //   printf("Scr:%.3f\n",scr[c]);
             }*/
-            //res[i] = -minimize(scr,df1+2,df2+2,df3+2,df4+2,rdef,2,2,(2*rad+1),(2*rad+1));        
             for (c=0;c<4;c++)
             {
                 //if (res[i]!=0) printf("Dy:%d Path:%d\n",dy[c],rdef[c]);

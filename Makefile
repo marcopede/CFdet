@@ -12,7 +12,7 @@ LIB_TARGETS = libresize.so libdynamic.so libexcorr.so libhog.so libfastpegasos.s
 all:	$(LIB_TARGETS)
 
 libexcorr.so: excorr.c Makefile dynamic.c
-	$(CC) $(CFLAGS) -shared -Wl,-soname=libexcorr.so -fPIC dynamic.c  excorr.c -o libexcorr.so
+	$(CC) $(CFLAGS) -shared -Wl,-soname=libexcorr.so -fPIC dynamic.c libmyrmf.so.1.0.1 excorr.c -o libexcorr.so
 
 libdynamic.so: dynamic.c Makefile
 	$(CC) $(CFLAGS) -shared -Wl,-soname=libdynamic.so -fPIC -lc -rdynamic dynamic.c -o libdynamic.so

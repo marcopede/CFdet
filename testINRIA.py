@@ -93,7 +93,7 @@ cfg.ovr=0.5
 cfg.thr=-2
 cfg.k=1.0
 #cfg.deform=False
-#cfg.bottomup=True
+cfg.bottomup=False
 cfg.loadfeat=False
 cfg.savefeat=False
 #cfg.usemrf=False#False#True#da togliere
@@ -185,9 +185,10 @@ for i,im in enumerate(itr):
     pylab.ion()
     pylab.draw()
     pylab.show()  
+    print [x["scr"] for x in im[1]]
     raw_input()
     if False:
-        pylab.savefig("./video/detNOPEDRO/"+tsImages[i]["name"].split("/")[-1].split(".")[0]+".png")  
+        pylab.savefig("./video/detSCRBU/"+tsImages[i]["name"].split("/")[-1].split(".")[0]+".png")  
     #raw_input()   
     for l in im[1]:
         detlist.append([tsImages[i]["name"].split("/")[-1].split(".")[0],l["scr"],l["bbox"][1],l["bbox"][0],l["bbox"][3],l["bbox"][2]])

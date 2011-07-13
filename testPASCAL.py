@@ -38,11 +38,12 @@ if __name__=="__main__":
     else:
         select="all"
     #cfg.bottomup=False
-    cfg.small=1
+    #cfg.small=1
+    cfg.small=False
     #cfg.year="2007"
     #cfg.maxtest=16#5000
     #cfg.initr=0
-    cfg.show=False
+    cfg.show=True
     select="pos"
     if cfg.show:
         cfg.multipr=False

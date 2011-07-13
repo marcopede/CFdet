@@ -268,13 +268,46 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
             showlabel="Parts"
         else:
             showlabel=False
-        det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)#remember to take away inclusion
-        #pylab.gca().set_ylim(0,img.shape[0])
-        #pylab.gca().set_xlim(0,img.shape[1])
-        #pylab.gca().set_ylim(pylab.gca().get_ylim()[::-1])
-        dettime=time.time()-t
+        ref=0#enable TD+BU
+        if ref:
+            t1=time.time()
+            det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
+            detR=[];detL=[]
+            for d in det:
+                if d["rl"]==1:
+                    detR.append(d)
+                else:
+                    detL.append(d)
+            samplesR=tr.goodsamples(detR,initr=initr,ratio=ratio)
+            samplesL=tr.goodsamples(detL,initr=initr,ratio=ratio)
+            #scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
+            #scr,pos=f.scanRCFLDefsamples(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
+            scrR,posR=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samplesR)
+            scrL,posL=f.scanRCFLDefBU(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samplesL)
+            #scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
+            lr=[];fscr=[]
+            for idl,l in enumerate(scrR):
+                auxscr=numpy.zeros((l.shape[0],l.shape[1],2),numpy.float32)
+                auxscr[:,:,0]=scrR[idl]
+                auxscr[:,:,1]=scrL[idl]
+                fscr.append(numpy.max(auxscr,2))
+                lr.append(numpy.argmax(auxscr,2))
+            print "Refine Time:",time.time()-t1
+            #tr=TreatDefRL(f,scr,pos,initr,m["fy"],m["fx"])
+            tr=TreatDefRL(f,fscr,posR,posL,lr,initr,m["fy"],m["fx"])
+            det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)
         #print "Elapsed Time:",dettime
         #print "Number HOG:",numhog
+        else:
+            det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)
+        dettime=time.time()-t
+#        det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)#remember to take away inclusion
+#        #pylab.gca().set_ylim(0,img.shape[0])
+#        #pylab.gca().set_xlim(0,img.shape[1])
+#        #pylab.gca().set_ylim(pylab.gca().get_ylim()[::-1])
+#        dettime=time.time()-t
+#        #print "Elapsed Time:",dettime
+#        #print "Number HOG:",numhog
         if show:
             tr.show(det,parts=showlabel,thr=-1.0,maxnum=0)           
         return tr,det,dettime,numhog

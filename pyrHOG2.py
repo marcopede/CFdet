@@ -943,7 +943,7 @@ class pyrHOG:
 #            res[i-self.starti]-=rho
 #        return res,pparts
 
-    def scanRCFLDefBUsamples(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None):
+    def scanRCFLDefBU(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None):
         ww=model["ww"]
         rho=model["rho"]
         df=model["df"]
@@ -1812,7 +1812,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
     f.resetHOG()
     if deform:
         if bottomup:
-            scr,pos=f.scanRCFLDefBUsamples(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
+            scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
         else:
             scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
 ##            scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
@@ -1846,14 +1846,14 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             showlabel="Parts"
         else:
             showlabel=False
-        ref=0#enable TD+BU
+        ref=1#enable TD+BU
         if ref:
             t1=time.time()
             det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
             samples=tr.goodsamples(det,initr=initr,ratio=ratio)
             #scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
             #scr,pos=f.scanRCFLDefsamples(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
-            scr,pos=f.scanRCFLDefBUsamples(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
+            scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
             #scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
             print "Refine Time:",time.time()-t1
             tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"])

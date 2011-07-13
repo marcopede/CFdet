@@ -13,6 +13,7 @@ from scipy.misc import imresize
 
 RSZ=1.0
 
+
 def detectWrap(a):
     t=time.time()
     i=a[0]
@@ -26,7 +27,7 @@ def detectWrap(a):
         pylab.ioff()
         pylab.clf()
         pylab.axis("off")
-        pylab.imshow(img,interpolation="nearest",animated=True) 
+        pylab.imshow(img, interpolation="nearest", animated=True) 
     if bbox!=None:
         gtbbox=[{"bbox":x} for x in bbox]   
     else:
@@ -93,12 +94,12 @@ cfg.ovr=0.5
 cfg.thr=-2
 cfg.k=1.0
 #cfg.deform=False
-cfg.bottomup=True
+cfg.bottomup=False
 cfg.loadfeat=False
 cfg.savefeat=False
 #cfg.usemrf=False#False#True#da togliere
 #cfg.usefather=False
-cfg.ratio=2#datogliere
+cfg.ratio=1#datogliere
 cfg.multipr=False
 cfg.inclusion=False
 #cfg.nms=0.5
@@ -186,7 +187,7 @@ for i,im in enumerate(itr):
     pylab.draw()
     pylab.show()  
     print [x["scr"] for x in im[1]]
-    #raw_input()
+    raw_input()
     if False:
         pylab.savefig("./video/detSCRBU/"+tsImages[i]["name"].split("/")[-1].split(".")[0]+".png")  
     #raw_input()   

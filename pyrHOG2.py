@@ -644,6 +644,56 @@ class pyrHOG:
             #raw_input()
         return res,pparts
 
+    def scanRCFLDefsamples(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None):
+        ww=model["ww"]
+        rho=model["rho"]
+        df=model["df"]
+        res=[]#score
+        pparts=[]#parts position
+        tot=0
+        if not(small):
+            self.starti=self.interv*(len(ww)-1)
+        else:
+            if type(small)==bool:
+                self.starti=0
+            else:
+                self.starti=self.interv*(len(ww)-1-small)
+        from time import time
+        for i in range(self.starti,len(self.hog)):
+            if mysamples==None:
+                samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(c_int)
+            else:
+                samples=mysamples[i]
+            sshape=samples.shape[1:3]
+            res.append(numpy.zeros(sshape,dtype=ctypes.c_float))
+            pparts.append([])
+            nelem=(sshape[0]*sshape[1])
+            for l in range(len(ww)):
+                pparts[-1].append(numpy.zeros((2**l,2**l,4,sshape[0],sshape[1]),dtype=c_int))
+            ff.scaneigh(self.hog[i],
+                self.hog[i].shape[0],
+                self.hog[i].shape[1],
+                ww[0],
+                ww[0].shape[0],ww[0].shape[1],ww[0].shape[2],
+                samples[0,:,:],
+                samples[1,:,:],
+                res[-1],
+                pparts[-1][0][0,0,0,:,:],
+                pparts[-1][0][0,0,1,:,:],
+                initr,initr,
+                nelem)
+            samples[:,:,:]=(samples[:,:,:]+pparts[-1][0][0,0,:2,:,:])*2+1
+            #self.scanRCFLPart(model,samples,pparts[-1],res[-1],i-self.interv,1,0,0,ratio,usemrf) 
+            self.scanRCFLPart(model,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf) 
+            res[i-self.starti]-=rho
+            #pylab.figure(1)
+            #pylab.imshow(res[-1],interpolation="nearest")
+            #pylab.show()
+            #print "Int",i,"Scr:",res[-1].max()
+            #print "RES:",res[-1].max()
+            #raw_input()
+        return res,pparts
+
     def scanRCFLprDef(self,model,initr=1,ratio=1,small=True,usemrf=True,pr=None):
         ww=model["ww"]
         rho=model["rho"]
@@ -892,6 +942,87 @@ class pyrHOG:
                         pparts[-1][l][elx==pt]=ct.ptr[pt].best[l-1][elx==pt]#auxpparts[pt,elx==pt]
             res[i-self.starti]-=rho
         return res,pparts
+
+    def scanRCFLDefBUsamples(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None):
+        ww=model["ww"]
+        rho=model["rho"]
+        df=model["df"]
+        res=[]#score
+        prec=[]#precomputed scores
+        pres=[]
+        pparts=[]#parts position
+        tot=0
+        pady=model["ww"][-1].shape[0]
+        padx=model["ww"][-1].shape[1]
+        if not(small):
+            self.starti=self.interv*(len(ww)-1)
+        else:
+            if type(small)==bool:
+                self.starti=0
+            else:
+                self.starti=self.interv*(len(ww)-1-small)
+        from time import time
+        #self.starti=19 #just for debug!!!!!!!
+        for i in range(self.starti,len(self.hog)):
+            if mysamples==None:
+                samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(c_int)
+            else:
+                samples=mysamples[i]
+            csamples=samples.copy()
+            sshape=samples.shape[1:3]
+            pres.append(numpy.zeros(((2*initr+1)*(2*initr+1),sshape[0],sshape[1]),dtype=ctypes.c_float))
+            res.append(numpy.zeros(sshape,dtype=ctypes.c_float))
+            pparts.append([])
+            prec=[]#.append([])
+            nelem=(sshape[0]*sshape[1])
+            #auxpparts=[]
+            for l in range(len(ww)):
+                prec.append(-100000*numpy.ones((4**l,2**l*(self.hog[i].shape[0]+2)+pady*2,2**l*(self.hog[i].shape[1]+2)+padx*2),dtype=ctypes.c_float))
+                pparts[-1].append(numpy.zeros((2**l,2**l,4,sshape[0],sshape[1]),dtype=c_int))                
+            #for p in range((2*initr+1)*(2*initr+1)):
+            auxpparts=(numpy.zeros(((2*initr+1)*(2*initr+1),2,2,4,sshape[0],sshape[1]),dtype=c_int))
+            auxptr=numpy.zeros((2*initr+1)*(2*initr+1),dtype=object)
+            #auxptr=numpy.zeros((2*ratio+1)*(2*ratio+1),dtype=object)
+            ct=container(auxpparts,auxptr)
+            #level=1
+            for l in range((2*initr+1)**2):
+                maux=(numpy.zeros((4,(2*initr+1)*(2*initr+1),2,2,4,sshape[0],sshape[1]),dtype=c_int))
+                auxptr=numpy.zeros((4,(2*initr+1)*(2*initr+1)),dtype=object)
+                ct.ptr[l]=container(maux,auxptr)
+                #for l in range(len(ww)):
+                #auxpparts[-1].append([numpy.zeros((2**l,2**l,4,sshape[0],sshape[1]),dtype=c_int)])
+            for dy in range(-initr,initr+1):
+                for dx in range(-initr,initr+1):
+                    csamples[0,:,:]=samples[0,:,:]+dy
+                    csamples[1,:,:]=samples[1,:,:]+dx
+                    ff.scaneigh(self.hog[i],
+                        self.hog[i].shape[0],
+                        self.hog[i].shape[1],
+                        ww[0],
+                        ww[0].shape[0],ww[0].shape[1],ww[0].shape[2],
+                        csamples[0,:,:],
+                        csamples[1,:,:],
+                        pres[-1][(dy+initr)*(2*initr+1)+(dx+initr),:,:],
+                        pparts[-1][0][0,0,0,:,:],#auxpparts[0][(dy+initr)*(2*initr+1)+(dx+initr),0,0,0,:,:],
+                        pparts[-1][0][0,0,1,:,:],#auxpparts[0][(dy+initr)*(2*initr+1)+(dx+initr),0,0,1,:,:],
+                        0,0,
+                        nelem)
+                    csamples=csamples[:,:,:]*2+1
+                    self.scanRCFLPartBU(model,csamples,pparts[-1],ct.ptr[(dy+initr)*(2*initr+1)+(dx+initr)],pres[i-self.starti][(dy+initr)*(2*initr+1)+(dx+initr),:,:],i-self.interv,1,0,0,ratio,usemrf,prec,pady,padx) 
+            res[i-self.starti]=pres[i-self.starti].max(0)
+            el=pres[i-self.starti].argmax(0)
+            pparts[-1][0][0,0,0,:,:]=el/(initr*2+1)-1#auxpparts[0][elx,aa[0],aa[1],aa[2],aa[3],aa[4]]
+            pparts[-1][0][0,0,1,:,:]=el%(initr*2+1)-1
+            #for l in range(1,len(ww)):
+            for l in range(1,len(ww)):
+                elx=numpy.tile(el,(2**l,2**l,4,1,1))
+                for pt in range((2*initr+1)*(2*initr+1)):
+                    if len(ct.ptr[pt].best)>=l:
+                        #l=1
+                        pparts[-1][l][elx==pt]=ct.ptr[pt].best[l-1][elx==pt]#auxpparts[pt,elx==pt]
+            res[i-self.starti]-=rho
+        return res,pparts
+
 
     def scanRCFLPartBU(self,model,samples,pparts,ct,res,i,lev,locy,locx,ratio,usemrf,prec,pady,padx):
         #if len(model["ww"])<=lev:
@@ -1469,7 +1600,20 @@ class Treat:
                     lpos2.append({"scr":-10,"bbox":gt["bbox"],"notfound":True})#not detected bbox
         return lpos2,lneg
 
-                
+    def goodsamples(self,det,initr,ratio):
+        f=self.f
+        samples=[]
+        #scl=[x["i"] for x in det]
+        for i in range(0,len(f.hog)):
+            samples.append(numpy.mgrid[-self.fy+initr:f.hog[i].shape[0]+1:1+2*initr,-self.fx+initr:f.hog[i].shape[1]+1:1+2*initr].astype(c_int))
+        #set to -100 positions to skip
+            #if i in scl:
+            csamples=samples[-1][0,:,:].copy()
+            samples[-1][0,:,:]=-1000
+            for d in det:
+                if d["i"]==i-f.starti:
+                    samples[-1][0,d["py"],d["px"]]=csamples[d["py"],d["px"]]      
+        return samples
 
 class TreatDef(Treat):
 
@@ -1669,7 +1813,6 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
 ##            scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
             #scr,pos=f.scanRCFLprDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,pr=pr)
-        dsfsd
         tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"])
     else:
         scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
@@ -1699,13 +1842,24 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             showlabel="Parts"
         else:
             showlabel=False
-        det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)#remember to take away inclusion
-        #pylab.gca().set_ylim(0,img.shape[0])
-        #pylab.gca().set_xlim(0,img.shape[1])
-        #pylab.gca().set_ylim(pylab.gca().get_ylim()[::-1])
-        dettime=time.time()-t
+        ref=0
+        if ref:
+            t1=time.time()
+            det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
+            samples=tr.goodsamples(det,initr=initr,ratio=ratio)
+            #scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
+            #scr,pos=f.scanRCFLDefsamples(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
+            scr,pos=f.scanRCFLDefBUsamples(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
+            #scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
+            print "Refine Time:",time.time()-t1
+            tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"])
+            det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)
         #print "Elapsed Time:",dettime
         #print "Number HOG:",numhog
+        else:
+            det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)
+        dettime=time.time()-t
+
         if show==True:
             tr.show(det,parts=showlabel,thr=-1.0,maxnum=5)           
         return tr,det,dettime,numhog

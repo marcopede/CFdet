@@ -93,12 +93,12 @@ cfg.ovr=0.5
 cfg.thr=-2
 cfg.k=1.0
 #cfg.deform=False
-cfg.bottomup=False
+cfg.bottomup=True
 cfg.loadfeat=False
 cfg.savefeat=False
 #cfg.usemrf=False#False#True#da togliere
 #cfg.usefather=False
-#cfg.ratio=1#datogliere
+cfg.ratio=2#datogliere
 cfg.multipr=False
 cfg.inclusion=False
 #cfg.nms=0.5
@@ -180,13 +180,13 @@ for i,im in enumerate(itr):
     img=util.myimread(tsImages[i]["name"],resize=RSZ)
     pylab.imshow(img,interpolation="nearest",animated=True)
     pylab.axis("off")
-    tr.show(im[1],parts=True,thr=-0.5,scr=True,maxnum=0)
+    tr.show(im[1],parts=True,thr=-0.5,scr=True,maxnum=3)
     pylab.axis((0,img.shape[1],img.shape[0],0))
     pylab.ion()
     pylab.draw()
     pylab.show()  
     print [x["scr"] for x in im[1]]
-    raw_input()
+    #raw_input()
     if False:
         pylab.savefig("./video/detSCRBU/"+tsImages[i]["name"].split("/")[-1].split(".")[0]+".png")  
     #raw_input()   

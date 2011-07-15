@@ -82,7 +82,7 @@ def loadcfg(place,name,cls,select):
     #if len(sys.argv)>3:
     #    cfg.mythr=float(sys.argv[3])
     #cfg.mythr=thr
-    #cfg.bottomup=False
+    cfg.bottomup=False
     cfg.maxtest=5000
     cfg.small=False
     #cfg.year="2007"
@@ -101,147 +101,6 @@ def loadcfg(place,name,cls,select):
     cfg.dbpath="/home/marcopede/databases/"
     return cfg
 
-def test(thr,cfg):
-    
-    #cfg.test=True
-    import util
-    it=7
-    models=util.load("%s%d.model"%(cfg.testname,it))
-    w=[]
-    rho=[]
-    cfg.mythr=thr
-    #for l in range(cfg.numcl):
-    #    w.append(util.ModeltoW(models[l],cfg.usemrf,cfg.usefather,cfg.k,lastlev=1))
-    #    rho.append(models[l]["rho"])
-    #cfg.mythr=cfg.mythr*numpy.mean([numpy.sum(x**2) for x in w])#-numpy.mean(rho)
-    #raw_input()    
-    #cfg.mythr=cfg.mythr#-numpy.mean(rho)
-    if cfg.multipr==1:
-        numcore=None
-    else:
-        numcore=cfg.multipr
-
-    mypool = Pool(numcore)
-    
-    if cfg.cls=="inria":
-        if cfg.select=="pos":
-            tsImages=getRecord(InriaTestData(basepath=cfg.dbpath),cfg.maxtest)
-        else:
-            tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
-    else:
-        if select=="dir":#"." or select[0]=="/"
-            import glob
-            #lst=glob.glob("/home/marcopede/ivan/zebra/CVC_Zebra1/*.jpeg")[150:]
-            lst=glob.glob("/media/ca0567b8-ee6d-4590-8462-0d093addb4cf/video/*.png")
-            lst.sort()
-            lst=lst[3900:]
-            total=len(lst)
-            tsImages=numpy.zeros(total,dtype=[("id",numpy.int32),("name",object),("bbox",list)])
-            for idl,l in enumerate(lst):
-                tsImages[idl]["id"]=idl
-                tsImages[idl]["name"]=l#l.split("/")[-1]
-                tsImages[idl]["bbox"]=None             
-        else:
-            tsImages=getRecord(VOC07Data(select=cfg.select,cl="%s_test.txt"%cfg.cls,
-                    basepath=cfg.dbpath,#"/home/databases/",
-                    usetr=True,usedf=False),cfg.maxtest)
-        
-    mypool = Pool(numcore)
- 
-    print "Test"
-    print "Pruning Threshold:",cfg.mythr
-    numhog=0
-    initime=time.time()
-    detlist=[]
-    mycfg=copy.copy(cfg)
-    mycfg.numneg=0
-    arg=[[i,tsImages[i]["name"],None,models,mycfg] for i in range(len(tsImages))]
-    t=time.time()
-    if not(cfg.multipr):
-        itr=itertools.imap(detectWrap,arg)        
-    else:
-        itr=mypool.imap(detectWrap,arg)
-    for ii,res in enumerate(itr):
-        totneg=0
-        fuse=[]
-        for mix in res:
-            tr=mix[0]
-            fuse+=mix[1]
-            numhog+=mix[3]
-        #for h in fuse:
-        #    h["scr"]+=models[h["cl"]]["ra"]
-        rfuse=tr.rank(fuse,maxnum=300)
-        nfuse=tr.cluster(rfuse,ovr=0.3,inclusion=False)
-        #print "----Test Image %d----"%ii
-        print "----Test Image %s----"%tsImages[ii]["name"].split("/")[-1]
-        for l in nfuse:
-            detlist.append([tsImages[ii]["name"].split("/")[-1].split(".")[0],l["scr"],l["bbox"][1],l["bbox"][0],l["bbox"][3],l["bbox"][2]])
-        print "Detections:",len(nfuse)
-        if cfg.show:
-            if cfg.show==True:
-                showlabel="Parts"
-            else:
-                showlabel=False
-            pylab.figure(20)
-            pylab.ioff()
-            pylab.clf()
-            pylab.axis("off")
-            img=util.myimread(tsImages[ii]["name"],resize=cfg.resize)
-            pylab.imshow(img,interpolation="nearest",animated=True)
-            pylab.gca().set_ylim(0,img.shape[0])
-            pylab.gca().set_xlim(0,img.shape[1])
-            pylab.gca().set_ylim(pylab.gca().get_ylim()[::-1])
-            tr.show(nfuse,parts=showlabel,thr=-1.0,maxnum=0)           
-            pylab.draw()
-            pylab.show()
-            #raw_input()
-        if True:
-            #RSZ=0.5
-            f=pylab.figure(11,figsize=(9,5))
-            pylab.ioff()
-            pylab.clf()
-            axes=pylab.Axes(f, [.0,.0,1.0,1.0]) # [left, bottom, width, height] where each value is between 0 and 1
-            f.add_axes(axes) 
-            img=util.myimread(tsImages[ii]["name"],resize=cfg.resize)
-            pylab.imshow(img,interpolation="nearest",animated=True)
-            #raw_input()
-            pylab.axis("off")
-            tr.show(nfuse,parts=True,thr=-0.99,scr=True)
-            pylab.axis((0,img.shape[1],img.shape[0],0))
-            pylab.ion()
-            pylab.draw()
-            pylab.show()  
-            #raw_input()
-            pylab.savefig("/media/ca0567b8-ee6d-4590-8462-0d093addb4cf/video/det/"+tsImages[ii]["name"].split("/")[-1].split(".")[0]+".png")  
-    del itr
-    
-    #tp,fp,scr,tot=VOCpr.VOCprlistfastscore(tsImages,detlist,numim=cfg.maxpostest,show=False,ovr=0.5)
-    #tp,fp,scr,tot=VOCpr.VOCprRecord_wrong(tsImages,detlist,show=False,ovr=0.5)
-    tp,fp,scr,tot=VOCpr.VOCprRecord(tsImages,detlist,show=False,ovr=0.5)
-    pylab.figure(15)
-    pylab.clf()
-    rc,pr,ap=VOCpr.drawPrfast(tp,fp,tot)
-    pylab.draw()
-    pylab.show()
-    #pylab.savefig("%s_ap%d_test%s%.1f.png"%(testname,it,select,cfg.mythr))
-    tottime=((time.time()-initime))
-    print "Threshold used:",cfg.mythr
-    print "Total number of HOG:",numhog
-    print "AP(it=",it,")=",ap
-    print "Testing Time: %.3f s"%tottime#/3600.0)
-    #results={"det":detlist,"ap":ap,"tp":tp,"fp":fp,"pr":pr,"rc":rc,"numhog":numhog,"mythr":cfg.mythr,"time":tottime}
-    #util.savemat("%s_ap%d_test_thr_%.3f.mat"%(cfg.testname,it,cfg.mythr),results)
-    #util.save("%s_ap%d_test_thr_%.3f.dat"%(testname,it,cfg.mythr),results)
-    #util.savedetVOC(detlist,"%s_ap%d_test_thr_%.3f.txt"%(testname,it,cfg.mythr))
-    #fd=open("%s_ap%d_test%s.txt"%(cfg.testname,it,select),"a")
-    #fd.write("Threshold used:%f\n"%cfg.mythr)
-    #fd.write("Total number of HOG:%d\n"%numhog)
-    #fd.write("Average precision:%f\n"%ap)
-    #fd.write("Testing Time: %.3f s\n\n"%tottime)
-    #fd.close()
-    return ap,numhog
-
-
 if __name__=="__main__":
 
     import sys
@@ -253,7 +112,7 @@ if __name__=="__main__":
     if len(sys.argv)>2:
         imname=sys.argv[2]
     else:
-        imname="000034.jpg"
+        imname="000004.jpg"
     
     cfg=loadcfg("./data/finalRL","test",cls,"all")
     

@@ -1822,7 +1822,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
         #scr,pos=f.scanRCFLpr(m,initr=initr,ratio=ratio,small=small,pr=pr)
         tr=Treat(f,scr,pos,initr,m["fy"],m["fx"])
-    numhog=f.getHOG()
+    #numhog=f.getHOG()
     #for h in range(18,len(scr)):
         #pylab.figure(200)
         #pylab.clf()
@@ -1846,10 +1846,10 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             showlabel="Parts"
         else:
             showlabel=False
-        ref=1#enable TD+BU
+        ref=0#enable TD+BU
         if ref:
             t1=time.time()
-            det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
+            det=tr.doall(thr=thr,rank=200,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
             samples=tr.goodsamples(det,initr=initr,ratio=ratio)
             #scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
             #scr,pos=f.scanRCFLDefsamples(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
@@ -1862,6 +1862,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         #print "Number HOG:",numhog
         else:
             det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)
+        numhog=f.getHOG()
         dettime=time.time()-t
 
         if show==True:

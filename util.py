@@ -1271,46 +1271,49 @@ def trainSvmRawLin(posnfeat,negnfeat,str,dir="./save/",pc=0.017,path="/home/marc
 import ctypes
 from ctypes import c_float,c_int,c_void_p,POINTER
 
-ctypes.cdll.LoadLibrary("./libfastpegasos.so")
-lpeg= ctypes.CDLL("libfastpegasos.so")
-#void fast_pegasos(ftype *w,int wx,ftype *ex,int exy,ftype *label,ftype lambda,int iter,int part)
-lpeg.fast_pegasos.argtypes=[
-    numpy.ctypeslib.ndpointer(dtype=c_float,ndim=1,flags="C_CONTIGUOUS")#w
-    ,c_int #sizew
-    ,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=2,flags="C_CONTIGUOUS")#samples
-    ,c_int #numsamples
-    ,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=1,flags="C_CONTIGUOUS")#labels
-    ,c_float #lambda
-    ,c_int #iter
-    ,c_int #part
-    ]
+try:
+    ctypes.cdll.LoadLibrary("./libfastpegasos.so")
+    lpeg= ctypes.CDLL("libfastpegasos.so")
+    #void fast_pegasos(ftype *w,int wx,ftype *ex,int exy,ftype *label,ftype lambda,int iter,int part)
+    lpeg.fast_pegasos.argtypes=[
+        numpy.ctypeslib.ndpointer(dtype=c_float,ndim=1,flags="C_CONTIGUOUS")#w
+        ,c_int #sizew
+        ,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=2,flags="C_CONTIGUOUS")#samples
+        ,c_int #numsamples
+        ,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=1,flags="C_CONTIGUOUS")#labels
+        ,c_float #lambda
+        ,c_int #iter
+        ,c_int #part
+        ]
 
-maxcomp=10 #max 10 components
-lpeg.fast_pegasos_comp.argtypes=[
-    numpy.ctypeslib.ndpointer(dtype=c_float,ndim=1,flags="C_CONTIGUOUS")#w
-    ,c_int #num comp
-    ,POINTER(c_int) #compx
-    ,POINTER(c_int) #compy 
-    ,POINTER(c_void_p)#samples
-    ,c_int #numsamples
-    ,numpy.ctypeslib.ndpointer(dtype=c_int,ndim=1,flags="C_CONTIGUOUS")#labels
-    ,numpy.ctypeslib.ndpointer(dtype=c_int,ndim=1,flags="C_CONTIGUOUS")#comp number
-    ,c_float #lambda
-    ,c_int #iter
-    ,c_int #part
-    ]
+    maxcomp=10 #max 10 components
+    lpeg.fast_pegasos_comp.argtypes=[
+        numpy.ctypeslib.ndpointer(dtype=c_float,ndim=1,flags="C_CONTIGUOUS")#w
+        ,c_int #num comp
+        ,POINTER(c_int) #compx
+        ,POINTER(c_int) #compy 
+        ,POINTER(c_void_p)#samples
+        ,c_int #numsamples
+        ,numpy.ctypeslib.ndpointer(dtype=c_int,ndim=1,flags="C_CONTIGUOUS")#labels
+        ,numpy.ctypeslib.ndpointer(dtype=c_int,ndim=1,flags="C_CONTIGUOUS")#comp number
+        ,c_float #lambda
+        ,c_int #iter
+        ,c_int #part
+        ]
 
-#ftype objective(ftype *w,int wx,ftype *ex, int exy,ftype *label,ftype lambda)
-lpeg.objective.argtypes=[
-    numpy.ctypeslib.ndpointer(dtype=c_float,ndim=1,flags="C_CONTIGUOUS")#w
-    ,c_int #sizew
-    ,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=2,flags="C_CONTIGUOUS")#samples
-    ,c_int #numsamples
-    ,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=1,flags="C_CONTIGUOUS")#labels
-    ,c_float #lambda
-    ]
-lpeg.objective.restype=ctypes.c_float
-
+    #ftype objective(ftype *w,int wx,ftype *ex, int exy,ftype *label,ftype lambda)
+    lpeg.objective.argtypes=[
+        numpy.ctypeslib.ndpointer(dtype=c_float,ndim=1,flags="C_CONTIGUOUS")#w
+        ,c_int #sizew
+        ,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=2,flags="C_CONTIGUOUS")#samples
+        ,c_int #numsamples
+        ,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=1,flags="C_CONTIGUOUS")#labels
+        ,c_float #lambda
+        ]
+    lpeg.objective.restype=ctypes.c_float
+except:
+    print "Subset for training..."
+    print "Split into 2 different files"
 
 def trainSvmRawPeg(posnfeat,negnfeat,fname,oldw=None,dir="./save/",pc=0.017,path="/home/marcopede/code/c/liblinear-1.7",maxtimes=100,eps=0.01,bias=100):
     """

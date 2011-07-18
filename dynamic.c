@@ -3,14 +3,13 @@
 #include "dynamic.h"
 //library for dynamic programming in chains
 
-void compute(int node,int *pos)//here maxnode=4
+void compute(int node,int *pos)
 {
     int i,id,idp,iddf,p;
     ftype aux;
     for (i=0;i<numlab;i++)
     {
         id=node*numlab+i;
-        //sumscr[id]=scr[id];
         sumscr[id]=-INFINITY;
         for (p=0;p<numlab;p++)
         {   
@@ -19,16 +18,11 @@ void compute(int node,int *pos)//here maxnode=4
             aux=scr1[id]+def[iddf]+sumscr[idp];
             if (aux>sumscr[id])
             {
-                //printf("  Aux(%d)=%.2f\n",p,aux);
                 sumscr[id]=aux;
                 pos[id]=p;
             }
         }
-        //printf("Scr(%d,%d)=%.2f\n",node,i,scr[id]);
-        //printf("SumScr(%d,%d)=%.2f\n",node,i,sumscr[id]);
-        //printf("Pos(%d,%d)=%d\n",node,i,pos[id]);
     }
-    //printf("\n");
 }
 
 void initmaxmarginal(int node,int p)//initialize for computing max marginals in node,pos
@@ -41,10 +35,7 @@ void initmaxmarginal(int node,int p)//initialize for computing max marginals in 
             sumscr[id]=scr1[id];
         else
             sumscr[id]=-INFINITY;
-        //printf("Scr(%d,%d)=%.2f\n",node,i,scr[id]);
-        //printf("SumScr(%d,%d)=%.2f\n",node,i,sumscr[id]);
     }
-    //printf("\n");
 }
 
 ftype maxmarginal(int node,int p,int *pos)//compute the max marginals in node,pos
@@ -62,9 +53,7 @@ ftype maxmarginal(int node,int p,int *pos)//compute the max marginals in node,po
         id=((node-1+maxnode)%maxnode)*numlab+i;
         idn=((node+maxnode)%maxnode)*numlab+p;
         iddf=((node+maxnode)%maxnode)*numlab*numlab+i*numlab+p;
-        //printf("Before Sumscr(%d)=%f\n",i,sumscr[id]);
         sumscr[id]+=def[iddf];
-        //printf("Sumscr(%d)=%f\n",i,sumscr[id]);
         if (sumscr[id]>maxm)
         {
             maxm=sumscr[id];
@@ -87,7 +76,6 @@ ftype map(int *mapos,int node,ftype *maxmarg)//compute map and avrg using max ma
     {
         scr=maxmarginal(node,i,auxpos);
         maxmarg[i]=scr;
-        //printf("Score in (%d,%d): %f \n",node,i,scr);
         if (scr>best)
         {
             best=scr;

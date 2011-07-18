@@ -309,7 +309,8 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
 #        #print "Elapsed Time:",dettime
 #        #print "Number HOG:",numhog
         if show:
-            tr.show(det,parts=showlabel,thr=-1.0,maxnum=0)           
+            tr.show(det,parts=showlabel,thr=-1.0,maxnum=0)  
+        print "Detect:",time.time()-t             
         return tr,det,dettime,numhog
     else:
         best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
@@ -331,7 +332,7 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
                 #ineg=ineg+inegflip
         else:
             ipos=[];ineg=[]
-        if True and show and len(best1)>0:
+        if False and show and len(best1)>0:
             import util
             ds=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather,k=K)
             pylab.figure(120)

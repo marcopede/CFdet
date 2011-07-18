@@ -210,9 +210,9 @@ void scaneighpr(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int
 #define maxrad 5
 static ftype scr[4*(2*maxrad+1)*(2*maxrad+1)];
 
-extern ftype minimize(ftype *D,ftype *pd1,ftype *pd2,ftype *pd3,ftype *pd4,int *result, int sizeX,int sizeY,int ry,int rx);
+//extern ftype minimize(ftype *D,ftype *pd1,ftype *pd2,ftype *pd3,ftype *pd4,int *result, int sizeX,int sizeY,int ry,int rx);
 
-void scanDef(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz,ftype *df1,ftype *df2,ftype *df3,ftype *df4,ftype *img,int imgy,int imgx,int *posy,int *posx,int *parts,ftype *res,int rad,int len,int usemrf,ftype *uscr,int useusrc,ftype *prec,int pady,int padx)
+/*void scanDef(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz,ftype *df1,ftype *df2,ftype *df3,ftype *df4,ftype *img,int imgy,int imgx,int *posy,int *posx,int *parts,ftype *res,int rad,int len,int usemrf,ftype *uscr,int useusrc,ftype *prec,int pady,int padx)
 {
     int sizedf=4;
     ftype maxscr1,maxscr2,maxscr3,maxscr4;
@@ -280,7 +280,7 @@ void scanDef(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz,
         parts[3*len*sizedf+3*len+i]=(dx[3]-dx[2])*(dx[3]-dx[2]); //my defx
        
     }
-}
+}*/
 
 
 //compute the score using dinamic programming

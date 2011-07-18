@@ -18,7 +18,7 @@ K=1.0#0.3
 
 from numpy import ctypeslib
 from ctypes import c_int,c_double,c_float
-libmrf=ctypeslib.load_library("libmyrmf.so.1.0.1","")
+#libmrf=ctypeslib.load_library("libmyrmf.so.1.0.1","")
 
 import ctypes
 ctypes.cdll.LoadLibrary("./libexcorr.so")
@@ -44,17 +44,17 @@ ff.scaneighpr.argtypes=[numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_
 (dtype=c_int,flags="C_CONTIGUOUS"),c_int,c_int,c_int,ctypes.POINTER(c_float)]
 
 
-ff.scanDef.argtypes = [
-    ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
-    c_int,c_int,c_int,
-    ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
-    ctypeslib.ndpointer(c_float),
-    c_int,c_int,ctypeslib.ndpointer(c_int),ctypeslib.ndpointer(c_int),
-    ctypeslib.ndpointer(c_int),
-    ctypeslib.ndpointer(c_float),
-    c_int,c_int,c_int,ctypeslib.ndpointer(c_float),c_int,
-    ctypes.POINTER(c_float),c_int,c_int]#ctypeslib.ndpointer(c_float,ndim=3,flags="C_CONTIGUOUS")]
-ff.scanDef.restype=ctypes.c_float
+#ff.scanDef.argtypes = [
+#    ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
+#    c_int,c_int,c_int,
+#    ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
+#    ctypeslib.ndpointer(c_float),
+#    c_int,c_int,ctypeslib.ndpointer(c_int),ctypeslib.ndpointer(c_int),
+#    ctypeslib.ndpointer(c_int),
+#    ctypeslib.ndpointer(c_float),
+#    c_int,c_int,c_int,ctypeslib.ndpointer(c_float),c_int,
+#    ctypes.POINTER(c_float),c_int,c_int]#ctypeslib.ndpointer(c_float,ndim=3,flags="C_CONTIGUOUS")]
+#ff.scanDef.restype=ctypes.c_float
 
 ff.scanDef2.argtypes = [
     ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
@@ -231,36 +231,36 @@ class pyrHOG:
         self.scale=scl
         self.hallucinate=hallucinate
 
-    def _computeold(self,img,interv=10,sbin=8):
-        """
-        Compute the HOG pyramid of an image in a list
-        """
-        import time
-        t=time.time()
-        l=[]
-        octimg=img.astype(numpy.float)#copy()
-        maxoct=int(numpy.log2(int(numpy.min(img.shape[:-1])/sbin)))-1#-2
-        #intimg=octimg
-        for o in range(maxoct):
-            intimg=octimg
-            for i in range(interv):
-                t1=time.time()
-                l.append(hog(intimg,sbin))
-                #print "hog:",time.time()-t1
-                t2=time.time()
-                #intimg=resize.resize(octimg.astype(numpy.float),math.pow(2,-float(i+1)/interv))
-                intimg=resize.resize(octimg,math.pow(2,-float(i+1)/interv))
-                #pylab.imshow(intimg)
-                #pylab.show()
-                #pylab.draw()
-                #raw_input()
-                #print "resize:",time.time()-t2
-            octimg=intimg
-        self.hog=l
-        self.interv=interv
-        self.oct=maxoct
-        self.sbin=sbin
-        print "Features: ",time.time()-t
+#    def _computeold(self,img,interv=10,sbin=8):
+#        """
+#        Compute the HOG pyramid of an image in a list
+#        """
+#        import time
+#        t=time.time()
+#        l=[]
+#        octimg=img.astype(numpy.float)#copy()
+#        maxoct=int(numpy.log2(int(numpy.min(img.shape[:-1])/sbin)))-1#-2
+#        #intimg=octimg
+#        for o in range(maxoct):
+#            intimg=octimg
+#            for i in range(interv):
+#                t1=time.time()
+#                l.append(hog(intimg,sbin))
+#                #print "hog:",time.time()-t1
+#                t2=time.time()
+#                #intimg=resize.resize(octimg.astype(numpy.float),math.pow(2,-float(i+1)/interv))
+#                intimg=resize.resize(octimg,math.pow(2,-float(i+1)/interv))
+#                #pylab.imshow(intimg)
+#                #pylab.show()
+#                #pylab.draw()
+#                #raw_input()
+#                #print "resize:",time.time()-t2
+#            octimg=intimg
+#        self.hog=l
+#        self.interv=interv
+#        self.oct=maxoct
+#        self.sbin=sbin
+#        print "Features: ",time.time()-t
         
     def _precompute(self,imname,interv=10,sbin=8,savedir="./",compress=False,notload=False,notsave=True,hallucinate=0,cformat=False):
         """
@@ -1472,7 +1472,7 @@ class Treat:
         return rdet
 
 
-    def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf,scr=True):
+    def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf,scr=True,cls=None):
         count=0
         for item in ldet:
             #if item!=[] and not(item.has_key("notfound")):
@@ -1496,7 +1496,10 @@ class Treat:
                 util.box(bbox[0],bbox[1],bbox[2],bbox[3],colors[0],lw=2)
                 #scr=False
                 if scr:
-                    pylab.text(bbox[1],bbox[0],"%d %.3f"%(item["cl"],item["scr"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
+                    if cls!=None:
+                        pylab.text(bbox[1],bbox[0],"%d %.3f %s"%(item["cl"],item["scr"],cls),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
+                    else:
+                        pylab.text(bbox[1],bbox[0],"%d %.3f"%(item["cl"],item["scr"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
             count+=1
             if count>maxnum:
                 break
@@ -1685,7 +1688,7 @@ class TreatDef(Treat):
         return rdet
 
 
-    def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf,scr=True):
+    def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf,scr=True,cls=None):
         ar=[5,4,2]
         count=0
         if parts:
@@ -1707,7 +1710,7 @@ class TreatDef(Treat):
                 count+=1
                 if count>maxnum:
                     break
-        Treat.show(self,ldet,colors=colors,thr=thr,maxnum=maxnum,scr=scr)        
+        Treat.show(self,ldet,colors=colors,thr=thr,maxnum=maxnum,scr=scr,cls=cls)        
 
     def descr(self,det,flip=False,usemrf=True,usefather=True,k=K):   
         ld=[]

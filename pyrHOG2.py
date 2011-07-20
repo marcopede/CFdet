@@ -648,6 +648,7 @@ class pyrHOG:
         ww=model["ww"]
         rho=model["rho"]
         df=model["df"]
+        occl=model["occl"]
         res=[]#score
         pparts=[]#parts position
         tot=0
@@ -1138,8 +1139,8 @@ class Treat:
             self.det=self.refine(self.det)
         #    print "Refine",time.time()-t
         #t=time.time()
-        if occl:
-            self.det=self.occl(self.det)
+        #if occl:
+        #    self.det=self.occl(self.det)
         self.det=self.bbox(self.det)
         #print "Bbox",time.time()-t
         #t=time.time()

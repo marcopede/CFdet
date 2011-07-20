@@ -740,7 +740,6 @@ class CVC02test(VOC06Data):
         item=self.selines[i]
         fd=open(self.annotations+item.split("/")[-1].split(".")[0]+".txt")
         bb=fd.readlines()
-        sdfs
         ll=[]
         for l in bb:
             prs=l.split(" ")

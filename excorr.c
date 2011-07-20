@@ -1,13 +1,14 @@
 
 #include<stdio.h>
 #include<stdlib.h>
-// gcc -fPIC -c excorr.c -O3
-//gcc -shared -Wl,-soname,libexcorr.so -o libexcorr.so  excorr.o
-#define ftype float
-#define INFINITY 10000
-//#define k 0.3
+#include<math.h>
 
-static ftype k=1.0;
+#define ftype float
+#ifndef INFINITY
+   #define INFINITY 10000
+#endif
+
+static ftype k=1.0;//deformation coefficient
 
 void setK(ftype pk)
 {
@@ -34,29 +35,22 @@ long getHOG()
 //compute 3d correlation between an image feature img and a mask 
 inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx)
 {
-    //pady=0;
-    //padx=0;
-    //printf("Value of prec:%d\n",prec==NULL);
-    //printf("Pady, Padx: %d %d \n",pady,padx);
-    if (prec!=NULL)
+    if (prec!=NULL)//memoization of the already computed locations
     {
         if (posy>=-pady && posy<imgy+pady && posx>=-padx && posx<imgx+padx)
             if (prec[(posy+pady)*(imgx+2*padx)+(posx+padx)]>-INFINITY)
             {
-                //printf("Value Already Computed at location:(%d,%d)\n",posy,posx);
                 return prec[(posy+pady)*(imgx+2*padx)+(posx+padx)];
             }
     }    
-    //img[y,x,z]
     ftype sum=0.0;
     int x,y,z,posi;
-    //posy=posy//-(masky)/2;
-    //posx=posx//-(maskx)/2;
     for (x=0;x<maskx;x++)
         for (y=0;y<masky;y++)
         {
             compHOG++;
             if (((x+posx)>=0 && (x+posx<imgx)) && ((y+posy)>=0 && (y+posy<imgy)))
+            //inside the image
             {
                 for (z=0;z<dimz;z++)
                 {   
@@ -67,17 +61,17 @@ inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
                 }
             }
         }
-    if (prec!=NULL)
+    if (prec!=NULL)//save computed values in the buffer
     {
         if (posy>=-pady && posy<imgy+pady && posx>=-padx && posx<imgx+padx)
         {
-            //printf("Writing location:(%d,%d)\n",posy,posx);
             prec[(posy+pady)*(imgx+2*padx)+(posx+padx)]=sum;
         }
     }
     return sum;
 }
 
+//compute the score over the possible values of a defined neighborhood
 inline ftype refineigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,int rady,int radx,int *posedy, int *posedx, ftype *prec)
 {
     int iy,ix;  
@@ -87,7 +81,6 @@ inline ftype refineigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
     {
         for (ix=-radx;ix<=radx;ix++)
         {
-            //val=corr3d(img,imgy,imgx,mask,masky,maskx,dimz,posy+iy,posx+ix,prec);
             val=corr3dpad(img,imgy,imgx,mask,masky,maskx,dimz,posy+iy,posx+ix,prec,0,0);
             if (val>maxval)
             {

@@ -643,16 +643,25 @@ class CVC02(VOC06Data):
     """
     def __init__(self,select="pos",
                 basepath="/media/ca0567b8-ee6d-4590-8462-0d093addb4cf/DATASET-CVC-02/",
-                trainfile="CVC-02-Classification/train/%s/color/",ext=".png"):
+                trainfile="CVC-02-Classification/train/%s/color/",ext=".png",mirror=False,margin=0.1):
         if select=="pos":
             self.imagepath=basepath+trainfile%("positive")
         elif select=="neg":
             self.imagepath=basepath+trainfile%("negative-frames")
+        elif select=="none":
+            self.imagepath=basepath+trainfile
         self.ext=ext
         #fd=open(self.trainfile,"r")
         import glob
-        self.selines=glob.glob(self.imagepath+"/*"+self.ext)
+        if select!="pos":
+            self.selines=glob.glob(self.imagepath+"/*"+self.ext)
+        else:
+            if mirror:
+                self.selines=glob.glob(self.imagepath+"/*"+self.ext)
+            else:
+                self.selines=glob.glob(self.imagepath+"/positive-??????"+self.ext)#do not use mirror
         self.selines.sort()
+        self.margin=margin
         #sdf
         #self.trlines=fd.readlines()
         #fd.close()
@@ -689,7 +698,7 @@ class CVC02(VOC06Data):
         img=myimread(item)
         w=img.shape[1]
         h=img.shape[0]
-        return [[0+0.1*h,0+0.1*h,h-0.1*h,w-0.1*h,0,0]]
+        return [[0+self.margin*h,0+self.margin*h,h-self.margin*h,w-self.margin*h,0,0]]
 
 
 class CVC02test(VOC06Data):
@@ -707,6 +716,7 @@ class CVC02test(VOC06Data):
         import glob
         self.selines=glob.glob(self.imagepath+"/*"+self.ext)
         self.selines.sort()
+        self.select=select
         #self.trlines=fd.readlines()
 
     def getDBname(self):
@@ -740,11 +750,16 @@ class CVC02test(VOC06Data):
         item=self.selines[i]
         fd=open(self.annotations+item.split("/")[-1].split(".")[0]+".txt")
         bb=fd.readlines()
-        sdfs
         ll=[]
         for l in bb:
             prs=l.split(" ")
-            ll.append([int(prs[1])-int(prs[3])/2,int(prs[0])-int(prs[2])/2,int(prs[1])+int(prs[3])/2,int(prs[0])+int(prs[2])/2,0,0])    
+            #print "prs:",'PEDESTRIAN-OBLIGATORY' in prs[-1]
+            if 'PEDESTRIAN-OBLIGATORY' in prs[-1]:
+                difficult=0
+            else:
+                #print "Consider this difficult becasue ",prs[-1]
+                difficult=1
+            ll.append([int(prs[1])-int(prs[3])/2,int(prs[0])-int(prs[2])/2,int(prs[1])+int(prs[3])/2,int(prs[0])+int(prs[2])/2,0,difficult])    
         return ll
 
 
@@ -1236,6 +1251,9 @@ class DirImages(VOC06Data):
         item=self.selines[i]
         return myimread(item)
     
+    def getBBox(self,i):
+        return[]
+    
 ##    def getImageRaw(self,i):
 ##        item=self.selines[i]
 ##        return im.open((self.imagepath+item.split(" ")[0])+".jpg")#pil.imread((self.imagepath+item.split(" ")[0])+".jpg")    
@@ -1535,19 +1553,30 @@ class ImgFile(VOC06Data):
     """
     Read images and BB from a pascal format detection file
     """
-    def __init__(self,trainfile,imgpath="",local="/tmp/"):
+    def __init__(self,trainfile,imgpath="",local="/tmp/",sort=False,amin=400):
+        self.trainfile=trainfile
+        self.imgpath=imgpath
         import glob
         fd=open(self.trainfile,"r")
         trlines=fd.readlines()
         fd.close()
         images={}
+        #limages=[]
         for l in trlines:
-            line=l.split()[0]
-            if images.has_key(line[0]):
-                images[line[0]].append(line[1:])
-            else:
-                images[line[0]]=[line[1:]]
-        self.limages=[l for l in images.iterkeys()]#images.keys()#[l for l in images.iterkeys()]
+            line=l.split(" ")
+            if len(line)>4:
+                r=[int(line[2]),int(line[1]),int(line[4]),int(line[3]),0,0]
+                a=(abs(r[4]-r[2])*abs(r[3]-r[1]))
+                #print a
+                if a>amin:#take only windows bigger than 400 pixles
+                    if images.has_key(line[0]):
+                        images[line[0]].append(r)
+                    else:
+                        images[line[0]]=[r]
+        self.limages=([l for l in images.iterkeys()])#images.keys()#[l for l in images.iterkeys()]
+        if sort:
+            self.limages=sorted(self.limages)
+        self.bbimages=images
         self.tot=len(self.limages)
         
     def getDBname(self):
@@ -1557,16 +1586,16 @@ class ImgFile(VOC06Data):
         return self.local
         
     def getImage(self,i):
-        return myimread(self.limages[i])
+        return myimread(self.limages[i]+".png")
     
     def getImageByName(self,name):
         return myimread(name)
     
     def getImageName(self,i):
-        return self.limages[i]
+        return self.imgpath+self.limages[i]+".png"
     
     def getBBox(self,i,cl=None,usetr=None,usedf=None):
-        bb=self.limages[i]
+        bb=self.bbimages[self.limages[i]]
         return bb
 
     def getTotal(self):

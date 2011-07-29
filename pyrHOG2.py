@@ -13,6 +13,7 @@ import time
 #global ccc
 #ccc=0
 
+SMALL=100 #coefficient to multiply resolution features
 DENSE=0
 K=1.0#0.3
 
@@ -334,68 +335,68 @@ class pyrHOG:
                 drawHOG2(self.hog[pos])
                 cnt+=1
     
-    def ifsupp(self,p1y,p1x,p2y,p2x,fy,fx,retfeat=False):
-        """
-            transform from the image space coordinates to the feature space
-            and return the corresponding features
-        """
-        sbin=self.sbin
-        dy=abs(p1y-p2y)/(fy)#/2+1)
-        dx=abs(p1x-p2x)/(fx)#/2+1)
-        d=max(dy,dx)#or mean
-        i=numpy.arange(len(self.hog)).astype(numpy.float)
-        s=sbin*2**(i/self.interv)
-        ibest=numpy.argmin(abs(s-d))
-        sbest=s[ibest]
-        print d,sbest
-       
-        cfy=(float((p1y+p2y)/2.0-sbest)/float(sbest))
-        cfx=(float((p1x+p2x)/2.0-sbest)/float(sbest))
-        
-        #print cfy,cfx,fy,fx
-        rrect=(cfy-float(fy)/2,cfx-float(fx)/2,cfy+float(fy)/2,cfx+float(fx)/2)
-        rect=numpy.floor(numpy.array(rrect)+0.5)
-        print rrect,rect
-        if retfeat:
-            feat=util.getfeat(self.hog[ibest],rect[0],rect[2],rect[1],rect[3])
-            return ibest,sbest,rect,ovr,feat
-        ovr=util.overlap(rrect,rect)
-        return ibest,sbest,rect,ovr
-    
-    def fisupp(self,i,hy,hx,h2y,h2x):
-        """
-            transform from feature sapce to image space coordinates
-        """
-        sbin=self.sbin
-        s=sbin*2**(float(i)/self.interv)
-        nhy= s*(hy)+s
-        nhx= s*(hx)+s
-        nh2y= s*(h2y)+s
-        nh2x= s*(h2x)+s
-        return (nhy,nhx,nh2y,nh2x)
-    
-    def fmov(self,i,hy,hx,h2y,h2x,d,retfeat=False):
-        """
-        returns the closer features in (interval=i+d) closest to the original bb
-        """
-        sbin=self.sbin
-        fy=abs(hy-h2y)
-        fx=abs(hx-h2x)
-        s=sbin*2**(float(i)/self.interv)
-        cpy=s*(hy+h2y)/2-s
-        cpx=s*(hx+h2x)/2-s
-        s1=sbin*2**(float(i+d)/self.interv)
-        cfy=(cpy/s1+1)
-        cfx=(cpx/s1+1)
-        
-        rrect=(cfy-float(fy)/2,cfx-float(fx)/2,cfy+float(fy)/2,cfx+float(fx)/2)
-        rect=numpy.round(rrect)
-        if retfeat:
-            feat=util.getfeat(self.hog[i+d],rect[0],rect[1],rect[2],rect[3])
-            return i+d,s1,rect,ovr,feat
-        ovr=util.overlap(rrect,rect)
-        #sf
-        return i+d,s1,rect,ovr
+#    def ifsupp(self,p1y,p1x,p2y,p2x,fy,fx,retfeat=False):
+#        """
+#            transform from the image space coordinates to the feature space
+#            and return the corresponding features
+#        """
+#        sbin=self.sbin
+#        dy=abs(p1y-p2y)/(fy)#/2+1)
+#        dx=abs(p1x-p2x)/(fx)#/2+1)
+#        d=max(dy,dx)#or mean
+#        i=numpy.arange(len(self.hog)).astype(numpy.float)
+#        s=sbin*2**(i/self.interv)
+#        ibest=numpy.argmin(abs(s-d))
+#        sbest=s[ibest]
+#        print d,sbest
+#       
+#        cfy=(float((p1y+p2y)/2.0-sbest)/float(sbest))
+#        cfx=(float((p1x+p2x)/2.0-sbest)/float(sbest))
+#        
+#        #print cfy,cfx,fy,fx
+#        rrect=(cfy-float(fy)/2,cfx-float(fx)/2,cfy+float(fy)/2,cfx+float(fx)/2)
+#        rect=numpy.floor(numpy.array(rrect)+0.5)
+#        print rrect,rect
+#        if retfeat:
+#            feat=util.getfeat(self.hog[ibest],rect[0],rect[2],rect[1],rect[3])
+#            return ibest,sbest,rect,ovr,feat
+#        ovr=util.overlap(rrect,rect)
+#        return ibest,sbest,rect,ovr
+#    
+#    def fisupp(self,i,hy,hx,h2y,h2x):
+#        """
+#            transform from feature sapce to image space coordinates
+#        """
+#        sbin=self.sbin
+#        s=sbin*2**(float(i)/self.interv)
+#        nhy= s*(hy)+s
+#        nhx= s*(hx)+s
+#        nh2y= s*(h2y)+s
+#        nh2x= s*(h2x)+s
+#        return (nhy,nhx,nh2y,nh2x)
+#    
+#    def fmov(self,i,hy,hx,h2y,h2x,d,retfeat=False):
+#        """
+#        returns the closer features in (interval=i+d) closest to the original bb
+#        """
+#        sbin=self.sbin
+#        fy=abs(hy-h2y)
+#        fx=abs(hx-h2x)
+#        s=sbin*2**(float(i)/self.interv)
+#        cpy=s*(hy+h2y)/2-s
+#        cpx=s*(hx+h2x)/2-s
+#        s1=sbin*2**(float(i+d)/self.interv)
+#        cfy=(cpy/s1+1)
+#        cfx=(cpx/s1+1)
+#        
+#        rrect=(cfy-float(fy)/2,cfx-float(fx)/2,cfy+float(fy)/2,cfx+float(fx)/2)
+#        rect=numpy.round(rrect)
+#        if retfeat:
+#            feat=util.getfeat(self.hog[i+d],rect[0],rect[1],rect[2],rect[3])
+#            return i+d,s1,rect,ovr,feat
+#        ovr=util.overlap(rrect,rect)
+#        #sf
+#        return i+d,s1,rect,ovr
 
     def scan(self,ww,rho,filter=None,minlev=1):
         """
@@ -494,6 +495,12 @@ class pyrHOG:
     def scanRCFL(self,model,initr=1,ratio=1,small=True):
         ww=model["ww"]
         rho=model["rho"]
+        if model.has_key("occl"):
+            print "Occlusions:",model["occl"]
+            occl=numpy.array(model["occl"])*SMALL
+        else:
+            print "No Occlusions"
+            occl=numpy.zeros(len(model["ww"]))
         res=[]#score
         pparts=[]#parts position
         tot=0
@@ -534,7 +541,9 @@ class pyrHOG:
                     samples[:,:,:]=(samples[:,:,:]+pparts[-1][:,lev,:,:])*2+1
                     #samples[1,:,:]=(samples[1,:,:]+pparts[-1][1,lev,:,:])*2+1
                 else:
-                    pass
+                    if len(model["ww"])-1>lev:
+                        res[i-self.starti]+=occl[lev-1]
+                    #pass
                     #set occlusion
             res[i-self.starti]-=rho
         return res,pparts
@@ -648,6 +657,12 @@ class pyrHOG:
         ww=model["ww"]
         rho=model["rho"]
         df=model["df"]
+        if model.has_key("occl"):
+            print "Occlusions:",model["occl"]
+            occl=numpy.array(model["occl"])*SMALL
+        else:
+            print "No Occlusions"
+            occl=numpy.zeros(len(model["ww"]))
         res=[]#score
         pparts=[]#parts position
         tot=0
@@ -684,7 +699,11 @@ class pyrHOG:
                 nelem)
             samples[:,:,:]=(samples[:,:,:]+pparts[-1][0][0,0,:2,:,:])*2+1
             #self.scanRCFLPart(model,samples,pparts[-1],res[-1],i-self.interv,1,0,0,ratio,usemrf) 
-            self.scanRCFLPart(model,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf) 
+            if i-self.interv>=0 and len(model["ww"])-1>0:
+                self.scanRCFLPart(model,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf,occl) 
+            else:
+                #print "Added occlusion 1 i=",i
+                res[i-self.starti]+=numpy.sum(occl[1:])
             res[i-self.starti]-=rho
             #pylab.figure(1)
             #pylab.imshow(res[-1],interpolation="nearest")
@@ -746,7 +765,7 @@ class pyrHOG:
             #raw_input()
         return res,pparts
 
-    def scanRCFLPart(self,model,samples,pparts,res,i,lev,locy,locx,ratio,usemrf):
+    def scanRCFLPart(self,model,samples,pparts,res,i,lev,locy,locx,ratio,usemrf,occl):
         #if len(model["ww"])<=lev:
         #    return
         #print "Level",lev,"Interval",i
@@ -771,14 +790,18 @@ class pyrHOG:
         if i-self.interv>=0 and len(model["ww"])-1>lev:
             samples1=(samples+parts[0,0,:2,:,:])*2+1
             #self.scanRCFLPart(model,samples1.copy(),pparts,res,i-self.interv,lev+1,(locx+0),(locx+0),ratio,usemrf)
-            self.scanRCFLPart(model,samples1.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+0),ratio,usemrf)
+            self.scanRCFLPart(model,samples1.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+0),ratio,usemrf,occl)
             samples2=((samples.T+parts[0,1,:2,:,:].T+numpy.array([0,fx],dtype=c_int).T)*2+1).T
             #self.scanRCFLPart(model,samples2.copy(),pparts,res,i-self.interv,lev+1,(locx+0),(locx+1),ratio,usemrf)
-            self.scanRCFLPart(model,samples2.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+1),ratio,usemrf)
+            self.scanRCFLPart(model,samples2.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+1),ratio,usemrf,occl)
             samples3=((samples.T+parts[1,0,:2,:,:].T+numpy.array([fy,0],dtype=c_int).T)*2+1).T
-            self.scanRCFLPart(model,samples3.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+0),ratio,usemrf)
+            self.scanRCFLPart(model,samples3.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+0),ratio,usemrf,occl)
             samples4=((samples.T+parts[1,1,:2,:,:].T+numpy.array([fy,fx],dtype=c_int).T)*2+1).T
-            self.scanRCFLPart(model,samples4.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf)
+            self.scanRCFLPart(model,samples4.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf,occl)
+        else:
+            if len(model["ww"])-1>lev:
+                #print "Added occlusion ",lev+1," i=",i
+                res+=numpy.sum(occl[lev+1:])
 
     def scanRCFLDefThr(self,model,initr=1,ratio=1,small=True,usemrf=True,mythr=0):
         ww=model["ww"]
@@ -1124,7 +1147,7 @@ class Treat:
             bbox=item["bbox"]
             pylab.fill([bbox[1],bbox[1],bbox[3],bbox[3],bbox[1]],[bbox[0],bbox[2],bbox[2],bbox[0],bbox[0]],colors[0], alpha=new_alpha, edgecolor=colors[0],lw=2)
 
-    def doall(self,thr=-1,rank=1000,refine=True,occl=False,cluster=0.5,rawdet=False,show=False,inclusion=False,cl=0):
+    def doall(self,thr=-1,rank=1000,refine=True,cluster=0.5,rawdet=False,show=False,inclusion=False,cl=0):
         #import time
         #t=time.time()
         self.det=self.select_fast(thr,cl=cl)        
@@ -1138,8 +1161,8 @@ class Treat:
             self.det=self.refine(self.det)
         #    print "Refine",time.time()-t
         #t=time.time()
-        if occl:
-            self.det=self.occl(self.det)
+        #if occl:
+        #    self.det=self.occl(self.det)
         self.det=self.bbox(self.det)
         #print "Bbox",time.time()-t
         #t=time.time()
@@ -1397,13 +1420,13 @@ class Treat:
             rdet.append(el)
         return rdet
 
-    def occl(self,det):
-        """rescore based on occluded resolutions"""
-        for el in det:
-            for l in range(len(el["occl"])):
-                if el["i"]-l*self.interv<0:
-                    el["scr"]+=el["occl"][l]        
-        return det
+#    def occl(self,det):
+#        """rescore based on occluded resolutions"""
+#        for el in det:
+#            for l in range(len(el["occl"])):
+#                if el["i"]-l*self.interv<0:
+#                    el["scr"]+=el["occl"][l]        
+#        return det
 
     def bbox(self,det,redy=0,redx=0):
         """
@@ -1473,8 +1496,12 @@ class Treat:
 
 
     def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf,scr=True,cls=None):
+        ar=[5,4,2]
         count=0
         for item in ldet:
+            nlev=0
+            if item.has_key("def"):
+                nlev=len(item["def"]["dy"])
             #if item!=[] and not(item.has_key("notfound")):
             if item["scr"]>thr:
                 bbox=item["bbox"]
@@ -1490,21 +1517,32 @@ class Treat:
                         x1=(item["nx"]+mx)*self.f.sbin/scl
                         y2=(item["ny"]+my+item["fy"])*self.f.sbin/scl
                         x2=(item["nx"]+mx+item["fx"])*self.f.sbin/scl
-                        pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],colors[1+l], alpha=0.15, edgecolor=colors[1+l],lw=2)           
+                        #pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],colors[1+l], alpha=0.15, edgecolor=colors[1+l],lw=2)           
+                        #util.box(y1,x1,y2,x2,colors[1+l],lw=2)
+                        pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],colors[1+l], alpha=0.1, edgecolor=colors[1+l],lw=ar[l],fill=False)        
                 #pylab.fill([bbox[1],bbox[1],bbox[3],bbox[3],bbox[1]],[bbox[0],bbox[2],bbox[2],bbox[0],bbox[0]],colors[0], alpha=0.15, edgecolor=colors[0],lw=2)
                 #pylab.text(bbox[1],bbox[0],"%d %.3f"%(item["cl"],item["scr"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
                 util.box(bbox[0],bbox[1],bbox[2],bbox[3],colors[0],lw=2)
                 #scr=False
+                if item["i"]-(nlev-1)*self.interv>=-self.f.starti:#no occlusion
+                    #print "No occlusion",item["i"],(nlev-1)*self.interv
+                    strsmall=""
+                else:
+                    #print "Occlusion!!!",item["i"],(nlev-1)*self.interv
+                    strsmall="S%d"%(-((item["i"]+self.f.starti-(nlev-1)*self.interv)/self.interv))
                 if scr:
                     if cls!=None:
                         pylab.text(bbox[1],bbox[0],"%d %.3f %s"%(item["cl"],item["scr"],cls),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
                     else:
-                        pylab.text(bbox[1],bbox[0],"%d %.3f"%(item["cl"],item["scr"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
+                        if item["cl"]==0:
+                            pylab.text(bbox[1],bbox[0],"%.3f %s"%(item["scr"],strsmall),bbox=dict(facecolor='w',alpha=0.5),fontsize=10)
+                        else:
+                            pylab.text(bbox[1],bbox[0],"%d %.3f %s"%(item["cl"],item["scr"],strsmall),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)                            
             count+=1
             if count>maxnum:
                 break
             
-    def descr(self,det,flip=False,usemrf=False,usefather=False):   
+    def descr(self,det,flip=False,usemrf=False,usefather=False,k=0):   
         ld=[]
         for item in det:
             #if item!=[] and not(item.has_key("notfound")):
@@ -1518,10 +1556,10 @@ class Treat:
                     #print "Flip",aux.shape
                 d=numpy.concatenate((d,aux.flatten()))
                 if self.occl:
-                    if item["i"]-l*self.interv>=0:
+                    if item["i"]-l*self.interv>=-self.f.starti:
                         d=nump.concatenate((d,[0.0]))
                     else:
-                        d=nump.concatenate((d,[1.0]))
+                        d=nump.concatenate((d,[1.0*SMALL]))
             ld.append(d.astype(numpy.float32))
             #else:
             #    ld.append([])
@@ -1748,6 +1786,11 @@ class TreatDef(Treat):
                             d=numpy.concatenate((d,aux.flatten()))
                             aux=defflip(k*k*item["def"]["ddx"][l])
                             d=numpy.concatenate((d,aux.flatten()))
+                if self.occl:
+                    if item["i"]-l*self.interv>=-self.f.starti:
+                        d=numpy.concatenate((d,[0.0]))
+                    else:
+                        d=numpy.concatenate((d,[1.0*SMALL]))
             ld.append(d.astype(numpy.float32))
             #else:
             #    ld.append([])
@@ -1756,6 +1799,7 @@ class TreatDef(Treat):
     def model(self,descr,rho,lev,fsz,fy=[],fx=[],mindef=0.001,usemrf=True,usefather=True): 
         ww=[]  
         df=[]
+        occl=[0]*lev
         if fy==[]:
             fy=self.fy
         if fx==[]:
@@ -1788,12 +1832,15 @@ class TreatDef(Treat):
                 df.append(aux.astype(numpy.float32))
             else:
                 df.append(numpy.zeros((2**l,2**l,4),dtype=numpy.float32))
-        m={"ww":ww,"rho":rho,"fy":fy,"fx":fx,"df":df}
+            if self.occl:
+                occl[l]=d[p]
+                p+=1
+        m={"ww":ww,"rho":rho,"fy":fy,"fx":fx,"df":df,"occl":occl}
         return m
 
 import time
 
-def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0):
+def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0,occl=False):
     """Detect objec in images
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -1817,10 +1864,11 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         if bottomup:
             scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
         else:
-            scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
+            #scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
+            scr,pos=f.scanRCFLDefsamples(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
 ##            scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
             #scr,pos=f.scanRCFLprDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,pr=pr)
-        tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"])
+        tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"],occl=occl)
     else:
         scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
         #scr,pos=f.scanRCFLpr(m,initr=initr,ratio=ratio,small=small,pr=pr)
@@ -1873,7 +1921,8 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         return tr,det,dettime,numhog
     else:
         t2=time.time()
-        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=numrank,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb)        
+        #best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=numrank,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb)        
+        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=numrank,show="Parts",mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb)        
         if 0:#True:#remember to use it in INRIA
             if deform:
                 ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)

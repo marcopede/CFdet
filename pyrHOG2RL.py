@@ -153,42 +153,55 @@ class TreatDefRL(pyrHOG2.TreatDef):#not complete
                 bbox=item["bbox"]
                 pylab.text(bbox[3]-10,bbox[2]-10,"%d"%(item["rl"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
 
+#    def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0):   
+#        ld=[]
+#        for item in det:
+#            #if item!=[] and not(item.has_key("notfound")):
+#            if item["rl"]==1:
+#                auxflip=not(flip)
+#            else:
+#                auxflip=flip
+#            d=numpy.array([])
+#            for l in range(len(item["feat"])):
+#                if not(auxflip):
+#                    d=numpy.concatenate((d,item["feat"][l].flatten()))       
+#                    if l>0: #skip deformations level 0
+#                        if usefather:
+#                            d=numpy.concatenate((d, k*k*(item["def"]["dy"][l].flatten()**2)  ))
+#                            d=numpy.concatenate((d, k*k*(item["def"]["dx"][l].flatten()**2)  ))
+#                        if usemrf:
+#                            d=numpy.concatenate((d,k*k*item["def"]["ddy"][l].flatten()))
+#                            d=numpy.concatenate((d,k*k*item["def"]["ddx"][l].flatten()))
+#                else:
+#                    d=numpy.concatenate((d,hogflip(item["feat"][l]).flatten()))        
+#                    if l>0: #skip deformations level 0
+#                        if usefather:
+#                            aux=(k*k*(item["def"]["dy"][l][:,::-1]**2))#.copy()
+#                            d=numpy.concatenate((d,aux.flatten()))
+#                            aux=(k*k*(item["def"]["dx"][l][:,::-1]**2))#.copy()
+#                            d=numpy.concatenate((d,aux.flatten()))
+#                        if usemrf:
+#                            aux=pyrHOG2.defflip(k*k*item["def"]["ddy"][l])
+#                            d=numpy.concatenate((d,aux.flatten()))
+#                            aux=pyrHOG2.defflip(k*k*item["def"]["ddx"][l])
+#                            d=numpy.concatenate((d,aux.flatten()))
+#            ld.append(d.astype(numpy.float32))
+#            #else:
+#            #    ld.append([])
+#        return ld
+
     def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0):   
         ld=[]
         for item in det:
-            #if item!=[] and not(item.has_key("notfound")):
             if item["rl"]==1:
                 auxflip=not(flip)
             else:
                 auxflip=flip
-            d=numpy.array([])
-            for l in range(len(item["feat"])):
-                if not(auxflip):
-                    d=numpy.concatenate((d,item["feat"][l].flatten()))       
-                    if l>0: #skip deformations level 0
-                        if usefather:
-                            d=numpy.concatenate((d, k*k*(item["def"]["dy"][l].flatten()**2)  ))
-                            d=numpy.concatenate((d, k*k*(item["def"]["dx"][l].flatten()**2)  ))
-                        if usemrf:
-                            d=numpy.concatenate((d,k*k*item["def"]["ddy"][l].flatten()))
-                            d=numpy.concatenate((d,k*k*item["def"]["ddx"][l].flatten()))
-                else:
-                    d=numpy.concatenate((d,hogflip(item["feat"][l]).flatten()))        
-                    if l>0: #skip deformations level 0
-                        if usefather:
-                            aux=(k*k*(item["def"]["dy"][l][:,::-1]**2))#.copy()
-                            d=numpy.concatenate((d,aux.flatten()))
-                            aux=(k*k*(item["def"]["dx"][l][:,::-1]**2))#.copy()
-                            d=numpy.concatenate((d,aux.flatten()))
-                        if usemrf:
-                            aux=pyrHOG2.defflip(k*k*item["def"]["ddy"][l])
-                            d=numpy.concatenate((d,aux.flatten()))
-                            aux=pyrHOG2.defflip(k*k*item["def"]["ddx"][l])
-                            d=numpy.concatenate((d,aux.flatten()))
-            ld.append(d.astype(numpy.float32))
-            #else:
-            #    ld.append([])
+            #ld.append(
+            dd=pyrHOG2.TreatDef.descr(self,[item],flip=auxflip,usemrf=usemrf,usefather=usefather,k=k)
+            ld.append(dd[0])
         return ld
+
 
 def flip(m):
     ww1=[]
@@ -207,7 +220,7 @@ def flip(m):
     return m1    
 
 
-def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,useprior=False,K=1.0):
+def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,useprior=False,K=1.0,occl=False):
     """Detect objec in images
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -227,8 +240,10 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
             scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
             scr1,pos1=f.scanRCFLDefBU(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
         else:
-            scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
-            scr1,pos1=f.scanRCFLDefThr(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
+            #scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
+            scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
+            #scr1,pos1=f.scanRCFLDefThr(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
+            scr1,pos1=f.scanRCFLDef(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
         #tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"])
     else:
         scr,pos=f.scanRCFLpr(m,initr=initr,ratio=ratio,small=small,pr=pr)
@@ -294,7 +309,7 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
                 lr.append(numpy.argmax(auxscr,2))
             print "Refine Time:",time.time()-t1
             #tr=TreatDefRL(f,scr,pos,initr,m["fy"],m["fx"])
-            tr=TreatDefRL(f,fscr,posR,posL,lr,initr,m["fy"],m["fx"])
+            tr=TreatDefRL(f,fscr,posR,posL,lr,initr,m["fy"],m["fx"],occl=occl)
             det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)
         #print "Elapsed Time:",dettime
         #print "Number HOG:",numhog

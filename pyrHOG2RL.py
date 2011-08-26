@@ -148,10 +148,19 @@ class TreatDefRL(pyrHOG2.TreatDef):#not complete
             thr=kargs["thr"]
         else:
             thr=-numpy.inf
-        for item in ldet:
+        if kargs.has_key("maxnum"):
+            maxnum=kargs["maxnum"]
+        else:
+            maxnum=-numpy.inf	
+        for item in ldet[:maxnum+1]:
             if item["scr"]>thr:
                 bbox=item["bbox"]
-                pylab.text(bbox[3]-10,bbox[2]-10,"%d"%(item["rl"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
+                if item["rl"]==0:
+        			rl="R"
+                else:
+                    rl="L"
+                pylab.text(bbox[3]-5,bbox[2]-5,"%s"%(rl),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
+		
 
 #    def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0):   
 #        ld=[]

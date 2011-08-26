@@ -1,6 +1,6 @@
 #scan an image with the standard method and with our CtF way
 
-import util
+import util2
 import pyrHOG2
 import time
 
@@ -21,7 +21,7 @@ else:
     imname="000073.jpg"
 
 #load the model
-m=util.load("%s%d.model"%(testname,it))
+m=util2.load("%s%d.model"%(testname,it))
 
 import pylab
 
@@ -30,16 +30,16 @@ if False:
     print "Show model"
     pylab.figure(100)
     pylab.clf()
-    util.drawModel(m["ww"])
+    util2.drawModel(m["ww"])
     pylab.figure(101)
     pylab.clf()
-    util.drawDeform(m["df"])
+    util2.drawDeform(m["df"])
     pylab.draw()
     pylab.show()
 
 print "---- Image %s----"%imname
 print
-img=util.myimread(imname)
+img=util2.myimread(imname)
 #compute the HOG pyramid
 f=pyrHOG2.pyrHOG(img,interv=10,savedir="",notload=True,notsave=True,hallucinate=True,cformat=True)
 print

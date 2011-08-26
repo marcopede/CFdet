@@ -3,7 +3,6 @@ import numpy
 import pylab
 import cPickle
 import time
-#from svm import *
 import scipy.ndimage.filters as flt
 from subprocess import call,PIPE
 import scipy.misc.pilutil as pil

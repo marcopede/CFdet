@@ -1,4 +1,4 @@
-import util
+import util2
 import pyrHOG2
 import pyrHOG2RL
 import time
@@ -38,7 +38,7 @@ if __name__=="__main__":
     cfg.usemrf=True
 
     #read the image
-    img=util.myimread(imname,resize=cfg.resize)    
+    img=util2.myimread(imname,resize=cfg.resize)    
     #compute the hog pyramid
     f=pyrHOG2.pyrHOG(img,interv=10,savedir="",notsave=True,notload=True,hallucinate=cfg.hallucinate,cformat=True)
     #show the image
@@ -54,7 +54,7 @@ if __name__=="__main__":
         print
         print "Class: %s"%ccls
         #load the class model
-        m=util.load("%s%d.model"%(cfg.testname%ccls,7))
+        m=util2.load("%s%d.model"%(cfg.testname%ccls,7))
         res=[]
         t1=time.time()
         #for each aspect

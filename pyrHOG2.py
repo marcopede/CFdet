@@ -1,7 +1,7 @@
 #class used to manage the pyramid HOG features
 #import mfeatures
 import resize
-import util
+import util2 as util
 import numpy
 import math
 import pylab

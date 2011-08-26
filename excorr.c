@@ -1,12 +1,12 @@
 
 #include<stdio.h>
 #include<stdlib.h>
-#include<math.h>
+//#include<math.h>
 
 #define ftype float
-#ifndef INFINITY
+//#ifndef INFINITY
    #define INFINITY 10000
-#endif
+//#endif
 
 static ftype k=1.0;//deformation coefficient
 

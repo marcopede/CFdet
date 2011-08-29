@@ -1,3 +1,4 @@
+#used to draw the HOG features
 import numpy, pylab
 
 def drawLine(img,py,px,ang,l,val=1):
@@ -46,7 +47,6 @@ def drawHOG(feat,hogpix=15):
     img=numpy.zeros(((dimy)*hogpix,(dimx)*hogpix))
     for y in range(dimy):
         for x in range(dimx):
-            #print y,x,y*hogpix,x*hogpix
             #draw1HOG(img,feat[y,x,:9]+0.5*feat[y,x,9:18]+0.5*feat[y,x,18:27],y*hogpix,x*hogpix,r,r)
             draw1HOG(img,feat[y,x,:9]+feat[y,x,9:18]+feat[y,x,18:27],y*hogpix,x*hogpix,r,r)
     return img

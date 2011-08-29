@@ -1,7 +1,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-//#include <omp.h>
 
 // small value, used to avoid division by zero
 #define eps 0.0001
@@ -42,12 +41,8 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
   int blocks[2];
   blocks[0] = (int)round((ftype)dimy/(ftype)sbin);
   blocks[1] = (int)round((ftype)dimx/(ftype)sbin);
-    //printf("b=(%d,%d)",blocks[0],blocks[1]);
   ftype *hist = (ftype *)calloc(blocks[0]*blocks[1]*18, sizeof(ftype));
   ftype *norm = (ftype *)calloc(blocks[0]*blocks[1], sizeof(ftype));
-  //int max_thr= omp_get_max_threads();
-  //if (blocks[0]*blocks[1]<100)
-  //  omp_set_num_threads(1);
 
   // memory for HOG features
   int out[3];
@@ -65,7 +60,6 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
   visible[1] = blocks[1]*sbin;
   
   int x,y,o;
-//#pragma omp parallel for private(y,x,o)
   for (x = 1; x < visible[1]-1; x++) {
     for (y = 1; y < visible[0]-1; y++) {
       // first color channel
@@ -80,15 +74,11 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
       ftype dx2 = *(s+dimy) - *(s-dimy);
       ftype v2 = dx2*dx2 + dy2*dy2;
 
-    //printf("2(%d,%d)=%f ",y,x,*s);
-
       // third color channel
       s += dimy*dimx;
       ftype dy3 = *(s+1) - *(s-1);
       ftype dx3 = *(s+dimy) - *(s-dimy);
       ftype v3 = dx3*dx3 + dy3*dy3;
-
-      //printf("3(%d,%d)=%f ",y,x,*s);
 
       // pick channel with strongest gradient
       if (v2 > v) {
@@ -105,7 +95,6 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
       // snap to one of 18 orientations
       ftype dot,best_dot = 0;
       int best_o = 0, o = 0;
-//#pragma omp parallel for shared(uu,dot,vv,best_dot) private(o)
       for (o = 0; o < 9; o++) {
 	dot = uu[o]*dx + vv[o]*dy;
 	if (dot > best_dot) {
@@ -150,11 +139,6 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
     }
   }
   // compute energy in each block by summing over orientations
-  //int o;
-//long time1 = clock();
-//long hh;
-//#pragma omp parallel for private(o,hh)
-//for (hh=0;hh<100000;hh++){
   for (o = 0; o < 9; o++) {
     ftype *src1 = hist + o*blocks[0]*blocks[1];
     ftype *src2 = hist + (o+9)*blocks[0]*blocks[1];
@@ -166,13 +150,8 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
       src2++;
     }
   }
-//}
-//long time2 = clock();
-//printf("Time taken:%ld\n",time2-time1);
 
   // compute features
-//long time1 = clock();
-//#pragma omp parallel for private(x,y,o)
   for (x = 0; x < out[1]; x++) {
     for (y = 0; y < out[0]; y++) {
       ftype *dst = feat + x*out[0] + y;      
@@ -194,7 +173,6 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
 
       // contrast-sensitive features
       src = hist + (x+1)*blocks[0] + (y+1);
-//#pragma omp parallel for private(o)
       for (o = 0; o < 18; o++) {
 	    h1 = min(*src * n1, 0.2);
 	    h2 = min(*src * n2, 0.2);
@@ -211,7 +189,6 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
 
       // contrast-insensitive features
       src = hist + (x+1)*blocks[0] + (y+1);
-//#pragma omp parallel for private(o)
       for (o = 0; o < 9; o++) {
 	ftype sum = *src + *(src + 9*blocks[0]*blocks[1]);
 	ftype h1 = min(sum * n1, 0.2);
@@ -233,9 +210,6 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
       *dst = 0.2357 * t4;
     }
   }
-//long time2 = clock();
-//printf("Time taken:%ld\n",time2-time1);
-  //omp_set_num_threads(max_thr);
   free(hist);
   free(norm);
 }

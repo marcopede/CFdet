@@ -13,7 +13,7 @@ def showImage(img,title=""):
     pylab.title(title)
     pylab.imshow(img,interpolation="nearest",animated=True) 
 
-testname="./data/INRIA/inria_bothfull";it=7
+modelname="./data/INRIA/inria_bothfull";it=7
 import sys
 if len(sys.argv)>1:
     imname=sys.argv[1]
@@ -21,21 +21,20 @@ else:
     imname="000073.jpg"
 
 #load the model
-m=util2.load("%s%d.model"%(testname,it))
+m=util2.load("%s%d.model"%(modelname,it))
 
 import pylab
 
 #show the model
-if False:
+if True:
     print "Show model"
     pylab.figure(100)
     pylab.clf()
     util2.drawModel(m["ww"])
-    pylab.figure(101)
-    pylab.clf()
-    util2.drawDeform(m["df"])
+    #pylab.figure(101)
+    #pylab.clf()
+    #util2.drawDeform(m["df"])
     pylab.draw()
-    pylab.show()
 
 print "---- Image %s----"%imname
 print

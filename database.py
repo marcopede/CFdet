@@ -268,7 +268,7 @@ class InriaNegData(imageData):
         self.imagepath=basepath+imagepath
         self.local=basepath+local
         fd=open(self.trainfile,"r")
-        self.trlines=fd.readlines()
+        self.trlines=fd.readlines()[::-1]#to take first the big images
         fd.close()
         
     def getDBname():

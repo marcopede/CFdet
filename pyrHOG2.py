@@ -60,6 +60,34 @@ ff.setK(K)
 def setK(pk):
     ff.setK(pk)    
 
+def getfeat(a,y1,y2,x1,x2):
+    """
+        returns the hog features at the given position and 
+        zeros in case the coordiantes are outside the borders
+        """
+    dimy=a.shape[0]
+    dimx=a.shape[1]
+    py1=y1;py2=y2;px1=x1;px2=x2
+    dy1=0;dy2=0;dx1=0;dx2=0
+    b=numpy.zeros((abs(y2-y1),abs(x2-x1),a.shape[2]))
+    if py1<0:
+        py1=0
+        dy1=py1-y1
+    if py2>=dimy:
+        py2=dimy
+        dy2=y2-py2
+    if px1<0:
+        px1=0
+        dx1=px1-x1
+    if px2>=dimx:
+        px2=dimx
+        dx2=x2-px2
+    if numpy.array(a[py1:py2,px1:px2].shape).min()==0 or numpy.array(b[dy1:y2-y1-dy2,dx1:x2-x1-dx2].shape).min()==0:
+        pass
+    else:
+        b[dy1:y2-y1-dy2,dx1:x2-x1-dx2]=a[py1:py2,px1:px2]
+    return b
+
 #wrapper for the HOG computation
 def hog(img,sbin=8):
     """
@@ -76,32 +104,6 @@ def hog(img,sbin=8):
     lhog.process(numpy.asfortranarray(img,dtype=mtype),img.shape[0],img.shape[1],sbin,hog,hy,hx,31)
     return hog;#mfeatures.mfeatures(img , sbin);
 
-#def hogflip_old(feat,obin=18):
-#    """    
-#    returns the orizontally flipped version of the HOG features
-#    """
-#    aux=feat[:,::-1,:]
-#    last=obin+obin/2
-#    aux=numpy.concatenate((aux[:,:,obin/2::-1],aux[:,:,obin-1:obin/2:-1],aux[:,:,obin].reshape(aux.shape[0],aux.shape[1],1,aux.shape[3]),aux[:,:,last-1:obin:-1],aux[:,:,last:last+2],aux[:,:,last+3:last+1:-1]),2)
-#    return aux
-
-#def hogflip_last(feat,obin=9):
-#    """    
-#    returns the orizontally flipped version of the HOG features
-#    """
-#    #feature shape
-#    #[9 not oriented][18 oriented][4 normalization]
-#    aux=feat[:,::-1,:]
-#    last=obin+obin*2
-#    noriented=numpy.concatenate((aux[:,:,0].reshape(aux.shape[0],aux.shape[1],1),aux[:,:,obin-1:0:-1]),2)
-#    oriented=numpy.concatenate((aux[:,:,obin].reshape(aux.shape[0],aux.shape[1],1),aux[:,:,last-1:obin:-1]),2)
-#    norm1=aux[:,:,last+2].reshape(aux.shape[0],aux.shape[1],1)
-#    norm2=aux[:,:,last+3].reshape(aux.shape[0],aux.shape[1],1)
-#    norm3=aux[:,:,last].reshape(aux.shape[0],aux.shape[1],1)
-#    norm4=aux[:,:,last+1].reshape(aux.shape[0],aux.shape[1],1)
-#    aux=numpy.concatenate((oriented,noriented,norm1,norm2,norm3,norm4),2) #remember you have to change this!!!!!!!!
-#    #aux=numpy.concatenate((noriented,oriented,norm1,norm2,norm3,norm4),2)
-#    return aux
 
 def hogflip(feat,obin=9):
     """    
@@ -290,16 +292,6 @@ class pyrHOG:
             winlist.append(auxlist)                        
         return winlist
 
-#    #useful to convert scanRCFL into C from Bishop
-#    class ListPOINTER(object):
-#        '''Just like a POINTER but accept a list of ctype as an argument'''
-#        def __init__(self, etype):
-#            self.etype = etype
-#    
-#        def from_param(self, param):
-#            if isinstance(param, (list,tuple)):
-#                return (self.etype * len(param))(*param)
-
     def resetHOG(self):
         "reset the HOG computation counter"
         ff.resetHOG()
@@ -307,58 +299,6 @@ class pyrHOG:
     def getHOG(self):
         "get the HOG computation counter"
         return ff.getHOG()
-
-#    def buildPrior(self,gt,fy,fx,py=1,px=1,v=1):
-#        pr=[]
-#        cnt=0
-#        #print "Len HOG:", len(self.hog)
-#        for i in range(len(self.hog)):
-#            #samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(ctypes.c_int)
-#            prior=numpy.zeros((self.hog[i].shape[0],self.hog[i].shape[1]),numpy.float32)
-#            scl=self.scale[i]
-#            for l in gt:
-#                bbx=l["bbox"]
-#                #h=(bbx[2]-bbx[0])/2
-#                #w=(bbx[3]-bbx[1])/2
-#                #print fy,fx
-#                #hg=32;ddy=0.9;ddx=1.1;
-#                #bbx=(hg*ddy,hg*ddx,hg*(ddy+fy),hg*(ddx+fx))
-#                #print bbx
-#                cy1=(float(bbx[0])*scl/self.sbin)-1#-1
-#                cx1=(float(bbx[1])*scl/self.sbin)-1#-1
-#                cy2=(float(bbx[2])*scl/self.sbin)-1#-1
-#                cx2=(float(bbx[3])*scl/self.sbin)-1#-1
-#                #print float(8)/scl,cy,cx,cy1,cx1
-#                for dy in range(-int(py+1),int(py+1)+1):#[-1,0,+1]:
-#                    for dx in range(-int(px+1),int(px+1)+1):
-#                        cpy=round(cy1+dy)
-#                        cpx=round(cx1+dx)
-#                        cpy1=cy2+dy
-#                        cpx1=cx2+dx
-#                        cyr=cpy+fy
-#                        cxr=cpx+fx
-#                        #print "Scale",scl
-#                        #print "Cy1",cy1,"cyr",cyr
-#                        #print "Cx1",cx1,"cxr",cxr
-#                        dsy1=abs(cy1-cpy);dsx1=abs(cx1-cpx)
-#                        dsy2=abs(cy2-cyr);dsx2=abs(cx2-cxr)
-#                        if dsy1<=py and dsx1<=px and dsy2<=py and dsx2<=px:
-#                            #if int(cpy)>=0 and int(cpx)>=0 and int(cpy)<prior.shape[0] and int(cpx)<prior.shape[1]:
-#                            if round(cpy)>=0 and round(cpx)>=0 and round(cpy)<prior.shape[0] and round(cpx)<prior.shape[1]:
-#                                #print "Prior:",round(cpy),round(cpx)
-#                                #print "Distances",dsy1,dsx1,dsy2,dsx2,v*(py-dsy1)/py*(px-dsx1)/px*(py-dsy2)/py*(px-dsx2)/px
-#                                cnt+=1
-#                                prior[round(cpy),round(cpx)]=v*(py-dsy1)/py*(px-dsx1)/px*(py-dsy2)/py*(px-dsx2)/px
-#                                #prior[int(cpy),int(cpx)]=v*(py-dsy)/py*(px-dsx)/px
-#            pr.append(prior)
-#            #if numpy.any(prior!=0):        
-#            #    pylab.figure(89)
-#            #    pylab.imshow(prior,interpolation="nearest")
-#            #    pylab.show()
-#            #    raw_input()
-#        print "Prior Locations:",cnt
-#        return pr                     
-
 
     def scanRCFL(self,model,initr=1,ratio=1,small=True):
         ww=model["ww"]
@@ -412,110 +352,6 @@ class pyrHOG:
             res[i-self.starti]-=rho
         return res,pparts
 
-#    def scanRCFLpr(self,model,initr=1,ratio=1,small=True,pr=None,dense=DENSE):
-#        ww=model["ww"]
-#        rho=model["rho"]
-#        res=[]#score
-#        pparts=[]#parts position
-#        tot=0
-#        if not(small):
-#            self.starti=self.interv*(len(ww)-1)
-#        else:
-#            if type(small)==bool:
-#                self.starti=0
-#            else:
-#                self.starti=self.interv*(len(ww)-1-small)
-#        from time import time
-#        for i in range(self.starti,len(self.hog)):
-#            if len(self.hog)-i<dense:
-#                initr=0
-#            samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(ctypes.c_int)
-#            sshape=samples.shape[1:3]
-#            res.append(numpy.zeros(sshape,dtype=ctypes.c_float))
-#            pparts.append(numpy.zeros((2,len(ww),sshape[0],sshape[1]),dtype=c_int))
-#            for lev in range(len(ww)):
-#                if i-self.interv*lev>=0:
-#                    #print "Lev:",lev
-#                    if lev==0:
-#                        r=initr
-#                        if pr!=None:
-#                            ipr=pr[i].ctypes.data_as(ctypes.POINTER(c_float))
-#                        else:
-#                            ipr=ctypes.POINTER(c_float)()
-#                    else:
-#                        ipr=ctypes.POINTER(c_float)()
-#                        r=ratio
-#                    auxres=res[-1].copy()
-#                    ff.scaneighpr(self.hog[i-self.interv*lev],
-#                        self.hog[i-self.interv*lev].shape[0],
-#                        self.hog[i-self.interv*lev].shape[1],
-#                        ww[lev],
-#                        ww[lev].shape[0],ww[lev].shape[1],ww[lev].shape[2],
-#                        samples[0,:,:],
-#                        samples[1,:,:],
-#                        auxres,
-#                        pparts[-1][0,lev,:,:],
-#                        pparts[-1][1,lev,:,:],
-#                        r,r,
-#                        sshape[0]*sshape[1],
-#                        ipr)
-#                        #res[-1].size)
-#                    res[i-self.starti]+=auxres
-#                    samples[:,:,:]=(samples[:,:,:]+pparts[-1][:,lev,:,:])*2+1
-#                    #samples[1,:,:]=(samples[1,:,:]+pparts[-1][1,lev,:,:])*2+1
-#                else:
-#                    pass
-#                    #set occlusion
-#            res[i-self.starti]-=rho
-#        return res,pparts
-
-
-#    def scanRCFLDef(self,model,initr=1,ratio=1,small=True,usemrf=True):
-#        ww=model["ww"]
-#        rho=model["rho"]
-#        df=model["df"]
-#        res=[]#score
-#        pparts=[]#parts position
-#        tot=0
-#        if not(small):
-#            self.starti=self.interv*(len(ww)-1)
-#        else:
-#            if type(small)==bool:
-#                self.starti=0
-#            else:
-#                self.starti=self.interv*(len(ww)-1-small)
-#        from time import time
-#        for i in range(self.starti,len(self.hog)):
-#            samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(c_int)
-#            sshape=samples.shape[1:3]
-#            res.append(numpy.zeros(sshape,dtype=ctypes.c_float))
-#            pparts.append([])
-#            nelem=(sshape[0]*sshape[1])
-#            for l in range(len(ww)):
-#                pparts[-1].append(numpy.zeros((2**l,2**l,4,sshape[0],sshape[1]),dtype=c_int))
-#            ff.scaneigh(self.hog[i],
-#                self.hog[i].shape[0],
-#                self.hog[i].shape[1],
-#                ww[0],
-#                ww[0].shape[0],ww[0].shape[1],ww[0].shape[2],
-#                samples[0,:,:],
-#                samples[1,:,:],
-#                res[-1],
-#                pparts[-1][0][0,0,0,:,:],
-#                pparts[-1][0][0,0,1,:,:],
-#                initr,initr,
-#                nelem)
-#            samples[:,:,:]=(samples[:,:,:]+pparts[-1][0][0,0,:2,:,:])*2+1
-#            #self.scanRCFLPart(model,samples,pparts[-1],res[-1],i-self.interv,1,0,0,ratio,usemrf) 
-#            self.scanRCFLPart(model,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf) 
-#            res[i-self.starti]-=rho
-#            #pylab.figure(1)
-#            #pylab.imshow(res[-1],interpolation="nearest")
-#            #pylab.show()
-#            #print "Int",i,"Scr:",res[-1].max()
-#            #print "RES:",res[-1].max()
-#            #raw_input()
-#        return res,pparts
 
     def scanRCFLDef(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None):
         ww=model["ww"]
@@ -570,57 +406,6 @@ class pyrHOG:
             res[i-self.starti]-=rho
         return res,pparts
 
-#    def scanRCFLprDef(self,model,initr=1,ratio=1,small=True,usemrf=True,pr=None):
-#        ww=model["ww"]
-#        rho=model["rho"]
-#        df=model["df"]
-#        res=[]#score
-#        pparts=[]#parts position
-#        tot=0
-#        if not(small):
-#            self.starti=self.interv*(len(ww)-1)
-#        else:
-#            if type(small)==bool:
-#                self.starti=0
-#            else:
-#                self.starti=self.interv*(len(ww)-1-small)
-#        from time import time
-#        for i in range(self.starti,len(self.hog)):
-#            samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(c_int)
-#            sshape=samples.shape[1:3]
-#            res.append(numpy.zeros(sshape,dtype=ctypes.c_float))
-#            pparts.append([])
-#            nelem=(sshape[0]*sshape[1])
-#            for l in range(len(ww)):
-#                pparts[-1].append(numpy.zeros((2**l,2**l,4,sshape[0],sshape[1]),dtype=c_int))
-#            if pr!=None:
-#                ipr=pr[i].ctypes.data_as(ctypes.POINTER(c_float))
-#            else:
-#                ipr=ctypes.POINTER(c_float)()
-#            ff.scaneighpr(self.hog[i],
-#                self.hog[i].shape[0],
-#                self.hog[i].shape[1],
-#                ww[0],
-#                ww[0].shape[0],ww[0].shape[1],ww[0].shape[2],
-#                samples[0,:,:],
-#                samples[1,:,:],
-#                res[-1],
-#                pparts[-1][0][0,0,0,:,:],
-#                pparts[-1][0][0,0,1,:,:],
-#                initr,initr,
-#                nelem,ipr)
-#            samples[:,:,:]=(samples[:,:,:]+pparts[-1][0][0,0,:2,:,:])*2+1
-#            #self.scanRCFLPart(model,samples,pparts[-1],res[-1],i-self.interv,1,0,0,ratio,usemrf) 
-#            if len(ww)>1:
-#                self.scanRCFLPart(model,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf) 
-#            res[i-self.starti]-=rho
-#            #pylab.figure(1)
-#            #pylab.imshow(res[-1],interpolation="nearest")
-#            #pylab.show()
-#            #print "Int",i,"Scr:",res[-1].max()
-#            #print "RES:",res[-1].max()
-#            #raw_input()
-#        return res,pparts
 
     def scanRCFLPart(self,model,samples,pparts,res,i,lev,locy,locx,ratio,usemrf,occl):
         #if len(model["ww"])<=lev:
@@ -920,38 +705,10 @@ class Treat:
         #    print "Show Parts",time.time()-t
         return self.det
    
-#    def doall_debug(self,thr=-1,rank=1000,refine=True,cluster=0.5,rawdet=False,show=False,cl=0):
-#        self.det=self.select(thr,cl=cl)        
-#        self.det1=self.rank(self.det,rank) 
-#        if refine:
-#            self.det2=self.refine(self.det1)
-#        else:  
-#            self.det2=self.det1[:]
-#        self.det3=self.bbox(self.det2)
-#        #import time
-#        #t=time.time()
-#        if cluster>0:
-#            self.det4=self.cluster(self.det3,ovr=cluster)
-#        else:
-#            self.det4=self.det3[:]
-#        #print time.time()-t
-#        if rawdet:
-#            self.det5=self.rawdet(self.det4)
-#        else:
-#            self.det5=self.det4[:]
-#        if show:
-#            self.show(self.det5)
-#        if show=="Parts":
-#            self.show(self.det5,parts=True)
-#        return self.det5
-
     def doalltrain(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,posovr=0.5,numpos=1,numneg=10,minnegovr=0,minnegincl=0,cl=0,emptybb=False):
         t=time.time()
         self.det=self.select_fast(thr,cl=cl)
         #print "Select time:",time.time()-t
-        #if gtbbox!=[]:# select only over the positive gtbbox
-        #    self.det=self.filter_pos(self.det,gtbbox)
-        #    pr=self.f.buildPrior(gtbbox,self.fy,self.fx)
         t=time.time()
         self.det=self.rank_fast(self.det,rank,cl=cl) 
         #print "Rank time:",time.time()-t
@@ -962,10 +719,6 @@ class Treat:
         t=time.time()
         self.det=self.bbox(self.det)
         #print "BBox time:",time.time()-t
-        #self.show(self.det,colors=["g"],thr=0.01)
-        #print [x["scr"] for x in self.det]
-        #pylab.show()
-        #raw_input()
         t=time.time()
         self.best,self.worste=self.getbestworste(self.det,gtbbox,numpos=numpos,numneg=numneg,mpos=mpos,posovr=posovr,minnegovr=minnegovr,minnegincl=minnegincl,emptybb=emptybb)
         #print "Bestworse time:",time.time()-t
@@ -974,7 +727,6 @@ class Treat:
             self.best=self.rawdet(self.best)
             self.worste=self.rawdet(self.worste)
         #    print "Raw Det time:",time.time()-t
-        #show="Parts" maybe it produces the increase of memory
         if show:
             self.show(self.best,colors=["b"])
             self.show(self.worste,colors=["r"])
@@ -982,45 +734,7 @@ class Treat:
         if show=="Parts":
             self.show(self.best,parts=True)
             self.show(self.worste,parts=True)
-        #self.trpos=self.descr(self.best)
-        #self.trneg=self.descr(self.worste)
-        #print "DoAll Time:",time.time()-t
-        #raw_input()
-        return self.best,self.worste#,self.trpos,self.trneg
-
-#    def doalltrain_debug(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,minnegovr=0,minnegincl=0,cl=0):
-#        self.det=self.select(thr,cl=cl)        
-#        #import time
-#        #t=time.time()
-#        self.det1=self.rank(self.det,rank) 
-#        #print time.time()-t
-#        #self.det1=self.det
-#        if refine:
-#            self.det2=self.refine(self.det1)
-#        else:  
-#            self.det2=self.det1[:]
-#        self.det3=self.bbox(self.det2)
-#        #import time
-#        #t=time.time()
-#        self.best1,self.worste1=self.getbestworste(self.det3,gtbbox,mpos=mpos)
-#        #print time.time()-t
-#        #self.worste1=self.getworste(self.det3,gtbbox)
-#        if rawdet:
-#            self.best2=self.rawdet(self.best1)
-#            self.worste2=self.rawdet(self.worste1)
-#        else:
-#            self.best2=self.best1[:]
-#            self.worste2=self.worste1[:]
-#        if show:
-#            self.show(self.best2,colors=["b"])
-#            self.show(self.worste2,colors=["r"])
-#        if show=="Parts":
-#            self.show(self.best2,parts=True)
-#            self.show(self.worste2,parts=True)
-#        self.trpos=self.descr(self.best2)
-#        self.trneg=self.descr(self.worste2)
-#        return self.best2,self.worste2,self.trpos,self.trneg
-
+        return self.best,self.worste
 
     def select(self,thr=0,cl=0,dense=DENSE):
         """
@@ -1057,48 +771,48 @@ class Treat:
             ir+=((initr*numpy.ones(len(cy)) ).tolist())
         return det,mcy,mcx,ii,ir
 
-    def filter_pos(self,detx,gtbbox=[]):
-        """
-        for each response higher than the threshold execute doitobj.doit
-        """
-        #gt["bbox"]
-        rdet=[]
-        det=numpy.array(detx[0])
-        cy=numpy.array(detx[1])
-        cx=numpy.array(detx[2])
-        i=numpy.array(detx[3])
-        scale=numpy.array(self.scale)
-        scl=numpy.array(scale[i+self.f.starti])
-        mcy=(numpy.array(cy)*(2*self.sample+1)-self.fy+1+self.sample).astype(numpy.float)
-        mcx=(numpy.array(cx)*(2*self.sample+1)-self.fx+1+self.sample).astype(numpy.float)
-        y1=mcy/scl*self.sbin
-        x1=mcx/scl*self.sbin
-        y2=(mcy+self.fy)/scl*self.sbin
-        x2=(mcx+self.fx)/scl*self.sbin
-        sel=numpy.zeros(len(det))
-        for l in gtbbox:
-            bbx=l["bbox"]
-            h=(bbx[2]-bbx[0])/2
-            w=(bbx[3]-bbx[1])/2
-            #bigbb=[bbx[0]-h,bbx[1]-w,bbx[2]+h,bbx[3]+w]
-            #sely=numpy.logical_and(y1>bigbb[0],y2<bigbb[2])
-            #selx=numpy.logical_and(x1>bigbb[1],x2<bigbb[3])
-            #sel=numpy.logical_or(sel,numpy.logical_and(sely,selx))
-            sely1=numpy.logical_and(y1>bbx[0]-h,y1<bbx[0]+h)
-            sely2=numpy.logical_and(y2>bbx[2]-h,y2<bbx[2]+h)
-            selx1=numpy.logical_and(x1>bbx[1]-h,x1<bbx[1]+h)
-            selx2=numpy.logical_and(x2>bbx[3]-h,x2<bbx[3]+h)
-            sely=numpy.logical_and(sely1,sely2)
-            selx=numpy.logical_and(selx1,selx2)
-            sel=numpy.logical_or(sel,numpy.logical_and(sely,selx))
-        det=det[sel]#.tolist()
-        cy=cy[sel]#.tolist()
-        cx=cx[sel]#.tolist()
-        i=i[sel]#.tolist()
-        print "Number bbox before",len(detx[0])
-        print "Number bbox after",len(det)
-        #raw_input()
-        return det,cy,cx,i
+#    def filter_pos(self,detx,gtbbox=[]):
+#        """
+#        for each response higher than the threshold execute doitobj.doit
+#        """
+#        #gt["bbox"]
+#        rdet=[]
+#        det=numpy.array(detx[0])
+#        cy=numpy.array(detx[1])
+#        cx=numpy.array(detx[2])
+#        i=numpy.array(detx[3])
+#        scale=numpy.array(self.scale)
+#        scl=numpy.array(scale[i+self.f.starti])
+#        mcy=(numpy.array(cy)*(2*self.sample+1)-self.fy+1+self.sample).astype(numpy.float)
+#        mcx=(numpy.array(cx)*(2*self.sample+1)-self.fx+1+self.sample).astype(numpy.float)
+#        y1=mcy/scl*self.sbin
+#        x1=mcx/scl*self.sbin
+#        y2=(mcy+self.fy)/scl*self.sbin
+#        x2=(mcx+self.fx)/scl*self.sbin
+#        sel=numpy.zeros(len(det))
+#        for l in gtbbox:
+#            bbx=l["bbox"]
+#            h=(bbx[2]-bbx[0])/2
+#            w=(bbx[3]-bbx[1])/2
+#            #bigbb=[bbx[0]-h,bbx[1]-w,bbx[2]+h,bbx[3]+w]
+#            #sely=numpy.logical_and(y1>bigbb[0],y2<bigbb[2])
+#            #selx=numpy.logical_and(x1>bigbb[1],x2<bigbb[3])
+#            #sel=numpy.logical_or(sel,numpy.logical_and(sely,selx))
+#            sely1=numpy.logical_and(y1>bbx[0]-h,y1<bbx[0]+h)
+#            sely2=numpy.logical_and(y2>bbx[2]-h,y2<bbx[2]+h)
+#            selx1=numpy.logical_and(x1>bbx[1]-h,x1<bbx[1]+h)
+#            selx2=numpy.logical_and(x2>bbx[3]-h,x2<bbx[3]+h)
+#            sely=numpy.logical_and(sely1,sely2)
+#            selx=numpy.logical_and(selx1,selx2)
+#            sel=numpy.logical_or(sel,numpy.logical_and(sely,selx))
+#        det=det[sel]#.tolist()
+#        cy=cy[sel]#.tolist()
+#        cx=cx[sel]#.tolist()
+#        i=i[sel]#.tolist()
+#        print "Number bbox before",len(detx[0])
+#        print "Number bbox after",len(det)
+#        #raw_input()
+#        return det,cy,cx,i
 
     def compare(self,a, b):
         return cmp(b["scr"], a["scr"]) # compare as integers
@@ -1123,13 +837,11 @@ class Treat:
         cx=detx[2]
         i=detx[3]
         initr=numpy.array(detx[4])
-        #initr=self.sample*numpy.ones(len(i))
-        #initr[len(self.scr)-i<dense]=0
         pos=numpy.argsort(-numpy.array(det))      
         if maxnum==numpy.inf:
             maxnum=len(rdet)
-        mcy=numpy.array(cy)*(2*initr+1)-self.fy+1+initr#+max(self.hy)
-        mcx=numpy.array(cx)*(2*initr+1)-self.fx+1+initr#+max(self.hx)
+        mcy=numpy.array(cy)*(2*initr+1)-self.fy+1+initr
+        mcx=numpy.array(cx)*(2*initr+1)-self.fx+1+initr
         for l in pos[:maxnum]:
             rdet.append({"i":i[l],"py":cy[l],"px":cx[l],"scr":det[l],"ry":mcy[l],"rx":mcx[l],"scl":self.scale[i[l]+self.f.starti],"fy":self.fy,"fx":self.fx,"cl":cl})
         return rdet
@@ -1210,7 +922,7 @@ class Treat:
                 if i+self.f.starti-(l)*self.interv>=0:
                     my=2*my+item["def"]["dy"][l]
                     mx=2*mx+item["def"]["dx"][l]
-                    aux=util.getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1,cy+my+fy*2**l-1,cx+mx-1,cx+mx+fx*2**l-1)
+                    aux=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1,cy+my+fy*2**l-1,cx+mx-1,cx+mx+fx*2**l-1)
                     item["feat"].append(aux)
                     cy=(cy)*2
                     cx=(cx)*2
@@ -1410,7 +1122,7 @@ class TreatDef(Treat):
                         for px in range(sz):
                             mov[py,px,0]=2*mov[py,px,0]+item["def"]["dy"][l][py,px]
                             mov[py,px,1]=2*mov[py,px,1]+item["def"]["dx"][l][py,px]
-                            aux[py*fy:(py+1)*fy,px*fx:(px+1)*fx,:]=util.getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+mov[py,px,0]-1,cy+mov[py,px,0]+fy-1,cx+mov[py,px,1]-1,cx+mov[py,px,1]+fx-1)
+                            aux[py*fy:(py+1)*fy,px*fx:(px+1)*fx,:]=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+mov[py,px,0]-1,cy+mov[py,px,0]+fy-1,cx+mov[py,px,1]-1,cx+mov[py,px,1]+fx-1)
                     cy=(cy)*2
                     cx=(cx)*2
                     aux1=numpy.kron(mov.T,[[1,1],[1,1]]).T
@@ -1572,22 +1284,6 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
     else:
         t2=time.time()
         best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=numrank,show="Parts",mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb)        
-#        if 0:#True:#remember to use it in INRIA
-#            if deform:
-#                ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather)
-#                iposflip=tr.descr(best1,flip=True,usemrf=usemrf,usefather=usefather)
-#                ipos=ipos+iposflip
-#                ineg=tr.descr(worste1,flip=False,usemrf=usemrf,usefather=usefather)
-#                inegflip=tr.descr(worste1,flip=True,usemrf=usemrf,usefather=usefather)
-#                ineg=ineg+inegflip
-#            else:
-#                ipos=tr.descr(best1,flip=False)
-#                iposflip=tr.descr(best1,flip=True)
-#                ipos=ipos+iposflip
-#                ineg=tr.descr(worste1,flip=False)
-#                inegflip=tr.descr(worste1,flip=True)
-#                ineg=ineg+inegflip
-#        else:
         ipos=[];ineg=[]
         print "Treat Time:",time.time()-t2
         print "Detect:",time.time()-t    

@@ -395,60 +395,60 @@ class InriaTestFullData(imageData):
     def getTotal(self):
         return len(self.trlines)
 
-class InriaTestFullParts(imageData):
-    """
-    INRIA database for positive examples
-    """
-    def __init__(self,numparts,part,basepath="/home/databases/",
-                        trainfile="INRIAPerson/Test/pos.lst",
-                        imagepath="INRIAPerson/Test/pos/",
-                        imagepath2="INRIAPerson/Test/neg/",
-                        local="INRIAPerson/",
-                        annpath="INRIAPerson/Test/annotations/"):
-        self.basepath=basepath
-        self.trainfile=basepath+trainfile
-        self.imagepath=basepath+imagepath
-        self.imagepath2=basepath+imagepath2
-        self.annpath=basepath+annpath
-        self.local=basepath+local
-        fd=open(self.trainfile,"r")
-        self.trlines=fd.readlines()
-        self.numpos=len(self.trlines)
-        self.numparts=numparts
-        self.part=part
-        fd=open(basepath+"INRIAPerson/Test/neg.lst","r")
-        self.trlines=self.trlines+fd.readlines()
-        fd.close()
-        
-    def getDBname():
-        return "INRIA POS"
+#class InriaTestFullParts(imageData):
+#    """
+#    INRIA database for positive examples
+#    """
+#    def __init__(self,numparts,part,basepath="/home/databases/",
+#                        trainfile="INRIAPerson/Test/pos.lst",
+#                        imagepath="INRIAPerson/Test/pos/",
+#                        imagepath2="INRIAPerson/Test/neg/",
+#                        local="INRIAPerson/",
+#                        annpath="INRIAPerson/Test/annotations/"):
+#        self.basepath=basepath
+#        self.trainfile=basepath+trainfile
+#        self.imagepath=basepath+imagepath
+#        self.imagepath2=basepath+imagepath2
+#        self.annpath=basepath+annpath
+#        self.local=basepath+local
+#        fd=open(self.trainfile,"r")
+#        self.trlines=fd.readlines()
+#        self.numpos=len(self.trlines)
+#        self.numparts=numparts
+#        self.part=part
+#        fd=open(basepath+"INRIAPerson/Test/neg.lst","r")
+#        self.trlines=self.trlines+fd.readlines()
+#        fd.close()
+#        
+#    def getDBname():
+#        return "INRIA POS"
 
-    def getStorageDir(self):
-        return self.local
-        
-    def getImage(self,i):
-        item=self.trlines[i*self.numparts+self.part]
-        impath=self.imagepath
-        if i*self.numparts+self.part>=self.numpos:
-            impath=self.imagepath2    
-        return myimread((impath+item.split("/")[-1])[:-1])
-    
-    def getImageName(self,i):
-        item=self.trlines[i*self.numparts+self.part]
-        impath=self.imagepath
-        if i*self.numparts+self.part>=self.numpos:
-            impath=self.imagepath2 
-        return (impath+item.split("/")[-1])[:-1]
-    
-    def getBBox(self,i):
-        if i*self.numparts+self.part>=self.numpos:
-            return []
-        item=self.trlines[i*self.numparts+self.part]
-        filename=self.annpath+item.split("/")[-1].split(".")[0]+".txt"
-        return getbboxINRIA(filename)
-    
-    def getTotal(self):
-        return len(self.trlines[self.part::self.numparts])
+#    def getStorageDir(self):
+#        return self.local
+#        
+#    def getImage(self,i):
+#        item=self.trlines[i*self.numparts+self.part]
+#        impath=self.imagepath
+#        if i*self.numparts+self.part>=self.numpos:
+#            impath=self.imagepath2    
+#        return myimread((impath+item.split("/")[-1])[:-1])
+#    
+#    def getImageName(self,i):
+#        item=self.trlines[i*self.numparts+self.part]
+#        impath=self.imagepath
+#        if i*self.numparts+self.part>=self.numpos:
+#            impath=self.imagepath2 
+#        return (impath+item.split("/")[-1])[:-1]
+#    
+#    def getBBox(self,i):
+#        if i*self.numparts+self.part>=self.numpos:
+#            return []
+#        item=self.trlines[i*self.numparts+self.part]
+#        filename=self.annpath+item.split("/")[-1].split(".")[0]+".txt"
+#        return getbboxINRIA(filename)
+#    
+#    def getTotal(self):
+#        return len(self.trlines[self.part::self.numparts])
 
     
 class VOC06Data(imageData):

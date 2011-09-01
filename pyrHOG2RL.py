@@ -3,34 +3,6 @@ import time
 import numpy
 import pylab
 
-#def hogflip_old(feat,obin=9):
-#    """    
-#    returns the orizontally flipped version of the HOG features
-#    """
-#    #feature shape
-#    #[9 not oriented][18 oriented][4 normalization]
-#    aux=feat[:,::-1,:]
-#    last=obin+obin*2
-#    noriented=numpy.concatenate((aux[:,:,0].reshape(aux.shape[0],aux.shape[1],1),aux[:,:,obin-1:0:-1]),2)
-#    oriented=numpy.concatenate((aux[:,:,obin].reshape(aux.shape[0],aux.shape[1],1),aux[:,:,last-1:obin:-1]),2)
-#    norm1=aux[:,:,last+2].reshape(aux.shape[0],aux.shape[1],1)
-#    norm2=aux[:,:,last+3].reshape(aux.shape[0],aux.shape[1],1)
-#    norm3=aux[:,:,last].reshape(aux.shape[0],aux.shape[1],1)
-#    norm4=aux[:,:,last+1].reshape(aux.shape[0],aux.shape[1],1)
-#    aux=numpy.concatenate((noriented,oriented,norm1,norm2,norm3,norm4),2)
-#    return aux
-
-#def hogflip(feat,obin=9):#pedro
-#    """    
-#    returns the orizontally flipped version of the HOG features
-#    """
-#    #feature shape
-#    #[9 not oriented][18 oriented][4 normalization] wrong!!!
-#    #[18 not oriented][9 oriented][4 normalization]
-#    p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,30,31,28,29])-1
-#    aux=feat[:,::-1,p]
-#    return numpy.ascontiguousarray(aux)
-
 class TreatRL(pyrHOG2.Treat):
     def __init__(self,f,scr,pos,pos1,lr,sample,fy,fx,occl=False):
         pyrHOG2.Treat.__init__(self,f,scr,pos,sample,fy,fx,occl)
@@ -155,43 +127,6 @@ class TreatDefRL(pyrHOG2.TreatDef):
                 pylab.text(bbox[3]-5,bbox[2]-5,"%s"%(rl),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
 		
 
-#    def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0):   
-#        ld=[]
-#        for item in det:
-#            #if item!=[] and not(item.has_key("notfound")):
-#            if item["rl"]==1:
-#                auxflip=not(flip)
-#            else:
-#                auxflip=flip
-#            d=numpy.array([])
-#            for l in range(len(item["feat"])):
-#                if not(auxflip):
-#                    d=numpy.concatenate((d,item["feat"][l].flatten()))       
-#                    if l>0: #skip deformations level 0
-#                        if usefather:
-#                            d=numpy.concatenate((d, k*k*(item["def"]["dy"][l].flatten()**2)  ))
-#                            d=numpy.concatenate((d, k*k*(item["def"]["dx"][l].flatten()**2)  ))
-#                        if usemrf:
-#                            d=numpy.concatenate((d,k*k*item["def"]["ddy"][l].flatten()))
-#                            d=numpy.concatenate((d,k*k*item["def"]["ddx"][l].flatten()))
-#                else:
-#                    d=numpy.concatenate((d,hogflip(item["feat"][l]).flatten()))        
-#                    if l>0: #skip deformations level 0
-#                        if usefather:
-#                            aux=(k*k*(item["def"]["dy"][l][:,::-1]**2))#.copy()
-#                            d=numpy.concatenate((d,aux.flatten()))
-#                            aux=(k*k*(item["def"]["dx"][l][:,::-1]**2))#.copy()
-#                            d=numpy.concatenate((d,aux.flatten()))
-#                        if usemrf:
-#                            aux=pyrHOG2.defflip(k*k*item["def"]["ddy"][l])
-#                            d=numpy.concatenate((d,aux.flatten()))
-#                            aux=pyrHOG2.defflip(k*k*item["def"]["ddx"][l])
-#                            d=numpy.concatenate((d,aux.flatten()))
-#            ld.append(d.astype(numpy.float32))
-#            #else:
-#            #    ld.append([])
-#        return ld
-
     def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0):   
         ld=[]
         for item in det:
@@ -245,13 +180,9 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
             scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
             #scr1,pos1=f.scanRCFLDefThr(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
             scr1,pos1=f.scanRCFLDef(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
-        #tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"])
     else:
-        #scr,pos=f.scanRCFLpr(m,initr=initr,ratio=ratio,small=small,pr=pr)
         scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
-        #scr1,pos1=f.scanRCFLpr(m1,initr=initr,ratio=ratio,small=small,pr=pr)
         scr1,pos1=f.scanRCFL(m1,initr=initr,ratio=ratio,small=small)
-        #tr=Treat(f,scr,pos,initr,m["fy"],m["fx"])
     lr=[]
     fscr=[]
     for idl,l in enumerate(scr):
@@ -312,23 +243,6 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
         return tr,det,dettime,numhog
     else:
         best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
-#        if 0:#True:#remember to use it in INRIA
-#            if deform:
-#                #print "deform"
-#                ipos=tr.descr(best1,flip=False,usemrf=usemrf,usefather=usefather,k=K)
-#                #iposflip=tr.descr(best1,flip=True,usemrf=usemrf,usefather=usefather)
-#                #ipos=ipos+iposflip
-#                ineg=tr.descr(worste1,flip=False,usemrf=usemrf,usefather=usefather,k=K)
-#                #inegflip=tr.descr(worste1,flip=True,usemrf=usemrf,usefather=usefather)
-#                #ineg=ineg+inegflip
-#            else:
-#                ipos=tr.descr(best1,flip=False)
-#                #iposflip=tr.descr(best1,flip=True)
-#                #ipos=ipos+iposflip
-#                ineg=tr.descr(worste1,flip=False)
-#                #inegflip=tr.descr(worste1,flip=True)
-#                #ineg=ineg+inegflip
-#        else:
         ipos=[];ineg=[]
         if False and show and len(best1)>0:
             import util

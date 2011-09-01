@@ -25,7 +25,7 @@ void compute(int node,int *pos)
     }
 }
 
-void initmaxmarginal(int node,int p)//initialize for computing max marginals in node,pos
+void initmaxmarginal(int node,int p)//initialize for computing max marginals in node,p
 {
     int i,id;
     for (i=0;i<numlab;i++)
@@ -38,7 +38,7 @@ void initmaxmarginal(int node,int p)//initialize for computing max marginals in 
     }
 }
 
-ftype maxmarginal(int node,int p,int *pos)//compute the max marginals in node,pos
+ftype maxmarginal(int node,int p,int *pos)//compute the max marginals in node,p
 {
     int i,n,id,idn,iddf;
     ftype maxm=-INFINITY;

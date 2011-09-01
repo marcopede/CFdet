@@ -19,7 +19,7 @@ static int numlab; //number of labels
 static int maxnode; //number of nodes
 
 //void compute(int node,int *pos);
-void initmaxmarginal(int node,int p);//initialize for computing max marginals in node,pos
+void initmaxmarginal(int node,int p);//initialize for computing max marginals in node,p
 ftype maxmarginal(int node,int p,int *pos);//compute the max marginals in node,pos
 ftype map(int *mapos,int node,ftype *maxmarg);//compute map and avrg using max marginals
 void filltables(ftype *pscr,ftype *pdef,int pnodes,int pnumlab);//fill scr,pos,def

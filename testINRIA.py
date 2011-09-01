@@ -104,7 +104,7 @@ cfg.multipr=False
 cfg.inclusion=False
 #cfg.nms=0.5
 cfg.posovr=0
-cfg.dbpath="/home/marcopede/databases/"
+cfg.dbpath="/home/owner/databases/"#"/home/marcopede/databases/"
 #cfg.auxdir="/state/partition1/marcopede/INRIA/"#InriaPosData(basepath="/home/databases/").getStorageDir()
 cfg.auxdir=InriaPosData(basepath=cfg.dbpath).getStorageDir()
 cfg.show=False

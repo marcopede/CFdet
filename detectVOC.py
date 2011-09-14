@@ -76,7 +76,7 @@ if __name__=="__main__":
         tr.show(nfuse,parts=True,thr=-0.99,scr=True,maxnum=10,cls=ccls)
         pylab.axis((0,img.shape[1],img.shape[0],0))
         print "Number of computed HOGs:",numhog
-        print "Elapsed time",time.time()-t
+        print "Elapsed time: %.3f s"%(time.time()-t)
         pylab.ion()
         pylab.draw()
     pylab.show()  

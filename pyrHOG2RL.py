@@ -5,7 +5,7 @@ import pylab
 
 class TreatRL(pyrHOG2.Treat):
     def __init__(self,f,scr,pos,pos1,lr,sample,fy,fx,occl=False):
-        pyrHOG2.Treat.__init__(self,f,scr,pos,sample,fy,fx,occl)
+        pyrHOG2.Treat.__init__(self,f,scr,pos,sample,fy,fx,occl=occl)
         self.lr=lr
         self.pose=[pos,pos1]
 
@@ -70,7 +70,7 @@ class TreatRL(pyrHOG2.Treat):
 
 class TreatDefRL(pyrHOG2.TreatDef):
     def __init__(self,f,scr,pos,pos1,lr,sample,fy,fx,occl=False):
-        pyrHOG2.TreatDef.__init__(self,f,scr,pos,sample,fy,fx,occl)
+        pyrHOG2.TreatDef.__init__(self,f,scr,pos,sample,fy,fx,occl=occl)
         self.lr=lr
         self.pose=[pos,pos1]
 
@@ -116,7 +116,7 @@ class TreatDefRL(pyrHOG2.TreatDef):
         if kargs.has_key("maxnum"):
             maxnum=kargs["maxnum"]
         else:
-            maxnum=-numpy.inf	
+            maxnum=1000#-numpy.inf	
         for item in ldet[:maxnum+1]:
             if item["scr"]>thr:
                 bbox=item["bbox"]
@@ -200,9 +200,9 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
             pylab.show()
             raw_input()
     if deform:
-        tr=TreatDefRL(f,fscr,pos,pos1,lr,initr,m["fy"],m["fx"])
+        tr=TreatDefRL(f,fscr,pos,pos1,lr,initr,m["fy"],m["fx"],occl=occl)
     else:
-        tr=TreatRL(f,fscr,pos,pos1,lr,initr,m["fy"],m["fx"])
+        tr=TreatRL(f,fscr,pos,pos1,lr,initr,m["fy"],m["fx"],occl=occl)
 
     numhog=f.getHOG()
     if gtbbox==None:
@@ -239,7 +239,7 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
         dettime=time.time()-t
         if show:
             tr.show(det,parts=showlabel,thr=-1.0,maxnum=0)  
-        print "Detect:",time.time()-t             
+        print "Detect: %.3f"%(time.time()-t)
         return tr,det,dettime,numhog
     else:
         best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
@@ -254,6 +254,6 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
             pylab.show()
             #raw_input()
 
-        print "Detect:",time.time()-t    
+        print "Detect: %.3f"%(time.time()-t)
         return tr,best1,worste1,ipos,ineg
 

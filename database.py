@@ -636,6 +636,37 @@ class VOC07Data(VOC06Data):
         filename=self.annpath+item.split(" ")[0]+".xml"
         return getbboxVOC07(filename,cl,usetr,usedf)
 
+class VOC11Data(VOC07Data):
+    """
+    VOC07 instance (you can choose positive or negative images with the option select)
+    """
+    def __init__(self,select="all",cl="person_train.txt",
+                basepath="media/DADES-2/",
+                trainfile="VOC2011/VOCdevkit/VOC2011/ImageSets/Main/",
+                imagepath="VOC2011/VOCdevkit/VOC2011/JPEGImages/",
+                annpath="VOC2011/VOCdevkit/VOC2011/Annotations/",
+                local="VOC2011/VOCdevkit/local/VOC2011/",
+                usetr=False,usedf=False):
+        VOC07Data.__init__(self,select=select,cl=cl,basepath=basepath,
+                trainfile=trainfile,imagepath=imagepath,
+                annpath=annpath,local=local,usetr=usetr,usedf=usedf)
+#        self.cl=cl
+#        self.usetr=usetr
+#        self.usedf=usedf
+#        self.local=basepath+local
+#        self.trainfile=basepath+trainfile+cl
+#        self.imagepath=basepath+imagepath
+#        self.annpath=basepath+annpath
+#        fd=open(self.trainfile,"r")
+#        self.trlines=fd.readlines()
+#        fd.close()
+#        if select=="all":#All images
+#            self.str=""
+#        if select=="pos":#Positives images
+#            self.str="1\n"
+#        if select=="neg":#Negatives images
+#            self.str="-1\n"
+#        self.selines=self.__selected()
 
 class CVC02(VOC06Data):
     """

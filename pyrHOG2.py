@@ -4,7 +4,7 @@ import util2 as util
 import numpy
 import math
 import pylab
-import scipy.misc.pilutil
+#import scipy.misc.pilutil
 import cPickle
 import time
 
@@ -156,7 +156,7 @@ class pyrHOG:
         if type(im)==numpy.ndarray:
             self._compute(im,interv,sbin,hallucinate,cformat=cformat)
             #return
-        print "Features: ",time.time()-t
+        print "Features: %.3f s"%(time.time()-t)
         #raise "Error: im must be either a string or an image"
         
     def _compute(self,img,interv=10,sbin=8,hallucinate=0,cformat=False):
@@ -1257,8 +1257,8 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"],occl=occl)
     else:
         scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
-        tr=Treat(f,scr,pos,initr,m["fy"],m["fx"])
-    print "Scan:",time.time()-t    
+        tr=Treat(f,scr,pos,initr,m["fy"],m["fx"],occl=occl)
+    print "Scan: %.3f s"%(time.time()-t)    
     if gtbbox==None:
         if show==True:
             showlabel="Parts"
@@ -1286,6 +1286,6 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=numrank,show="Parts",mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb)        
         ipos=[];ineg=[]
         print "Treat Time:",time.time()-t2
-        print "Detect:",time.time()-t    
+        print "Detect: %.3f s"%(time.time()-t)
         return tr,best1,worste1,ipos,ineg
 

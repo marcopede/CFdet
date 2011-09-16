@@ -23,7 +23,7 @@ if __name__=="__main__":
     if len(sys.argv)>2:
         imname=sys.argv[2]
     else:
-        imname="000004.jpg"
+        imname="test2.png"
     
     #configuration class
     class config(object):
@@ -73,7 +73,7 @@ if __name__=="__main__":
         nfuse=tr.cluster(rfuse,ovr=0.3,inclusion=False)
         pylab.axis("off")
         #show detections
-        tr.show(nfuse,parts=True,thr=-0.99,scr=True,maxnum=10,cls=ccls)
+        tr.show(nfuse,parts=True,thr=-0.98,scr=True,maxnum=10,cls=ccls)
         pylab.axis((0,img.shape[1],img.shape[0],0))
         print "Number of computed HOGs:",numhog
         print "Elapsed time: %.3f s"%(time.time()-t)

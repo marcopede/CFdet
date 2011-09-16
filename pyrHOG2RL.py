@@ -11,7 +11,7 @@ class TreatRL(pyrHOG2.Treat):
 
     def refine(self,ldet):
         """
-            refine the localization of the object (py,px) based on higher resolutions
+        refine the localization of the object based on higher resolutions
         """
         rdet=[]
         for item in ldet:
@@ -33,6 +33,9 @@ class TreatRL(pyrHOG2.Treat):
         return rdet
 
     def show(self,*args,**kargs):#ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf):
+        """
+        show the object detections
+        """
         pyrHOG2.Treat.show(self,*args,**kargs)
         ldet=args[0]
         if kargs.has_key("thr"):
@@ -44,7 +47,10 @@ class TreatRL(pyrHOG2.Treat):
                 bbox=item["bbox"]
                 pylab.text(bbox[3]-10,bbox[2]-10,"%d"%(item["rl"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
 
-    def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0):   
+    def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0): 
+        """
+        convert each detection in a feature descriptor for the SVM
+        """        
         ld=[]
         for item in det:
             d=numpy.array([])
@@ -75,6 +81,9 @@ class TreatDefRL(pyrHOG2.TreatDef):
         self.pose=[pos,pos1]
 
     def refine(self,ldet):
+        """
+            refine the localization of the object based on the position of the parts
+        """
         rdet=[]
         for item in ldet:
             i=item["i"];cy=item["py"];cx=item["px"];pp=self.lr[i][cy,cx]
@@ -107,6 +116,9 @@ class TreatDefRL(pyrHOG2.TreatDef):
         return rdet
 
     def show(self,*args,**kargs):#ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf):
+        """
+        show the detections in an image
+        """        
         pyrHOG2.TreatDef.show(self,*args,**kargs)
         ldet=args[0]
         if kargs.has_key("thr"):
@@ -128,6 +140,9 @@ class TreatDefRL(pyrHOG2.TreatDef):
 		
 
     def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0):   
+        """
+        convert each detection in a feature descriptor for the SVM
+        """  
         ld=[]
         for item in det:
             if item["rl"]==1:
@@ -140,6 +155,9 @@ class TreatDefRL(pyrHOG2.TreatDef):
 
 
 def flip(m):
+    """
+    flip of the object model
+    """  
     ww1=[]
     df1=[]
     for l in m["ww"]:
@@ -153,11 +171,13 @@ def flip(m):
             aux[:,:,3]=pyrHOG2.defflip(l[:,:,3])
             df1.append(numpy.ascontiguousarray(aux))
         m1["df"]=df1
+    if m.has_key("occl"):
+        m1["occl"]=m["occl"]
     return m1    
 
 
 def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,useprior=False,K=1.0,occl=False):
-    """Detect objec in images
+    """Detect objects with RL flip
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
     """

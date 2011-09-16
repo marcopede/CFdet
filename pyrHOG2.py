@@ -107,7 +107,7 @@ def hog(img,sbin=8):
 
 def hogflip(feat,obin=9):
     """    
-    returns the orizontally flipped version of the HOG features
+    returns the horizontally flipped version of the HOG features
     """
     #feature shape
     #[9 not oriented][18 oriented][4 normalization]
@@ -117,7 +117,7 @@ def hogflip(feat,obin=9):
 
 def defflip(feat):
     """    
-    returns the orizontally flipped version of the deformation features
+    returns the horizontally flipped version of the deformation features
     """
     sx=feat.shape[1]/2-1
     fflip=numpy.zeros(feat.shape,dtype=feat.dtype)
@@ -161,7 +161,7 @@ class pyrHOG:
         
     def _compute(self,img,interv=10,sbin=8,hallucinate=0,cformat=False):
         """
-        Compute the HOG pyramid of an image in a list
+        Compute the HOG pyramid of an image
         """
         l=[]
         scl=[]
@@ -248,49 +248,7 @@ class pyrHOG:
                 f=gzip.open(savedir+imname.split("/")[-1]+".zhog%d_%d_%d"%(self.interv,self.sbin,hallucinate),"wb")
             else:
                 f=open(savedir+imname.split("/")[-1]+".hog%d_%d_%d"%(self.interv,self.sbin,hallucinate),"w")
-            cPickle.dump(self,f,2)
-        
-    def show(self,oct=[],interv=[]):
-        """
-        Draw the pyramid of HOG features in a figure
-        """
-        if oct==[]:
-            oct=range(self.oct)
-        if interv==[]:
-            interv=range(self.interv)
-        cnt=0
-        for o in oct:
-            for i in interv:
-                pos=o*self.interv+i
-                pylab.subplot(len(oct),len(interv),cnt+1)
-                pylab.title("Oct: %d Int: %d"%(o,i))
-                drawHOG2(self.hog[pos])
-                cnt+=1
-    
-
-    def scan(self,ww,rho,filter=None,minlev=1):
-        """
-        scan the fature pyramid to detect where the SVM model gives higher response
-        """
-        print "scan"
-        ttot=0
-        tm=0
-        scn=0
-        list=[]
-        winlist=[]
-        win=filter
-        for intrv in range(len(self.hog)):
-            auxlist=[]
-            for oct in range(len(self.hog[intrv])):
-                if oct<minlev:
-                    win=-10*numpy.ones(self.hog[intrv][oct].shape[:2])
-                else:
-                    if filter==None:
-                        win=numpy.array([])
-                    win=scanFull(self.hog,intrv,ww,rho,0,win)
-                auxlist.append(win)
-            winlist.append(auxlist)                        
-        return winlist
+            cPickle.dump(self,f,2)   
 
     def resetHOG(self):
         "reset the HOG computation counter"
@@ -301,6 +259,9 @@ class pyrHOG:
         return ff.getHOG()
 
     def scanRCFL(self,model,initr=1,ratio=1,small=True):
+        """
+        scan the HOG pyramid using the CtF algorithm
+        """        
         ww=model["ww"]
         rho=model["rho"]
         if model.has_key("occl"):
@@ -354,6 +315,9 @@ class pyrHOG:
 
 
     def scanRCFLDef(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None):
+        """
+        scan the HOG pyramid using the CtF algorithm but using deformations
+        """     
         ww=model["ww"]
         rho=model["rho"]
         df=model["df"]
@@ -401,16 +365,15 @@ class pyrHOG:
             if i-self.interv>=0 and len(model["ww"])-1>0:
                 self.scanRCFLPart(model,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf,occl) 
             else:
-                #print "Added occlusion 1 i=",i
                 res[i-self.starti]+=numpy.sum(occl[1:])
             res[i-self.starti]-=rho
         return res,pparts
 
 
     def scanRCFLPart(self,model,samples,pparts,res,i,lev,locy,locx,ratio,usemrf,occl):
-        #if len(model["ww"])<=lev:
-        #    return
-        #print "Level",lev,"Interval",i
+        """
+        auxiliary function for the recursive search of the parts
+        """     
         locy=locy*2
         locx=locx*2
         fy=model["ww"][0].shape[0]
@@ -439,15 +402,17 @@ class pyrHOG:
             self.scanRCFLPart(model,samples4.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf,occl)
         else:
             if len(model["ww"])-1>lev:
-                #print "Added occlusion ",lev+1," i=",i
                 res+=numpy.sum(occl[lev+1:])
 
     def scanRCFLDefThr(self,model,initr=1,ratio=1,small=True,usemrf=True,mythr=0):
+        """
+        scan the HOG pyramid using the CtF algorithm but using deformations and a pruning threshold
+        """    
         ww=model["ww"]
         rho=model["rho"]
         df=model["df"]
-        res=[]#score
-        pparts=[]#parts position
+        res=[]
+        pparts=[]
         tot=0
         if not(small):
             self.starti=self.interv*(len(ww)-1)
@@ -483,9 +448,9 @@ class pyrHOG:
         return res,pparts
 
     def scanRCFLPartThr(self,model,samples,pparts,res,i,lev,locy,locx,ratio,usemrf,mythr):
-        #if len(model["ww"])<=lev:
-        #    return
-        #print "Level",lev,"Interval",i
+        """
+        auxiliary function for the recursive search of the parts with pruning threshold
+        """   
         locy=locy*2
         locx=locx*2
         fy=model["ww"][0].shape[0]
@@ -516,6 +481,9 @@ class pyrHOG:
             self.scanRCFLPart(model,samples4.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf)
 
     def scanRCFLDefBU(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None):
+        """
+        scan the HOG pyramid using the full search and using deformations
+        """   
         ww=model["ww"]
         rho=model["rho"]
         df=model["df"]
@@ -589,8 +557,9 @@ class pyrHOG:
 
 
     def scanRCFLPartBU(self,model,samples,pparts,ct,res,i,lev,locy,locx,ratio,usemrf,prec,pady,padx):
-        #if len(model["ww"])<=lev:
-        #    return
+        """
+        auxiliary function for the recursive search of the parts for the complete search
+        """   
         locy=locy*2
         locx=locx*2
         fy=model["ww"][0].shape[0]
@@ -628,9 +597,8 @@ class pyrHOG:
                     auxparts[3,(dy+ratio)*(2*ratio+1)+(dx+ratio)]=self.scanRCFLPartBU(model,samples4.copy(),pparts,ct.ptr[3,(dy+ratio)*(2*ratio+1)+(dx+ratio)],pres[3,(dy+ratio),(dx+ratio),:,:],i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf,prec,pady,padx)
         
         auxprec=prec[lev][((locy/2)*2+(locx/2))*4:((locy/2)*2+(locx/2)+1)*4]
-        ff.scanDef2(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,pres,1,auxprec.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),pady,padx)#,ctypes.POINTER(c_float)())#auxprec.ctypes.data_as(ctypes.POINTER(ctypes.c_float)))
+        ff.scanDef2(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,pres,1,auxprec.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),pady,padx)
         res+=auxres
-        #ct.parts=parts
         ct.best=[parts]
 
         if i-self.interv>=0 and len(model["ww"])-1>lev:            
@@ -669,6 +637,9 @@ class Treat:
             pylab.fill([bbox[1],bbox[1],bbox[3],bbox[3],bbox[1]],[bbox[0],bbox[2],bbox[2],bbox[0],bbox[0]],colors[0], alpha=new_alpha, edgecolor=colors[0],lw=2)
 
     def doall(self,thr=-1,rank=1000,refine=True,cluster=0.5,rawdet=False,show=False,inclusion=False,cl=0):
+        """
+        executes all the detection steps for test
+        """        
         #import time
         #t=time.time()
         self.det=self.select_fast(thr,cl=cl)        
@@ -706,6 +677,9 @@ class Treat:
         return self.det
    
     def doalltrain(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,posovr=0.5,numpos=1,numneg=10,minnegovr=0,minnegincl=0,cl=0,emptybb=False):
+        """
+        executes all the detection steps for training
+        """        
         t=time.time()
         self.det=self.select_fast(thr,cl=cl)
         #print "Select time:",time.time()-t
@@ -738,24 +712,23 @@ class Treat:
 
     def select(self,thr=0,cl=0,dense=DENSE):
         """
-        for each response higher than the threshold execute doitobj.doit
+        select the best detections
         """
         det=[]
-        #pylab.ioff()
         initr=self.sample
         for i in range(len(self.scr)):
             if len(self.scr)-i<dense:
                 initr=0
             cy,cx=numpy.where(self.scr[i]>thr)
             for l in range(len(cy)):
-                mcy=(cy[l])*(2*initr+1)-self.fy+1+initr#self.sample
-                mcx=(cx[l])*(2*initr+1)-self.fx+1+initr#self.sample
+                mcy=(cy[l])*(2*initr+1)-self.fy+1+initr
+                mcx=(cx[l])*(2*initr+1)-self.fx+1+initr
                 det.append({"i":i,"py":cy[l],"px":cx[l],"scr":self.scr[i][cy[l],cx[l]],"ry":mcy,"rx":mcx,"scl":self.scale[i+self.f.starti],"fy":self.fy,"fx":self.fx,"cl":cl})
         return det
 
     def select_fast(self,thr=0,cl=0,dense=DENSE):
         """
-        for each response higher than the threshold execute doitobj.doit
+        select the best detections in a faster way
         """
         det=[];mcy=[];mcx=[];ii=[];ir=[]
         for i in range(len(self.scr)):
@@ -770,49 +743,6 @@ class Treat:
             det+=self.scr[i][cy,cx].tolist()
             ir+=((initr*numpy.ones(len(cy)) ).tolist())
         return det,mcy,mcx,ii,ir
-
-#    def filter_pos(self,detx,gtbbox=[]):
-#        """
-#        for each response higher than the threshold execute doitobj.doit
-#        """
-#        #gt["bbox"]
-#        rdet=[]
-#        det=numpy.array(detx[0])
-#        cy=numpy.array(detx[1])
-#        cx=numpy.array(detx[2])
-#        i=numpy.array(detx[3])
-#        scale=numpy.array(self.scale)
-#        scl=numpy.array(scale[i+self.f.starti])
-#        mcy=(numpy.array(cy)*(2*self.sample+1)-self.fy+1+self.sample).astype(numpy.float)
-#        mcx=(numpy.array(cx)*(2*self.sample+1)-self.fx+1+self.sample).astype(numpy.float)
-#        y1=mcy/scl*self.sbin
-#        x1=mcx/scl*self.sbin
-#        y2=(mcy+self.fy)/scl*self.sbin
-#        x2=(mcx+self.fx)/scl*self.sbin
-#        sel=numpy.zeros(len(det))
-#        for l in gtbbox:
-#            bbx=l["bbox"]
-#            h=(bbx[2]-bbx[0])/2
-#            w=(bbx[3]-bbx[1])/2
-#            #bigbb=[bbx[0]-h,bbx[1]-w,bbx[2]+h,bbx[3]+w]
-#            #sely=numpy.logical_and(y1>bigbb[0],y2<bigbb[2])
-#            #selx=numpy.logical_and(x1>bigbb[1],x2<bigbb[3])
-#            #sel=numpy.logical_or(sel,numpy.logical_and(sely,selx))
-#            sely1=numpy.logical_and(y1>bbx[0]-h,y1<bbx[0]+h)
-#            sely2=numpy.logical_and(y2>bbx[2]-h,y2<bbx[2]+h)
-#            selx1=numpy.logical_and(x1>bbx[1]-h,x1<bbx[1]+h)
-#            selx2=numpy.logical_and(x2>bbx[3]-h,x2<bbx[3]+h)
-#            sely=numpy.logical_and(sely1,sely2)
-#            selx=numpy.logical_and(selx1,selx2)
-#            sel=numpy.logical_or(sel,numpy.logical_and(sely,selx))
-#        det=det[sel]#.tolist()
-#        cy=cy[sel]#.tolist()
-#        cx=cx[sel]#.tolist()
-#        i=i[sel]#.tolist()
-#        print "Number bbox before",len(detx[0])
-#        print "Number bbox after",len(det)
-#        #raw_input()
-#        return det,cy,cx,i
 
     def compare(self,a, b):
         return cmp(b["scr"], a["scr"]) # compare as integers
@@ -829,7 +759,7 @@ class Treat:
 
     def rank_fast(self,detx,maxnum=1000,cl=0,dense=DENSE):
         """
-           rank detections based on score
+           rank detections based on score fast
         """
         rdet=[]
         det=detx[0]
@@ -848,7 +778,7 @@ class Treat:
 
     def refine(self,ldet):
         """
-            refine the localization of the object (py,px) based on higher resolutions
+            refine the localization of the object based on higher resolutions
         """
         rdet=[]
         for item in ldet:
@@ -911,6 +841,9 @@ class Treat:
         return [el[0] for el in cllist]
 
     def rawdet(self,det):
+        """
+        extract features from detections and store in "feat"
+        """        
         rdet=det[:]
         for item in det:
             i=item["i"];cy=item["ny"];cx=item["nx"];
@@ -932,6 +865,9 @@ class Treat:
 
 
     def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf,scr=True,cls=None):
+        """
+        show the detections in an image
+        """        
         ar=[5,4,2]
         count=0
         for item in ldet:
@@ -970,7 +906,10 @@ class Treat:
             if count>maxnum:
                 break
             
-    def descr(self,det,flip=False,usemrf=False,usefather=False,k=0):   
+    def descr(self,det,flip=False,usemrf=False,usefather=False,k=0):
+        """
+        convert each detection in a feature descriptor for the SVM
+        """           
         ld=[]
         for item in det:
             d=numpy.array([])
@@ -988,13 +927,19 @@ class Treat:
             ld.append(d.astype(numpy.float32))
         return ld
 
-    def mixture(self,det):   
+    def mixture(self,det): 
+        """
+        returns the mixture number if the detector is a mixture of models
+        """    
         ld=[]
         for item in det:
             ld.append(item["cl"])
         return ld
 
-    def model(self,descr,rho,lev,fsz,fy=[],fx=[],usemrf=False,usefather=False): 
+    def model(self,descr,rho,lev,fsz,fy=[],fx=[],usemrf=False,usefather=False):
+        """
+        build a new model from the weights of the SVM
+        """     
         ww=[]  
         p=0
         occl=[0]*lev
@@ -1014,6 +959,9 @@ class Treat:
         return m
 
     def getbestworste(self,det,gtbbox,numpos=1,numneg=10,posovr=0.5,negovr=0.2,mpos=0,minnegovr=0,minnegincl=0,emptybb=True):
+        """
+        returns the detection that best overlap with the ground truth and also the best not overlapping
+        """    
         lpos=[]
         lneg=[]
         lnegfull=False
@@ -1074,7 +1022,7 @@ class TreatDef(Treat):
 
     def refine(self,ldet):
         """
-            refine the localization of the object (py,px) based on higher resolutions
+            refine the localization of the object based on higher resolutions
         """
         rdet=[]
         for item in ldet:
@@ -1107,6 +1055,9 @@ class TreatDef(Treat):
         return rdet
 
     def rawdet(self,det):
+        """
+        extract features from detections and store in "feat"
+        """        
         rdet=det[:]
         for item in det:
             i=item["i"];cy=item["ny"];cx=item["nx"];
@@ -1136,6 +1087,9 @@ class TreatDef(Treat):
 
 
     def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf,scr=True,cls=None):
+        """
+        show the detections in an image
+        """  
         ar=[5,4,2]
         count=0
         if parts:
@@ -1157,7 +1111,10 @@ class TreatDef(Treat):
                     break
         Treat.show(self,ldet,colors=colors,thr=thr,maxnum=maxnum,scr=scr,cls=cls)        
 
-    def descr(self,det,flip=False,usemrf=True,usefather=True,k=K):   
+    def descr(self,det,flip=False,usemrf=True,usefather=True,k=K):
+        """
+        convert each detection in a feature descriptor for the SVM
+        """      
         ld=[]
         for item in det:
             d=numpy.array([])
@@ -1193,6 +1150,9 @@ class TreatDef(Treat):
         return ld
 
     def model(self,descr,rho,lev,fsz,fy=[],fx=[],mindef=0.001,usemrf=True,usefather=True): 
+        """
+        build a new model from the weights of the SVM
+        """     
         ww=[]  
         df=[]
         occl=[0]*lev
@@ -1231,7 +1191,7 @@ class TreatDef(Treat):
 import time
 
 def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0,occl=False):
-    """Detect objec in images
+    """Detect objects in an image
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
     """
@@ -1264,7 +1224,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             showlabel="Parts"
         else:
             showlabel=False
-        ref=0#enable TD+BU
+        ref=0
         if ref:
             t1=time.time()
             det=tr.doall(thr=thr,rank=200,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)

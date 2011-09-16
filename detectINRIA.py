@@ -18,7 +18,7 @@ import sys
 if len(sys.argv)>1:
     imname=sys.argv[1]
 else:
-    imname="000073.jpg"
+    imname="test1.png"
 
 #load the model
 m=util2.load("%s%d.model"%(modelname,it))
@@ -31,9 +31,6 @@ if True:
     pylab.figure(100)
     pylab.clf()
     util2.drawModel(m["ww"])
-    #pylab.figure(101)
-    #pylab.clf()
-    #util2.drawDeform(m["df"])
     pylab.draw()
 
 print "---- Image %s----"%imname

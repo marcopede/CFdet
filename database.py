@@ -1600,6 +1600,7 @@ class ImgFile(VOC06Data):
                 a=(abs(r[4]-r[2])*abs(r[3]-r[1]))
                 #print a
                 if a>amin:#take only windows bigger than 400 pixles
+                #if a>amin and r[2]>155:#take only windows bigger than 400 pixles
                     if images.has_key(line[0]):
                         images[line[0]].append(r)
                     else:

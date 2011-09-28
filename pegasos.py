@@ -332,7 +332,8 @@ def objective(trpos,trneg,trposcl,trnegcl,clsize,w,lamda):
         pstart=clsum[idc]
         pend=pstart+clsize[idc]
         scr.append(numpy.sum(w[pstart:pend]**2))    
-    reg=lamda*max(scr)*0.5
+    #reg=lamda*max(scr)*0.5
+    reg=lamda*(max(scr)**2)*0.5
     posloss=posloss/total
     negloss=negloss/total
     hardpos=float(hardpos)/total

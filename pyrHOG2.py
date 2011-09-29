@@ -36,7 +36,7 @@ ctypes.cdll.LoadLibrary("./libexcorr.so")
 ff= ctypes.CDLL("libexcorr.so")
 
 ff.scaneigh.argtypes=[numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_float,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer
-(dtype=c_int,flags="C_CONTIGUOUS"),c_int,c_int,c_int]
+(dtype=c_int,flags="C_CONTIGUOUS"),c_int,c_int,c_int,c_int]
 
 ff.scanDef2.argtypes = [
     ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
@@ -47,7 +47,7 @@ ff.scanDef2.argtypes = [
     ctypeslib.ndpointer(c_int),
     ctypeslib.ndpointer(c_float),
     c_int,c_int,c_int,ctypeslib.ndpointer(c_float),c_int,
-    ctypes.POINTER(c_float),c_int,c_int]
+    ctypes.POINTER(c_float),c_int,c_int,c_int]
 ff.scanDef2.restype=ctypes.c_float
 
 ff.setK.argtypes = [c_float]
@@ -60,7 +60,7 @@ ff.setK(K)
 def setK(pk):
     ff.setK(pk)    
 
-def getfeat(a,y1,y2,x1,x2):
+def getfeat(a,y1,y2,x1,x2,trunc=0):
     """
         returns the hog features at the given position and 
         zeros in case the coordiantes are outside the borders
@@ -69,7 +69,12 @@ def getfeat(a,y1,y2,x1,x2):
     dimx=a.shape[1]
     py1=y1;py2=y2;px1=x1;px2=x2
     dy1=0;dy2=0;dx1=0;dx2=0
-    b=numpy.zeros((abs(y2-y1),abs(x2-x1),a.shape[2]))
+    #if trunc>0:
+    b=numpy.zeros((abs(y2-y1),abs(x2-x1),a.shape[2]+trunc))
+    if trunc>0:
+        b[:,:,-trunc]=1
+    #else:
+    #    b=numpy.zeros((abs(y2-y1),abs(x2-x1),a.shape[2]))
     if py1<0:
         py1=0
         dy1=py1-y1
@@ -85,8 +90,14 @@ def getfeat(a,y1,y2,x1,x2):
     if numpy.array(a[py1:py2,px1:px2].shape).min()==0 or numpy.array(b[dy1:y2-y1-dy2,dx1:x2-x1-dx2].shape).min()==0:
         pass
     else:
-        b[dy1:y2-y1-dy2,dx1:x2-x1-dx2]=a[py1:py2,px1:px2]
+        if trunc==1:
+            b[dy1:y2-y1-dy2,dx1:x2-x1-dx2,:-1]=a[py1:py2,px1:px2]
+            #b[:,:,-1]=1
+            b[dy1:y2-y1-dy2,dx1:x2-x1-dx2,-1]=0
+        else:
+            b[dy1:y2-y1-dy2,dx1:x2-x1-dx2]=a[py1:py2,px1:px2]
     return b
+
 
 #wrapper for the HOG computation
 def hog(img,sbin=8):
@@ -111,7 +122,10 @@ def hogflip(feat,obin=9):
     """
     #feature shape
     #[9 not oriented][18 oriented][4 normalization]
-    p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,30,31,28,29])-1
+    if feat.shape[2]==31:
+        p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,30,31,28,29])-1
+    else:
+        p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,30,31,28,29,32])-1
     aux=feat[:,::-1,p]
     return numpy.ascontiguousarray(aux)
 
@@ -258,7 +272,7 @@ class pyrHOG:
         "get the HOG computation counter"
         return ff.getHOG()
 
-    def scanRCFL(self,model,initr=1,ratio=1,small=True):
+    def scanRCFL(self,model,initr=1,ratio=1,small=True,trunc=0):
         """
         scan the HOG pyramid using the CtF algorithm
         """        
@@ -304,7 +318,7 @@ class pyrHOG:
                         pparts[-1][0,lev,:,:],
                         pparts[-1][1,lev,:,:],
                         r,r,
-                        sshape[0]*sshape[1])
+                        sshape[0]*sshape[1],trunc)
                     res[i-self.starti]+=auxres
                     samples[:,:,:]=(samples[:,:,:]+pparts[-1][:,lev,:,:])*2+1
                 else:#resolution occlusion
@@ -314,7 +328,7 @@ class pyrHOG:
         return res,pparts
 
 
-    def scanRCFLDef(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None):
+    def scanRCFLDef(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None,trunc=0):
         """
         scan the HOG pyramid using the CtF algorithm but using deformations
         """     
@@ -360,17 +374,17 @@ class pyrHOG:
                 pparts[-1][0][0,0,0,:,:],
                 pparts[-1][0][0,0,1,:,:],
                 initr,initr,
-                nelem)
+                nelem,trunc)
             samples[:,:,:]=(samples[:,:,:]+pparts[-1][0][0,0,:2,:,:])*2+1
             if i-self.interv>=0 and len(model["ww"])-1>0:
-                self.scanRCFLPart(model,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf,occl) 
+                self.scanRCFLPart(model,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf,occl,trunc) 
             else:
                 res[i-self.starti]+=numpy.sum(occl[1:])
             res[i-self.starti]-=rho
         return res,pparts
 
 
-    def scanRCFLPart(self,model,samples,pparts,res,i,lev,locy,locx,ratio,usemrf,occl):
+    def scanRCFLPart(self,model,samples,pparts,res,i,lev,locy,locx,ratio,usemrf,occl,trunc):
         """
         auxiliary function for the recursive search of the parts
         """     
@@ -388,18 +402,18 @@ class pyrHOG:
         df4=model["df"][lev][(locy+1):(locy+2),(locx+1):(locx+2),:].copy()
         parts=numpy.zeros((2,2,4,res.shape[0],res.shape[1]),dtype=c_int)
         auxres=numpy.zeros(res.shape,numpy.float32)
-        ff.scanDef2(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,numpy.array([],dtype=numpy.float32),0,ctypes.POINTER(c_float)(),0,0)
+        ff.scanDef2(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,numpy.array([],dtype=numpy.float32),0,ctypes.POINTER(c_float)(),0,0,trunc)
         res+=auxres
         pparts[lev][(locy+0):(locy+2),(locx+0):(locx+2),:,:,:]=parts
         if i-self.interv>=0 and len(model["ww"])-1>lev:
             samples1=(samples+parts[0,0,:2,:,:])*2+1
-            self.scanRCFLPart(model,samples1.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+0),ratio,usemrf,occl)
+            self.scanRCFLPart(model,samples1.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+0),ratio,usemrf,occl,trunc)
             samples2=((samples.T+parts[0,1,:2,:,:].T+numpy.array([0,fx],dtype=c_int).T)*2+1).T
-            self.scanRCFLPart(model,samples2.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+1),ratio,usemrf,occl)
+            self.scanRCFLPart(model,samples2.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+1),ratio,usemrf,occl,trunc)
             samples3=((samples.T+parts[1,0,:2,:,:].T+numpy.array([fy,0],dtype=c_int).T)*2+1).T
-            self.scanRCFLPart(model,samples3.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+0),ratio,usemrf,occl)
+            self.scanRCFLPart(model,samples3.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+0),ratio,usemrf,occl,trunc)
             samples4=((samples.T+parts[1,1,:2,:,:].T+numpy.array([fy,fx],dtype=c_int).T)*2+1).T
-            self.scanRCFLPart(model,samples4.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf,occl)
+            self.scanRCFLPart(model,samples4.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf,occl,trunc)
         else:
             if len(model["ww"])-1>lev:
                 res+=numpy.sum(occl[lev+1:])
@@ -441,7 +455,7 @@ class pyrHOG:
                 pparts[-1][0][0,0,0,:,:],
                 pparts[-1][0][0,0,1,:,:],
                 initr,initr,
-                nelem)
+                nelem,0)
             samples[:,:,:]=(samples[:,:,:]+pparts[-1][0][0,0,:2,:,:])*2+1
             self.scanRCFLPartThr(model,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf,mythr) 
             res[i-self.starti]-=rho
@@ -467,7 +481,7 @@ class pyrHOG:
         auxres=numpy.zeros(res.shape,numpy.float32)
         res[res<mythr]=-1000
         samples[:,res==-1000]=-1000
-        ff.scanDef2(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,numpy.array([],dtype=numpy.float32),0,ctypes.POINTER(c_float)(),0,0)
+        ff.scanDef2(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,numpy.array([],dtype=numpy.float32),0,ctypes.POINTER(c_float)(),0,0,0)
         res+=auxres
         pparts[lev][(locy+0):(locy+2),(locx+0):(locx+2),:,:,:]=parts
         if i-self.interv>=0 and len(model["ww"])-1>lev:
@@ -540,7 +554,7 @@ class pyrHOG:
                         pparts[-1][0][0,0,0,:,:],
                         pparts[-1][0][0,0,1,:,:],
                         0,0,
-                        nelem)
+                        nelem,0)
                     csamples=csamples[:,:,:]*2+1
                     self.scanRCFLPartBU(model,csamples,pparts[-1],ct.ptr[(dy+initr)*(2*initr+1)+(dx+initr)],pres[i-self.starti][(dy+initr)*(2*initr+1)+(dx+initr),:,:],i-self.interv,1,0,0,ratio,usemrf,prec,pady,padx) 
             res[i-self.starti]=pres[i-self.starti].max(0)
@@ -597,7 +611,7 @@ class pyrHOG:
                     auxparts[3,(dy+ratio)*(2*ratio+1)+(dx+ratio)]=self.scanRCFLPartBU(model,samples4.copy(),pparts,ct.ptr[3,(dy+ratio)*(2*ratio+1)+(dx+ratio)],pres[3,(dy+ratio),(dx+ratio),:,:],i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf,prec,pady,padx)
         
         auxprec=prec[lev][((locy/2)*2+(locx/2))*4:((locy/2)*2+(locx/2)+1)*4]
-        ff.scanDef2(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,pres,1,auxprec.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),pady,padx)
+        ff.scanDef2(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,pres,1,auxprec.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),pady,padx,0)
         res+=auxres
         ct.best=[parts]
 
@@ -619,7 +633,7 @@ class pyrHOG:
 
 
 class Treat:
-    def __init__(self,f,scr,pos,sample,fy,fx,occl=False):
+    def __init__(self,f,scr,pos,sample,fy,fx,occl=False,trunc=0):
         self.pos=pos
         self.scr=scr
         self.f=f
@@ -630,6 +644,7 @@ class Treat:
         self.scale=f.scale
         self.sample=sample
         self.occl=occl
+        self.trunc=trunc
 
     def showBBox(self,allgtbbox,colors=["w","g"],new_alpha=0.15):
         for item in allgtbbox:
@@ -845,6 +860,9 @@ class Treat:
         extract features from detections and store in "feat"
         """        
         rdet=det[:]
+        hogdim=31
+        if self.trunc:
+            hogdim=32
         for item in det:
             i=item["i"];cy=item["ny"];cx=item["nx"];
             fy=self.fy
@@ -855,12 +873,12 @@ class Treat:
                 if i+self.f.starti-(l)*self.interv>=0:
                     my=2*my+item["def"]["dy"][l]
                     mx=2*mx+item["def"]["dx"][l]
-                    aux=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1,cy+my+fy*2**l-1,cx+mx-1,cx+mx+fx*2**l-1)
+                    aux=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1,cy+my+fy*2**l-1,cx+mx-1,cx+mx+fx*2**l-1,self.trunc)
                     item["feat"].append(aux)
                     cy=(cy)*2
                     cx=(cx)*2
                 else:
-                    item["feat"].append(numpy.zeros((fy*2**l,fx*2**l,31)))
+                    item["feat"].append(numpy.zeros((fy*2**l,fx*2**l,hogdim)))
         return rdet
 
 
@@ -921,9 +939,9 @@ class Treat:
                 d=numpy.concatenate((d,aux.flatten()))
                 if self.occl:
                     if item["i"]-l*self.interv>=-self.f.starti:
-                        d=nump.concatenate((d,[0.0]))
+                        d=numpy.concatenate((d,[0.0]))
                     else:
-                        d=nump.concatenate((d,[1.0*SMALL]))
+                        d=numpy.concatenate((d,[1.0*SMALL]))
             ld.append(d.astype(numpy.float32))
         return ld
 
@@ -1059,6 +1077,9 @@ class TreatDef(Treat):
         extract features from detections and store in "feat"
         """        
         rdet=det[:]
+        hogdim=31
+        if self.trunc:
+            hogdim=32
         for item in det:
             i=item["i"];cy=item["ny"];cx=item["nx"];
             fy=self.fy
@@ -1067,13 +1088,13 @@ class TreatDef(Treat):
             mov=numpy.zeros((1,1,2))
             for l in range(len(item["def"]["party"])):
                 sz=2**l
-                aux=numpy.zeros((fy*sz,fx*sz,self.f.hog[i].shape[2]))
+                aux=numpy.zeros((fy*sz,fx*sz,hogdim))
                 if i+self.f.starti-(l)*self.interv>=0:
                     for py in range(sz):
                         for px in range(sz):
                             mov[py,px,0]=2*mov[py,px,0]+item["def"]["dy"][l][py,px]
                             mov[py,px,1]=2*mov[py,px,1]+item["def"]["dx"][l][py,px]
-                            aux[py*fy:(py+1)*fy,px*fx:(px+1)*fx,:]=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+mov[py,px,0]-1,cy+mov[py,px,0]+fy-1,cx+mov[py,px,1]-1,cx+mov[py,px,1]+fx-1)
+                            aux[py*fy:(py+1)*fy,px*fx:(px+1)*fx,:]=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+mov[py,px,0]-1,cy+mov[py,px,0]+fy-1,cx+mov[py,px,1]-1,cx+mov[py,px,1]+fx-1,self.trunc)
                     cy=(cy)*2
                     cx=(cx)*2
                     aux1=numpy.kron(mov.T,[[1,1],[1,1]]).T
@@ -1190,7 +1211,7 @@ class TreatDef(Treat):
 
 import time
 
-def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0,occl=False):
+def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0,occl=False,trunc=0):
     """Detect objects in an image
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -1213,13 +1234,13 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
         else:
             #scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
-            scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
-        tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"],occl=occl)
+            scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,trunc=trunc)
+        tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
     else:
-        scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
-        tr=Treat(f,scr,pos,initr,m["fy"],m["fx"],occl=occl)
+        scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
+        tr=Treat(f,scr,pos,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
     print "Scan: %.3f s"%(time.time()-t)    
-    if gtbbox==None:
+    if gtbbox==None:#test
         if show==True:
             showlabel="Parts"
         else:
@@ -1241,9 +1262,9 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         if show==True:
             tr.show(det,parts=showlabel,thr=-1.0,maxnum=5)           
         return tr,det,dettime,numhog
-    else:
+    else:#training
         t2=time.time()
-        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=numrank,show="Parts",mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb)        
+        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show="Parts",mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb)        
         ipos=[];ineg=[]
         print "Treat Time:",time.time()-t2
         print "Detect: %.3f s"%(time.time()-t)

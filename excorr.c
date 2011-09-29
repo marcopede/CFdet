@@ -31,8 +31,13 @@ long getHOG()
 }
 
 //compute 3d correlation between an image feature img and a mask 
-inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx)
+inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx,int occl)
 {
+    int dimzfull=dimz;
+    if (occl!=0)
+        //with occl
+        dimz=dimz-occl;
+        //printf("Occl:%d Dimzfull:%d Dimz:%d",occl,dimzfull,dimz);
     if (prec!=NULL)//memoization of the already computed locations
     {
         if (posy>=-pady && posy<imgy+pady && posx>=-padx && posx<imgx+padx)
@@ -52,10 +57,23 @@ inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
             {
                 for (z=0;z<dimz;z++)
                 {   
+                    //printf("%d:%f\n",z,mask[z+x*dimzfull+y*dimzfull*maskx]);
                     posi=z+(x+posx)*dimz+(y+posy)*dimz*imgx;
+                    sum=sum+img[posi]*mask[z+x*dimzfull+y*dimzfull*maskx];      
+                    /*posi=z+(x+posx)*dimzfull+(y+posy)*dimzfull*imgx;
                     {
-                        sum=sum+img[posi]*mask[z+x*dimz+y*dimz*maskx];      
-                    }
+                        sum=sum+img[posi]*mask[z+x*dimzfull+y*dimzfull*maskx];      
+                    }*/
+                }
+            }
+            else
+            //occlusion using dimz
+            {
+                for (z=dimz;z<dimzfull;z++)
+                {
+                    //printf("%d:%f\n",z,mask[z+x*dimzfull+y*dimzfull*maskx]);
+                    //posi=z+(x+posx)*dimz+(y+posy)*dimz*imgx;
+                    sum=sum+mask[z+x*dimzfull+y*dimzfull*maskx];      
                 }
             }
         }
@@ -70,7 +88,7 @@ inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
 }
 
 //compute the score over the possible values of a defined neighborhood
-inline ftype refineigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,int rady,int radx,int *posedy, int *posedx, ftype *prec)
+inline ftype refineigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,int rady,int radx,int *posedy, int *posedx, ftype *prec,int occl)
 {
     int iy,ix;  
     ftype val,maxval=-1000;
@@ -78,7 +96,7 @@ inline ftype refineigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
     {
         for (ix=-radx;ix<=radx;ix++)
         {
-            val=corr3dpad(img,imgy,imgx,mask,masky,maskx,dimz,posy+iy,posx+ix,prec,0,0);
+            val=corr3dpad(img,imgy,imgx,mask,masky,maskx,dimz,posy+iy,posx+ix,prec,0,0,occl);
             if (val>maxval)
             {
                 maxval=val;
@@ -90,7 +108,7 @@ inline ftype refineigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
     return maxval;
 }
 
-inline ftype refineighfull(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,ftype dy,ftype dx,int posy,int posx,int rady,int radx,ftype *scr,int *rdy,int *rdx,ftype *prec,int pady,int padx)
+inline ftype refineighfull(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,ftype dy,ftype dx,int posy,int posx,int rady,int radx,ftype *scr,int *rdy,int *rdx,ftype *prec,int pady,int padx,int occl)
 {
     int iy,ix;  
     ftype val,maxval=-1000;
@@ -100,7 +118,7 @@ inline ftype refineighfull(ftype *img,int imgy,int imgx,ftype *mask,int masky,in
     {
         for (ix=-radx;ix<=radx;ix++)
         {
-            val=corr3dpad(img,imgy,imgx,mask,masky,maskx,dimz,posy+iy,posx+ix,prec,pady,padx)+k*k*dy*(iy*iy)+k*k*dx*(ix*ix);
+            val=corr3dpad(img,imgy,imgx,mask,masky,maskx,dimz,posy+iy,posx+ix,prec,pady,padx,occl)+k*k*dy*(iy*iy)+k*k*dx*(ix*ix);
             scr[(iy+rady)*(2*radx+1)+(ix+radx)]+=-val;
             if (val>maxval)
             {
@@ -113,7 +131,7 @@ inline ftype refineighfull(ftype *img,int imgy,int imgx,ftype *mask,int masky,in
     return maxval;
 }
 
-void scaneigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int *posy,int *posx,ftype *val,int *posey,int *posex,int rady, int radx,int len)
+void scaneigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int *posy,int *posx,ftype *val,int *posey,int *posex,int rady, int radx,int len,int occl)
 {   
     //return;
     int i;
@@ -122,7 +140,7 @@ void scaneigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int d
         //if (posy[i]==-1  && posx[i]==-1)
         //    val[i]=0.0;
         //else
-        val[i]=refineigh(img,imgy,imgx,mask,masky,maskx,dimz,posy[i],posx[i],rady,radx,posey++,posex++,NULL);       
+        val[i]=refineigh(img,imgy,imgx,mask,masky,maskx,dimz,posy[i],posx[i],rady,radx,posey++,posex++,NULL,occl);       
     }
 }
 
@@ -149,8 +167,9 @@ void buildef(ftype *def,ftype dfy,ftype dfx,int rad)
 
 static ftype scr2[4*(2*maxrad+1)*(2*maxrad+1)];
 
-void scanDef2(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz,ftype *df1,ftype *df2,ftype *df3,ftype *df4,ftype *img,int imgy,int imgx,int *posy,int *posx,int *parts,ftype *res,int rad,int len,int usemrf,ftype *uscr,int useusrc,ftype *prec,int pady,int padx)
+void scanDef2(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz,ftype *df1,ftype *df2,ftype *df3,ftype *df4,ftype *img,int imgy,int imgx,int *posy,int *posx,int *parts,ftype *res,int rad,int len,int usemrf,ftype *uscr,int useusrc,ftype *prec,int pady,int padx,int occl)
 {
+    //printf("dimz:%d occl:%d",dimz,occl);
     int sizedf=4;
     ftype maxscr1,maxscr2,maxscr3,maxscr4;
     ftype aux,aux0,aux1,aux2,aux3,myaux;
@@ -187,10 +206,10 @@ void scanDef2(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int dimz
             prec4=prec+3*(imgy+2*pady)*(imgx+2*padx);
         }
         //compute the score of the 4 parts
-        maxscr1 = refineighfull(img,imgy,imgx,ww1,fy,fx,dimz,df1[0],df1[1],posy[i],posx[i],rad,rad,scr,dy,dx,prec1,pady,padx);
-        maxscr2 = refineighfull(img,imgy,imgx,ww2,fy,fx,dimz,df2[0],df2[1],posy[i],posx[i]+fx,rad,rad,scr+(2*rad+1)*(2*rad+1),dy+1,dx+1,prec2,pady,padx);
-        maxscr3 = refineighfull(img,imgy,imgx,ww3,fy,fx,dimz,df3[0],df3[1],posy[i]+fy,posx[i],rad,rad,scr+3*(2*rad+1)*(2*rad+1),dy+2,dx+2,prec3,pady,padx);
-        maxscr4 = refineighfull(img,imgy,imgx,ww4,fy,fx,dimz,df4[0],df4[1],posy[i]+fy,posx[i]+fx,rad,rad,scr+2*(2*rad+1)*(2*rad+1),dy+3,dx+3,prec4,pady,padx);
+        maxscr1 = refineighfull(img,imgy,imgx,ww1,fy,fx,dimz,df1[0],df1[1],posy[i],posx[i],rad,rad,scr,dy,dx,prec1,pady,padx,0);
+        maxscr2 = refineighfull(img,imgy,imgx,ww2,fy,fx,dimz,df2[0],df2[1],posy[i],posx[i]+fx,rad,rad,scr+(2*rad+1)*(2*rad+1),dy+1,dx+1,prec2,pady,padx,0);
+        maxscr3 = refineighfull(img,imgy,imgx,ww3,fy,fx,dimz,df3[0],df3[1],posy[i]+fy,posx[i],rad,rad,scr+3*(2*rad+1)*(2*rad+1),dy+2,dx+2,prec3,pady,padx,0);
+        maxscr4 = refineighfull(img,imgy,imgx,ww4,fy,fx,dimz,df4[0],df4[1],posy[i]+fy,posx[i]+fx,rad,rad,scr+2*(2*rad+1)*(2*rad+1),dy+3,dx+3,prec4,pady,padx,0);
         if (usemrf)//use lateral constraints
         {
             for (c=0;c<4*(2*rad+1)*(2*rad+1);c++)

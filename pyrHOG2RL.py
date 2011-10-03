@@ -4,8 +4,8 @@ import numpy
 import pylab
 
 class TreatRL(pyrHOG2.Treat):
-    def __init__(self,f,scr,pos,pos1,lr,sample,fy,fx,occl=False):
-        pyrHOG2.Treat.__init__(self,f,scr,pos,sample,fy,fx,occl=occl)
+    def __init__(self,f,scr,pos,pos1,lr,sample,fy,fx,occl=False,trunc=0):
+        pyrHOG2.Treat.__init__(self,f,scr,pos,sample,fy,fx,occl=occl,trunc=trunc)
         self.lr=lr
         self.pose=[pos,pos1]
 
@@ -50,33 +50,48 @@ class TreatRL(pyrHOG2.Treat):
     def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0): 
         """
         convert each detection in a feature descriptor for the SVM
-        """        
+        """  
         ld=[]
         for item in det:
-            d=numpy.array([])
             if item["rl"]==1:
                 auxflip=not(flip)
             else:
                 auxflip=flip
-            for l in range(len(item["feat"])):
-                if not(auxflip):
-                    aux=item["feat"][l]
-                    #print "No flip",aux.shape
-                else:
-                    aux=pyrHOG2.hogflip(item["feat"][l])
-                    #print "Flip",aux.shape
-                d=numpy.concatenate((d,aux.flatten()))
-                if self.occl:
-                    if item["i"]-l*self.interv>=0:
-                        d=nump.concatenate((d,[0.0]))
-                    else:
-                        d=nump.concatenate((d,[1.0]))
-            ld.append(d.astype(numpy.float32))
+            dd=pyrHOG2.Treat.descr(self,[item],flip=auxflip,usemrf=usemrf,usefather=usefather,k=k)
+            ld.append(dd[0])
         return ld
 
+
+#    def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0): 
+#        """
+#        convert each detection in a feature descriptor for the SVM
+#        """        
+#        ld=[]
+#        for item in det:
+#            d=numpy.array([])
+#            if item["rl"]==1:
+#                auxflip=not(flip)
+#            else:
+#                auxflip=flip
+#            for l in range(len(item["feat"])):
+#                if not(auxflip):
+#                    aux=item["feat"][l]
+#                    #print "No flip",aux.shape
+#                else:
+#                    aux=pyrHOG2.hogflip(item["feat"][l])
+#                    #print "Flip",aux.shape
+#                d=numpy.concatenate((d,aux.flatten()))
+#                if self.occl:
+#                    if item["i"]-l*self.interv>=0:
+#                        d=nump.concatenate((d,[0.0]))
+#                    else:
+#                        d=nump.concatenate((d,[1.0]))
+#            ld.append(d.astype(numpy.float32))
+#        return ld
+
 class TreatDefRL(pyrHOG2.TreatDef):
-    def __init__(self,f,scr,pos,pos1,lr,sample,fy,fx,occl=False):
-        pyrHOG2.TreatDef.__init__(self,f,scr,pos,sample,fy,fx,occl=occl)
+    def __init__(self,f,scr,pos,pos1,lr,sample,fy,fx,occl=False,trunc=0):
+        pyrHOG2.TreatDef.__init__(self,f,scr,pos,sample,fy,fx,occl=occl,trunc=trunc)
         self.lr=lr
         self.pose=[pos,pos1]
 
@@ -176,7 +191,7 @@ def flip(m):
     return m1    
 
 
-def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,useprior=False,K=1.0,occl=False):
+def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,useprior=False,K=1.0,occl=False,trunc=0):
     """Detect objects with RL flip
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -197,12 +212,12 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
             scr1,pos1=f.scanRCFLDefBU(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
         else:
             #scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
-            scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
+            scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,trunc=trunc)
             #scr1,pos1=f.scanRCFLDefThr(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
-            scr1,pos1=f.scanRCFLDef(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
+            scr1,pos1=f.scanRCFLDef(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,trunc=trunc)
     else:
-        scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small)
-        scr1,pos1=f.scanRCFL(m1,initr=initr,ratio=ratio,small=small)
+        scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
+        scr1,pos1=f.scanRCFL(m1,initr=initr,ratio=ratio,small=small,trunc=trunc)
     lr=[]
     fscr=[]
     for idl,l in enumerate(scr):
@@ -220,9 +235,9 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
             pylab.show()
             raw_input()
     if deform:
-        tr=TreatDefRL(f,fscr,pos,pos1,lr,initr,m["fy"],m["fx"],occl=occl)
+        tr=TreatDefRL(f,fscr,pos,pos1,lr,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
     else:
-        tr=TreatRL(f,fscr,pos,pos1,lr,initr,m["fy"],m["fx"],occl=occl)
+        tr=TreatRL(f,fscr,pos,pos1,lr,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
 
     numhog=f.getHOG()
     if gtbbox==None:

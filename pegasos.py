@@ -300,9 +300,9 @@ lpeg.fast_pegasos_comp.argtypes=[
     ]
 
 
-def objective(trpos,trneg,trposcl,trnegcl,clsize,w,lamda):
+def objective(trpos,trneg,trposcl,trnegcl,clsize,w,c):
     posloss=0.0
-    total=(len(trpos))
+    total=float(len(trpos))
     clsum=numpy.concatenate(([0],numpy.cumsum(clsize)))
     hardpos=0.0
     for idl,l in enumerate(trpos):
@@ -333,12 +333,12 @@ def objective(trpos,trneg,trposcl,trnegcl,clsize,w,lamda):
         pend=pstart+clsize[idc]
         scr.append(numpy.sum(w[pstart:pend]**2))    
     #reg=lamda*max(scr)*0.5
-    reg=lamda*(max(scr)**2)*0.5
-    posloss=posloss/total
-    negloss=negloss/total
-    hardpos=float(hardpos)/total
-    hardneg=float(hardneg)/total
-    return posloss,negloss,reg,posloss+negloss+reg,hardpos,hardneg
+    reg=(max(scr))*0.5/total
+    posloss=c*posloss/total
+    negloss=c*negloss/total
+    hardpos=c*float(hardpos)/total
+    hardneg=c*float(hardneg)/total
+    return posloss,negloss,reg,(posloss+negloss)+reg,hardpos,hardneg
 
 def trainComp_old(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./save/",pc=0.017,path="/home/marcopede/code/c/liblinear-1.7",maxtimes=100,eps=0.01,bias=100):
     """
@@ -500,9 +500,9 @@ def trainComp(trpos,trneg,fname="",trposcl=None,trnegcl=None,oldw=None,dir="./sa
     print "Starting Pegasos SVM training"
     #ff.write("Starting Pegasos SVM training\n")
     #lamd=1/(pc*ntimes)
-    lamd=1/(pc*len(trpos))
+    #lamd=1/(pc*len(trpos))
     #lamd=0.5#1/(pc*len(trpos))
-    print "Lambda",lamd
+    #print "Lambda",lamd
     obj=0.0
     ncomp=c_int(numcomp)
     
@@ -514,14 +514,14 @@ def trainComp(trpos,trneg,fname="",trposcl=None,trnegcl=None,oldw=None,dir="./sa
     #print "X1:",trcomp[1][0,:7],newtrcomp[1]
     #raw_input()
     loss=[]
-    posl,negl,reg,nobj,hpos,hneg=objective(trpos,trneg,trposcl,trnegcl,compx,w,lamd)
+    posl,negl,reg,nobj,hpos,hneg=objective(trpos,trneg,trposcl,trnegcl,compx,w,pc)
     loss.append([posl,negl,reg,nobj,hpos,hneg])
     for tt in range(maxtimes):
-        lpeg.fast_pegasos_comp(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,lamd,ntimes*10,tt)
+        lpeg.fast_pegasos_comp(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,pc,ntimes*10,tt)
         #lpeg.fast_pegasos_comp(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,lamd,ntimes*10*numcomp/k,tt,k,numthr)
         #nobj=lpeg.objective(w,fdim,bigm,ntimes,labels,lamd)
         #nobj=1
-        posl,negl,reg,nobj,hpos,hneg=objective(trpos,trneg,trposcl,trnegcl,compx,w,lamd)
+        posl,negl,reg,nobj,hpos,hneg=objective(trpos,trneg,trposcl,trnegcl,compx,w,pc)
         loss.append([posl,negl,reg,nobj,hpos,hneg])
         print "Objective Function:",nobj
         print "PosLoss:%.6f NegLoss:%.6f Reg:%.6f"%(posl,negl,reg)

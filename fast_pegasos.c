@@ -79,7 +79,7 @@ void fast_pegasos(ftype *w,int wx,ftype *ex,int exy,ftype *label,ftype lambda,in
     printf("N:%g t:%d\n",n,t);
 }
 
-void fast_pegasos_comp(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsamplescomp,int totsamples,int *label,int *comp,ftype lambda,int iter,int part)
+void fast_pegasos_comp(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsamplescomp,int totsamples,int *label,int *comp,ftype C,int iter,int part)
 {
     int wx=0,wxtot=0,wcx;
     srand48(3);
@@ -104,7 +104,7 @@ void fast_pegasos_comp(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsam
         x=ptrsamplescomp[comp[pex]]+(pex-sumszy[comp[pex]])*wx;
         y=label[pex];
         //printf("Y %d ",y);
-        n=1.0/(lambda*t);
+        n=1.0/(t);
         //printf("C %d ",comp[pex]);
         scr=score(x,w+sumszx[comp[pex]],wx);
         //only the component l2_max
@@ -120,12 +120,12 @@ void fast_pegasos_comp(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsam
             }
         }
         //printf("Regularize Component %d \n",bcp);
-        mul(w+sumszx[bcp],1-n*lambda,compx[bcp]);    
+        mul(w+sumszx[bcp],1-n,compx[bcp]);    
         //all the vector
         //mul(w,1-n*lambda,wxtot);
         if (scr*y<1.0)
         {
-            addmul(w+sumszx[comp[pex]],x,y*n,wx);            
+            addmul(w+sumszx[comp[pex]],x,C*y*n*totsamples,wx);            
         }
     }
     printf("N:%g t:%d\n",n,t);

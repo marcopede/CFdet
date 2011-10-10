@@ -300,7 +300,7 @@ lpeg.fast_pegasos_comp.argtypes=[
     ]
 
 
-def objective(trpos,trneg,trposcl,trnegcl,clsize,w,c):
+def objective(trpos,trneg,trposcl,trnegcl,clsize,w,C):
     posloss=0.0
     total=float(len(trpos))
     clsum=numpy.concatenate(([0],numpy.cumsum(clsize)))
@@ -333,11 +333,12 @@ def objective(trpos,trneg,trposcl,trnegcl,clsize,w,c):
         pend=pstart+clsize[idc]
         scr.append(numpy.sum(w[pstart:pend]**2))    
     #reg=lamda*max(scr)*0.5
+    #print "C in OBJECTIVE",C
     reg=(max(scr))*0.5/total
-    posloss=c*posloss/total
-    negloss=c*negloss/total
-    hardpos=c*float(hardpos)/total
-    hardneg=c*float(hardneg)/total
+    posloss=C*posloss/total
+    negloss=C*negloss/total
+    hardpos=C*float(hardpos)/total
+    hardneg=C*float(hardneg)/total
     return posloss,negloss,reg,(posloss+negloss)+reg,hardpos,hardneg
 
 def trainComp_old(trpos,trneg,fname,trposcl=None,trnegcl=None,oldw=None,dir="./save/",pc=0.017,path="/home/marcopede/code/c/liblinear-1.7",maxtimes=100,eps=0.01,bias=100):
@@ -518,6 +519,7 @@ def trainComp(trpos,trneg,fname="",trposcl=None,trnegcl=None,oldw=None,dir="./sa
     loss.append([posl,negl,reg,nobj,hpos,hneg])
     for tt in range(maxtimes):
         lpeg.fast_pegasos_comp(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,pc,ntimes*10,tt)
+        ##################lpeg.fast_pegasos_comp_parall(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,pc,ntimes*10,tt,numthr)
         #lpeg.fast_pegasos_comp(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,lamd,ntimes*10*numcomp/k,tt,k,numthr)
         #nobj=lpeg.objective(w,fdim,bigm,ntimes,labels,lamd)
         #nobj=1

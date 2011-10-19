@@ -529,14 +529,19 @@ if __name__=="__main__":
                 lowf[(fy*2**l)/2:,:,16]=0.1/31
                 lowf[:(fy*2**l)/2,:,18+2]=0.1/31
                 lowf[(fy*2**l)/2:,:,18+7]=0.1/31
-                lowf=lowf/numpy.sqrt(numpy.sum(lowf**2))
+                #lowf=lowf/(numpy.sum(lowf**2))
             else:
                 lowf1=numpy.ones((fy*2**l,fx*2**l,31)).astype(numpy.float32)
-                lowf=lowf1/numpy.sqrt(numpy.sum(lowf1**2))
+                #lowf=lowf1/(numpy.sum(lowf1**2))
             lowd=-numpy.ones((1*2**l,1*2**l,4)).astype(numpy.float32)
             ww.append(lowf)
             dd.append(lowd)
             rho=0
+        mynorm=0
+        for wc in ww:
+            mynorm+=numpy.sum(wc**2)
+        for idw,wc in enumerate(ww):
+            ww[idw]=wc/numpy.sqrt(mynorm)
         models.append({"ww":ww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1]})
 
     if 0:        

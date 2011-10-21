@@ -541,7 +541,7 @@ if __name__=="__main__":
         for wc in ww:
             mynorm+=numpy.sum(wc**2)
         for idw,wc in enumerate(ww):
-            ww[idw]=wc/numpy.sqrt(mynorm)
+            ww[idw]=wc*0.1/numpy.sqrt(mynorm)
         models.append({"ww":ww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1]})
 
     if 0:        

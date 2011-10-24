@@ -304,6 +304,22 @@ def loss_pos(trpos,trposcl,cumsize):
         lscr.append(scr)
     return loss,lscr
 
+import pegasos
+
+def train(a):
+    #import pegasos
+    trpos=a[0]
+    trneg=a[1]
+    trposcl=a[2]
+    trnegcl=a[3]
+    w=a[4]
+    testname=a[5]
+    svmc=a[6]
+    k=a[7]
+    numthr=a[8]
+    w,r,prloss=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,oldw=w,dir="",pc=svmc,k=10,numthr=numcore,eps=0.01)
+    return w,r,prloss
+
 if __name__=="__main__":
 
     import sys
@@ -1033,8 +1049,8 @@ if __name__=="__main__":
                 #lambd=1.0/(len(trpos)*cfg.svmc)
                 #trpos,trneg,trposcl,trnegcl,clsize,w,lamda
                 posl,negl,reg,nobj,hpos,hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,cfg.svmc)
-                print "NIT:",nit,"OLDLOSS",prloss[-1][3],"NEWLOSS:",nobj
-                negratio.append(nobj/(prloss[-1][3]+0.000001))
+                print "NIT:",nit,"OLDLOSS",old_nobj,"NEWLOSS:",nobj
+                negratio.append(nobj/(old_nobj+0.000001))
                 print "RATIO: newobj/oldobj:",negratio
                 output="Negative not converging yet!"
                 if (negratio[-1]<1.05):
@@ -1058,10 +1074,86 @@ if __name__=="__main__":
             #util.trainSvmRaw(ftrneg,ftrpos,svmname,dir="",pc=pc,lib=lib)
             #w,r=util.loadSvm(svmname,dir="",lib=lib)
             #w,r=util.trainSvmRawPeg(ftrpos,ftrneg,testname+".rpt.txt",dir="",pc=pc)
+
             import pegasos
             if w==None: 
-                w=numpy.zeros(cumsize[-1])
-            w,r,prloss=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,oldw=w,dir="",pc=cfg.svmc,k=10,numthr=numcore)
+                #w=numpy.zeros(cumsize[-1])
+                w=numpy.random.rand(cumsize[-1])
+                w=w/numpy.sqrt(numpy.sum(w**2))
+
+            noise=False
+            noiselev=0.1
+            if noise:
+                atrpos=numpy.array(trpos,dtype=object)
+                atrposcl=numpy.array(trposcl,dtype=object)
+                oldoutlyers=numpy.zeros(len(trpos),dtype=numpy.int)
+                newoutlyers=numpy.zeros(len(trpos),dtype=numpy.int)
+                for ii in range(10):
+                    lscr=[]
+                    dns=buildense(trpos,trposcl,cumsize)
+                    for f in dns:
+                        lscr.append(numpy.sum(f*w))
+                    ordered=numpy.argsort(lscr)             
+                    ntrpos=atrpos[ordered][len(trpos)*noiselev:len(trpos)]
+                    ntrposcl=atrposcl[ordered][len(trposcl)*noiselev:len(trposcl)]
+                    w,r,prloss=pegasos.trainComp(ntrpos,trneg,testname+"loss.rpt.txt",ntrposcl,trnegcl,oldw=w,dir="",pc=cfg.svmc,k=10,numthr=numcore)
+                    newoutlyers[ordered[:len(trpos)*noiselev]]=1
+                    numout=numpy.sum(numpy.bitwise_and(newoutlyers,oldoutlyers))
+                    print ordered
+                    print ordered[:len(trpos)*noiselev]#ntrpos[:len(trpos)*noiselev]
+                    print numout
+                    if numout>=int(len(trpos)*noiselev*0.95):
+                        print 'Converging because ',numout,'/',int(len(trpos)*noiselev*0.95) 
+                        break
+                    else:
+                        print 'Not congergin yet because',numout,'/',int(len(trpos)*noiselev*0.95) 
+                    oldoutlyers=newoutlyers.copy()
+                    raw_input()
+            else:
+                parallel=True
+                if not(parallel):
+                    w,r,prloss=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,oldw=w,dir="",pc=cfg.svmc,k=10,numthr=numcore)
+                else:
+                    #atrpos=numpy.array(trpos,dtype=object)
+                    #atrposcl=numpy.array(trposcl,dtype=object)
+                    #atrneg=numpy.array(trneg,dtype=object)
+                    #atrnegcl=numpy.array(trnegcl,dtype=object)
+                    ltrpos=len(trpos);ltrneg=len(trneg)
+                    reordpos=range(ltrpos);numpy.random.shuffle(reordpos)
+                    reordneg=range(ltrneg);numpy.random.shuffle(reordneg)
+                    ltr=[]
+                    litpos=ltrpos/numcore;litneg=ltrneg/numcore
+                    atrpos=[];atrposcl=[]
+                    atrneg=[];atrnegcl=[]
+                    for ll in range(ltrpos):
+                        atrpos.append(trpos[reordpos[ll]])                   
+                        atrposcl.append(trposcl[reordpos[ll]])                   
+                    for ll in range(ltrneg):
+                        atrneg.append(trneg[reordneg[ll]])                   
+                        atrnegcl.append(trnegcl[reordneg[ll]])                   
+                    for gr in range(numcore-1):
+                        ltr.append([atrpos[litpos*gr:litpos*(gr+1)],atrneg[litneg*gr:litneg*(gr+1)],atrposcl[litpos*gr:litpos*(gr+1)],atrnegcl[litneg*gr:litneg*(gr+1)],w,testname,cfg.svmc,10,numcore])        
+                    ltr.append([atrpos[litpos*(gr+1):],atrneg[litneg*(gr+1):],atrposcl[litpos*(gr+1):],atrnegcl[litneg*(gr+1):],w,testname,cfg.svmc,10,numcore])        
+                    if not(cfg.multipr):
+                        itr=itertools.imap(train,ltr)        
+                    else:
+                        itr=mypool.map(train,ltr)
+                    waux=numpy.zeros((numcore,len(w)))
+                    raux=numpy.zeros((numcore))
+                    #lprloss=[]
+                    #lenprloss=[]
+                    for ii,res in enumerate(itr):
+                        waux[ii]=res[0]
+                        raux[ii]=res[1]    
+                    #    lptrloss.append(res[2])
+                    #    lenprloss.append(len(res[2][0]))
+                        #w,r,prloss=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,oldw=w,dir="",pc=cfg.svmc,k=10,numthr=numcore)
+                    #for ii in range(len(lprloss)):
+                    #    auxprloss=numpy.ones(max(lenprloss))*lprloss
+                    prloss=res[2]#take the last one
+                    w=numpy.mean(waux,0)
+                    r=numpy.mean(raux)
+            old_posl,old_negl,old_reg,old_nobj,old_hpos,old_hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,cfg.svmc)            
             #pylab.figure(300)
             #pylab.clf()
             #pylab.plot(w)

@@ -188,7 +188,7 @@ def detectWrap(a):
                 tres=[]
                 res=[]
                 for x in bbox:
-                    margin=0.3
+                    margin=0.5
                     dy=x[2]-x[0];dx=x[3]-x[1]
                     dd=max(dy,dx)
                     ny1=max(0,x[0]-margin*dd);ny2=min(x[2]+margin*dd,img[0].shape)
@@ -478,10 +478,10 @@ if __name__=="__main__":
                             usetr=True,usedf=False),30000)
             
     elif cfg.db=="ivan":
-        #trPosImages=getRecord(ImgFile("/media/OS/data/PVTRA101/CLEAR06_PVTRA101a01_502_BboxROI.txt",imgpath="/media/OS/data/PVTRA101/images/"),cfg.maxpos)
+        trPosImages=getRecord(ImgFile("/media/OS/data/PVTRA101/CLEAR06_PVTRA101a01_502_BboxROI.txt",imgpath="/media/OS/data/PVTRA101/images/",sort=True,amin=400),cfg.maxpos)[:1000:10]
         #trPosImages=getRecord(ImgFile("/media/OS/data/PVTRA101/CLEAR06_PVTRA101a01_PDT_vis1_objid-1_pres-1_occl0_syncat-1_amb0_mob-1.txt",imgpath="/media/OS/data/PVTRA101/images/"),cfg.maxpos)##pedestrian
         #trPosImages=getRecord(ImgFile("/media/OS/data/PVTRA101/CLEAR06_PVTRA101a01_VDT_vis1_objid-1_pres-1_occl0_syncat-1_amb0_mob-1.txt",imgpath="/media/OS/data/PVTRA101/images/"),cfg.maxpos)##cars
-        trPosImages=getRecord(ImgFile("/media/OS/data/PVTRA101/CLEAR06_PVTRA101a01_PVDT_vis1_objid-1_pres-1_occl0_syncat-1_amb0_mob-1.txt",imgpath="/media/OS/data/PVTRA101/images/"),cfg.maxpos)##car+person
+        #trPosImages=getRecord(ImgFile("/media/OS/data/PVTRA101/CLEAR06_PVTRA101a01_PVDT_vis1_objid-1_pres-1_occl0_syncat-1_amb0_mob-1.txt",imgpath="/media/OS/data/PVTRA101/images/"),cfg.maxpos)##car+person
         #trNegImages=getRecord(InriaNegData(basepath=cfg.dbpath),cfg.maxneg)
         trNegImages=getRecord(DirImages(imagepath="/media/OS/data/PVTRA101/neg/"),cfg.maxneg)
         trNegImagesFull=trNegImages
@@ -1123,7 +1123,7 @@ if __name__=="__main__":
                 w=w/numpy.sqrt(numpy.sum(w**2))
 
             noise=False
-            noiselev=0.1
+            noiselev=cfg.noiselev
             if noise:
                 atrpos=numpy.array(trpos,dtype=object)
                 atrposcl=numpy.array(trposcl,dtype=object)
@@ -1150,9 +1150,9 @@ if __name__=="__main__":
                     else:
                         print 'Not congergin yet because',numout,'/',int(len(trpos)*noiselev*0.95) 
                     oldoutlyers=newoutlyers.copy()
-                    raw_input()
+                    #raw_input()
             else:
-                w,r,prloss=trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,cfg.svmc,cfg.multipr,parallel=True)
+                w,r,prloss=trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,cfg.svmc,cfg.multipr,parallel=False)
 
             old_posl,old_negl,old_reg,old_nobj,old_hpos,old_hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,cfg.svmc)            
             #pylab.figure(300)

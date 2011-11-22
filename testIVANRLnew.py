@@ -68,6 +68,11 @@ def test(thr,cfg,it=9):
     #skip occlusion
     #for l in models:
     #    del l["occl"]
+    #only car
+    #del models[2:]
+    #only person
+    del models[:1]    
+
 
     w=[]
     rho=[]
@@ -116,9 +121,9 @@ def test(thr,cfg,it=9):
         #tsImages=getRecord(ImgFile("/media/OS/data/PVTRA101/CLEAR06_PVTRA101a01_502_Bbox.txt",imgpath="/media/OS/data/PVTRA101/images/"),stest+cfg.maxtest)[stest:]
         #tsImages=getRecord(ImgFile("/media/OS/data/PVTRA101a19/GrTr_CLEAR06_PVTRA101a19.txt",imgpath="/media/OS/data/PVTRA101a19/CLEAR06_PVTRA101a19/",sort=True,amin=1000),cfg.maxtest)[:600]#[:1950]#the other frames do not have GT
         #tsImages=getRecord(ImgFile("/media/OS/data/PVTRA101a19/GrTr_CLEAR06_PVTRA101a19_only12.txt",imgpath="/media/OS/data/PVTRA101a19/CLEAR06_PVTRA101a19/",sort=True,amin=100),cfg.maxtest)[:(1950/12)]#the other frames do not have GT
-        #tsImages=getRecord(ImgFile("/media/OS/data/PVTRA101a19/CLEAR06_PVTRA101a19_people_Celik_allfr.txt",imgpath="/media/OS/data/PVTRA101a19/CLEAR06_PVTRA101a19/",sort=True,amin=100),cfg.maxtest)#pedestrian
+        tsImages=getRecord(ImgFile("/media/OS/data/PVTRA101a19/CLEAR06_PVTRA101a19_people_Celik_allfr.txt",imgpath="/media/OS/data/PVTRA101a19/CLEAR06_PVTRA101a19/",sort=True,amin=100),cfg.maxtest)#pedestrian
         #tsImages=getRecord(ImgFile("/media/OS/data/PVTRA101a19/CLEAR06_PVTRA101a19_vehicles_Celik_allfr.txt",imgpath="/media/OS/data/PVTRA101a19/CLEAR06_PVTRA101a19/",sort=True,amin=100),cfg.maxtest)#vechicles
-        tsImages=getRecord(ImgFile("/media/OS/data/PVTRA101a19/CLEAR06_PVTRA101a19_PV_Celik_allfr.txt",imgpath="/media/OS/data/PVTRA101a19/CLEAR06_PVTRA101a19/",sort=True,amin=100),cfg.maxtest)#pedestrian+vechicles
+        #tsImages=getRecord(ImgFile("/media/OS/data/PVTRA101a19/CLEAR06_PVTRA101a19_PV_Celik_allfr.txt",imgpath="/media/OS/data/PVTRA101a19/CLEAR06_PVTRA101a19/",sort=True,amin=100),cfg.maxtest)#pedestrian+vechicles
         tsImagesFull=tsImages
         
     #mypool = Pool(numcore)
@@ -225,7 +230,7 @@ def test(thr,cfg,it=9):
     
     #tp,fp,scr,tot=VOCpr.VOCprlistfastscore(tsImages,detlist,numim=cfg.maxpostest,show=False,ovr=0.5)
     #tp,fp,scr,tot=VOCpr.VOCprRecord_wrong(tsImages,detlist,show=False,ovr=0.5)
-    tp,fp,scr,tot=VOCpr.VOCprRecord(tsImages,detlist,show=False,ovr=0.5)
+    tp,fp,scr,tot=VOCpr.VOCprRecord(tsImages,detlist,show=False,ovr=0.5,pixels=20)
     pylab.figure(15)
     pylab.clf()
     rc,pr,ap=VOCpr.drawPrfast(tp,fp,tot)
@@ -275,8 +280,11 @@ if __name__=="__main__":
     #cfg=loadcfg("./data/IVAN/11_09_06/","testFAST_real",cls,select)
     #cfg=loadcfg("./data/IVAN/11_09_06/","testFAST",cls,select)
     #cfg=loadcfg("./data/IVAN/11_10_03/","cars",cls,select,numcl=1)
-    cfg=loadcfg("./data/IVAN/11_10_03/","car2aspect",cls,select,numcl=3)
-    
+    #cfg=loadcfg("./data/IVAN/11_10_03/","car2aspect",cls,select,numcl=3)
+    #person4_PV_Mseg_4Mod_RL_trOrd10_ms800_roiyup155_lev2_ap9.png
+    #cfg=loadcfg("/home/marcopede/Dropbox/Ivan-Marco/CVPR11/results/data/23_10_11_training/","PV_Mseg_4Mod_RL_trOrd10_ms800_roiyup155_lev2",cls,select,numcl=4)
+    cfg=loadcfg("/home/marcopede/code/python/git/titus_final/data/IVAN/11_10_03/","withGT",cls,select,numcl=3)
+
     if len(sys.argv)>3:
         tmin=float(sys.argv[3])
         tmax=float(sys.argv[4])

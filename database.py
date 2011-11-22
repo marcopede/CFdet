@@ -1597,14 +1597,17 @@ class ImgFile(VOC06Data):
             line=l.split(" ")
             if len(line)>4:
                 r=[int(line[2]),int(line[1]),int(line[4]),int(line[3]),0,0]
-                a=(abs(r[4]-r[2])*abs(r[3]-r[1]))
-                #print a
+                a=(abs(r[3]-r[1])*abs(r[2]-r[0]))
+                #print r
+                #print "y",abs(r[4]-r[2]),"x",abs(r[3]-r[1]),"a",a
                 if a>amin:#take only windows bigger than 400 pixles
                 #if a>amin and r[2]>155:#take only windows bigger than 400 pixles
                     if images.has_key(line[0]):
                         images[line[0]].append(r)
                     else:
                         images[line[0]]=[r]
+                #else:
+                #    print "Examples Too small!!!"
         self.limages=([l for l in images.iterkeys()])#images.keys()#[l for l in images.iterkeys()]
         if sort:
             self.limages=sorted(self.limages)

@@ -186,6 +186,55 @@ def inclusion(rect1,rect2):
         ia=(xx2-xx1+1)*(yy2-yy1+1)
     return ia/float(a1)
 
+def myinclusion(rect1,rect2):
+    """
+        Calculate the intersection percentage between two rectangles
+        Note that it is not anymore symmetric
+    """
+    dy1=abs(rect1[0]-rect1[2])+1
+    dx1=abs(rect1[1]-rect1[3])+1
+    dy2=abs(rect2[0]-rect2[2])+1
+    dx2=abs(rect2[1]-rect2[3])+1
+    cy1=(rect1[0]-rect1[2])/2.0
+    cx1=(rect1[1]-rect1[3])/2.0
+    cy2=(rect2[0]-rect2[2])/2.0
+    cx2=(rect2[1]-rect2[3])/2.0
+    dc=numpy.sqrt(((cy1-cy2)/float(dy2))**2+((cx1-cx2)/float(dx2))**2);
+    #print dc
+    a1=dx1*dy1
+    a2=dx2*dy2
+    if dx1>dy1:#xgt
+        a21=max(dx2,dx1)*dy1
+    else:#ygt
+        a21=max(dy1,dy2)*dx1
+    ia=0
+    if rect1[2]>rect2[0] and rect2[2]>rect1[0] and rect1[3]>rect2[1] and rect2[3]>rect1[1]:
+        xx1 = max(rect1[1], rect2[1]);
+        yy1 = max(rect1[0], rect2[0]);
+        xx2 = min(rect1[3], rect2[3]);
+        yy2 = min(rect1[2], rect2[2]);
+        ia=(xx2-xx1+1)*(yy2-yy1+1)
+    #print dy1,dx1,dy2,dx2
+    #print ia
+    #print a21
+    return ia/float(a21)-dc
+
+def overlapx(rect1,rect2,pixels=20):
+    """
+        Calculate the intersection percentage between two rectangles
+        Note that it is not anymore symmetric
+    """
+    dy1=abs(rect1[0]-rect1[2])+1
+    dx1=abs(rect1[1]-rect1[3])+1
+    dy2=abs(rect2[0]-rect2[2])+1
+    dx2=abs(rect2[1]-rect2[3])+1
+    cy1=(rect1[0]-rect1[2])/2.0
+    cx1=(rect1[1]-rect1[3])/2.0
+    cy2=(rect2[0]-rect2[2])/2.0
+    cx2=(rect2[1]-rect2[3])/2.0
+    dc=max(abs(cy1-cy2)/float(pixels*2),abs(cx1-cx2)/float(pixels*2));
+    return 1-dc
+
 def boxHOG(px,py,dx,dy,col,lw):
     """
         bbox one the HOG weights

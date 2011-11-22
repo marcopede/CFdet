@@ -691,7 +691,7 @@ class Treat:
         #    print "Show Parts",time.time()-t
         return self.det
    
-    def doalltrain(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,posovr=0.5,numpos=1,numneg=10,minnegovr=0,minnegincl=0,cl=0,emptybb=False):
+    def doalltrain(self,gtbbox,thr=-numpy.inf,rank=numpy.inf,refine=True,rawdet=True,show=False,mpos=0,posovr=0.5,numpos=1,numneg=10,minnegovr=0,minnegincl=0,cl=0,emptybb=False,useMaxOvr=False):
         """
         executes all the detection steps for training
         """        
@@ -709,7 +709,7 @@ class Treat:
         self.det=self.bbox(self.det)
         #print "BBox time:",time.time()-t
         t=time.time()
-        self.best,self.worste=self.getbestworste(self.det,gtbbox,numpos=numpos,numneg=numneg,mpos=mpos,posovr=posovr,minnegovr=minnegovr,minnegincl=minnegincl,emptybb=emptybb)
+        self.best,self.worste=self.getbestworste(self.det,gtbbox,numpos=numpos,numneg=numneg,mpos=mpos,posovr=posovr,minnegovr=minnegovr,minnegincl=minnegincl,emptybb=emptybb,useMaxOvr=useMaxOvr)
         #print "Bestworse time:",time.time()-t
         if rawdet:
             t=time.time()
@@ -976,7 +976,7 @@ class Treat:
         m={"ww":ww,"rho":rho,"fy":fy,"fx":fx,"occl":occl}
         return m
 
-    def getbestworste(self,det,gtbbox,numpos=1,numneg=10,posovr=0.5,negovr=0.2,mpos=0,minnegovr=0,minnegincl=0,emptybb=True):
+    def getbestworste(self,det,gtbbox,numpos=1,numneg=10,posovr=0.5,negovr=0.2,mpos=0,minnegovr=0,minnegincl=0,emptybb=True,useMaxOvr=False):
         """
         returns the detection that best overlap with the ground truth and also the best not overlapping
         """    
@@ -992,11 +992,21 @@ class Treat:
             for gt in lpos: 
                 ovr=util.overlap(d["bbox"],gt["bbox"])
                 incl=util.inclusion(d["bbox"],gt["bbox"])
-                if ovr>posovr:
+                if useMaxOvr:
+                    ovr=util.myinclusion(gt["bbox"],d["bbox"])
+                    #ovr=util.myinclusion(gt["bbox"],d["bbox"])
+                    #print "OVR:",ovr
+                    #raw_input()
+                    #print posovr
+                if ovr>posovr:#good positive
                     if d["scr"]-mpos*(1-ovr)>gt["scr"]-mpos*(1-gt["ovr"]):
                         gt["scr"]=d["scr"]
                         gt["ovr"]=ovr
                         gt["data"]=d.copy()
+                        #print "GT:",gt["bbox"]
+                        #print "D:",d["bbox"]
+                        #print "OVR",ovr
+                        #raw_input()
                 if ovr>negovr or ovr<minnegovr or incl<minnegincl:
                     goodneg=False
             if goodneg and not(lnegfull):
@@ -1211,7 +1221,7 @@ class TreatDef(Treat):
 
 import time
 
-def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0,occl=False,trunc=0):
+def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000):
     """Detect objects in an image
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -1264,7 +1274,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         return tr,det,dettime,numhog
     else:#training
         t2=time.time()
-        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show="Parts",mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb)        
+        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=ranktr,show="Parts",mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,emptybb=emptybb,useMaxOvr=useMaxOvr)        
         ipos=[];ineg=[]
         print "Treat Time:",time.time()-t2
         print "Detect: %.3f s"%(time.time()-t)

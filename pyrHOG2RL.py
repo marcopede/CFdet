@@ -191,7 +191,7 @@ def flip(m):
     return m1    
 
 
-def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,useprior=False,K=1.0,occl=False,trunc=0):
+def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000):
     """Detect objects with RL flip
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -277,7 +277,7 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
         print "Detect: %.3f"%(time.time()-t)
         return tr,det,dettime,numhog
     else:
-        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=1000,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl)        
+        best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=ranktr,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,useMaxOvr=useMaxOvr)        
         ipos=[];ineg=[]
         if False and show and len(best1)>0:
             import util

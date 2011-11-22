@@ -3,6 +3,7 @@ import numpy
 import pylab
 from database import *
 from util import box,overlap
+from util2 import overlapx
 import time
 
 def VOCpr(gtImages,detfile,show=False,cl="person",usetr=True,usedf=False):
@@ -338,7 +339,7 @@ def VOCprRecord_old(gtImages,detlist,show=False,usetr=True,usedf=False,ovr=0.5):
 
     return tp,fp,thr,tot
 
-def VOCprRecord(gtImages,detlist,show=False,ovr=0.5):
+def VOCprRecord(gtImages,detlist,show=False,ovr=0.5,pixels=None):
     """
         calculate the precision recall curve
     """
@@ -375,7 +376,10 @@ def VOCprRecord(gtImages,detlist,show=False,ovr=0.5):
                 rb=(float(detbb[3]),float(detbb[2]),float(detbb[5]),float(detbb[4]))
                 #print "GT:",r
                 #print "DET:",rb
-                covr=overlap(rb,r)
+                if pixels==None:
+                    covr=overlap(rb,r)
+                else:
+                    covr=overlapx(rb,r,pixels)
                 if covr>=maxovr:
                     maxovr=covr
                     gt=ir

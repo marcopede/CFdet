@@ -5,63 +5,168 @@ import config
 
 cfg=config.cfg
 
-cfg.multipr=5
+cfg.multipr=4
 cfg.savefeat=False
 cfg.loadfeat=False
-cfg.savedir="Nothing"#"/state/partition1/marcopede/INRIA/hog/"
+cfg.savedir=""#"/state/partition1/marcopede/INRIA/hog/"
 
-#cfg.dbpath = "/state/partition1/marcopede/"#"/share/ISE/marcopede/database/" #database path
-cfg.dbpath = "/share/ISE/marcopede/database/" #database path
-#cfg.dbpath = "/home/databases/" #database path
+#cfg.dbpath = "/share/ISE/marcopede/database/" #database path
+cfg.dbpath = "/home/marcopede/databases/" #database path
 cfg.maxpos=2000 #maximum number of positive images
-cfg.maxtest=2000 #maximum number of test images
-cfg.maxneg=200 #maximum number of negative images
+cfg.maxtest=20000 #0 #maximum number of test images
+cfg.maxneg=240 #maximum number of negative images
 cfg.maxexamples=20000 #maximum number of examples
+
+if 0:
+    cfg.maxpos=20 #maximum number of positive images
+    cfg.maxtest=20 #0 #maximum number of test images
+    cfg.maxneg=24 #maximum number of negative images
+    cfg.maxexamples=20000 #maximum number of examples
 
 cfg.deform=True
 cfg.usemrf=True
-cfg.usefather=True#True
+cfg.usefather=True
 cfg.bottomup=False
 cfg.initr=1
 cfg.ratio=1
 
 #additional for pascal
-cfg.lev=[3,3,3]
+cfg.lev=[3,3,3,3,3]
 cfg.numcl=2
 cfg.numneginpos=0#6/cfg.numcl #reduce the number of negatives
-cfg.svmc=0.005#0.005#0.002#0.004
+cfg.svmc=0.002#0.002#0.004
+cfg.db="ivan"
 cfg.cls="bicycle"
 cfg.year="2007"
-cfg.thr=-3      #threshold positives
+cfg.show=True
+cfg.thr=-2      #threshold positives
 cfg.mythr=-10   #threshold cascade
-cfg.posovr=0.65#0.5#0.65#0.65 
-cfg.posit=8
-cfg.negit=10
+cfg.posovr=0.75#0.65
+cfg.perc=0.12
+cfg.posit=10#8
+cfg.negit=10#5
 cfg.useprior=False
-cfg.perc=0.10
-cfg.k=0.3
-cfg.small=False
 cfg.dense=0
-cfg.ovrasp=0.3
-cfg.sortneg=True
-cfg.bestovr=False
-cfg.kmeans=True
-cfg.useRL=True
+cfg.k=0.3
+cfg.useRL=True#True
+cfg.bestovr=True
+cfg.resize=1.0
+cfg.kmeans=False
+cfg.small=1
+cfg.occl=True
+cfg.trunc=0
 
-cfg.comment    ="nothing"
+cfg.comment    =""
 #cfg.testname="./data/11_02_28/iria_full" #location of the current test
-#cfg.testname="./data/11_03_11/%s_%d_2levnodef"%(cfg.cls,cfg.numcl)
-cfg.testpath="./data/finalRL/"
-cfg.testspec="test"
+cfg.testpath="./data/PASCAL/11_10_10/"
+cfg.testspec="debug"
+#cfg.testname="./data/11_03_10/%s_%d_3levnompos_hres"%(cfg.cls,cfg.numcl)
 
-cfg.debug = False#debug mode
+
+#cfg.cls="inria"
+if cfg.db=="inria":
+    cfg.cls="person"
+    cfg.testspec="full"
+    cfg.multipr=4
+    cfg.sortneg=True
+    cfg.show=True
+    cfg.useRL=False
+    cfg.negit=10
+    cfg.posit=10
+    cfg.testpath="./data/INRIA/11_09_06/"
+    cfg.minnegincl=0.5
+    cfg.maxpos=2000 #maximum number of positive images
+    cfg.maxtest=2000 #maximum number of test images
+    cfg.maxneg=200#0#0 #maximum number of negative images
+    cfg.maxexamples=10000 #maximum number of examples
+    cfg.lev=[3]#[3,3]
+    cfg.numcl=1
+    cfg.numneginpos=0#10
+    cfg.k=0.3
+    cfg.small=1
+    cfg.dense=0
+    cfg.posovr=0.75
+    cfg.perc=0.2 #how many examples to discard
+    cfg.mpos=0.5
+    cfg.resize=1.0
+    cfg.kmeans=False
+    cfg.occl=True
+    cfg.ratio=1
+
+if cfg.db=="cvc02":
+    cfg.cls="person"
+    cfg.testspec="full100"
+    cfg.deform=True
+    cfg.sbin=8
+    cfg.useRL=False
+    cfg.testpath="./data/CVC02/11_07_25/"
+    cfg.sortneg=True
+    cfg.show=True
+    cfg.posit=10
+    cfg.negit=10
+    cfg.minnegincl=0.5
+    cfg.maxpos=2032 #maximum number of positive images
+    cfg.maxneg=2000 #maximum number of negative images
+    cfg.maxtest=2000 #maximum number of test images
+    cfg.maxexamples=10000 #maximum number of examples
+    cfg.lev=[3,3]
+    cfg.numcl=1
+    cfg.numneginpos=0
+    cfg.k=0.3
+    cfg.small=True
+    cfg.dense=0
+    cfg.posovr=0.75
+    cfg.perc=0.2
+    cfg.mpos=0.5
+    cfg.kmeans=False
+    cfg.occl=True
+
+if cfg.db=="ivan":
+    cfg.cls="person"
+    cfg.testspec="withGT"
+    cfg.multipr=4
+    cfg.deform=True
+    cfg.sbin=8
+    cfg.useRL=True
+    cfg.testpath="./data/IVAN/11_10_03/"
+    cfg.sortneg=True
+    cfg.show=True
+    cfg.posit=10
+    cfg.negit=10
+    #cfg.minnegincl=0.5
+    cfg.minnegincl=0
+    cfg.maxpos=1000 #maximum number of positive images
+    cfg.maxneg=400 #maximum number of negative images
+    cfg.maxtest=250 #maximum number of test images
+    cfg.maxexamples=20000 #maximum number of examples
+    cfg.lev=[2,2,2,2]
+    cfg.numcl=3
+    cfg.numneginpos=0#10
+    cfg.k=0.3
+    cfg.small=True
+    cfg.dense=0
+    cfg.posovr=0.75
+    cfg.perc=0.2
+    cfg.mpos=0.5
+    cfg.kmeans=False
+    cfg.occl=True
+
+
+cfg.debug = False #debug mode
 
 if cfg.debug:
+    #cfg.posovr=0.5#0.65
+    cfg.useprior=False
+    cfg.lev=[3,3]
+    cfg.numcl=2
     cfg.show=True
-    cfg.multipr=8#2
-    cfg.maxpos=10#120
-    cfg.maxtest=10#100
-    cfg.maxneg=10#120
+    cfg.posit=8
+    cfg.negit=1
+    #cfg.testspec="debug"
+    cfg.multipr=4#2
+    cfg.maxpos=100#120
+    cfg.maxtest=100#100
+    cfg.maxneg=100#120
     cfg.description="DEBUG"
     #cfg.testname=cfg.testname+"_debug"
 

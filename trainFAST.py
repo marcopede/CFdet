@@ -188,7 +188,7 @@ def detectWrap(a):
                 tres=[]
                 res=[]
                 for x in bbox:
-                    margin=0.5
+                    margin=0.3
                     dy=x[2]-x[0];dx=x[3]-x[1]
                     dd=max(dy,dx)
                     ny1=max(0,x[0]-margin*dd);ny2=min(x[2]+margin*dd,img[0].shape)
@@ -320,7 +320,7 @@ def train(a):
     w,r,prloss=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,oldw=w,dir="",pc=svmc,eps=0.01)
     return w,r,prloss
 
-def trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,svmc,multipr,parallel=True):
+def trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,svmc,multipr,parallel=True,numcore=4):
     
     if not(parallel):
         w,r,prloss=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,oldw=w,dir="",pc=svmc)
@@ -360,6 +360,48 @@ def trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,svmc,multipr,parallel=T
         w=numpy.mean(waux,0)
         r=numpy.mean(raux)
     return w,r,prloss
+
+def trainParallel2(trpos,trneg,testname,trposcl,trnegcl,w,svmc,multipr,parallel=True,numcore=4,mypool=None):
+    
+    if not(parallel):
+        w,r,prloss=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,oldw=w,dir="",pc=svmc)
+    else:
+        #atrpos=numpy.array(trpos,dtype=object)
+        #atrposcl=numpy.array(trposcl,dtype=object)
+        #atrneg=numpy.array(trneg,dtype=object)
+        #atrnegcl=numpy.array(trnegcl,dtype=object)
+        ltrpos=len(trpos);ltrneg=len(trneg)
+        reordpos=range(ltrpos);numpy.random.shuffle(reordpos)
+        reordneg=range(ltrneg);numpy.random.shuffle(reordneg)
+        ltr=[]
+        litpos=ltrpos/numcore;litneg=ltrneg/numcore
+        atrpos=[];atrposcl=[]
+        atrneg=[];atrnegcl=[]
+        for ll in range(ltrpos):
+            atrpos.append(trpos[reordpos[ll]])                   
+            atrposcl.append(trposcl[reordpos[ll]])                   
+        for ll in range(ltrneg):
+            atrneg.append(trneg[reordneg[ll]])                   
+            atrnegcl.append(trnegcl[reordneg[ll]])                   
+        for gr in range(numcore-1):
+            ltr.append([atrpos[litpos*gr:litpos*(gr+1)],atrneg[litneg*gr:litneg*(gr+1)],atrposcl[litpos*gr:litpos*(gr+1)],atrnegcl[litneg*gr:litneg*(gr+1)],w,testname,svmc])        
+        ltr.append([atrpos[litpos*(gr+1):],atrneg[litneg*(gr+1):],atrposcl[litpos*(gr+1):],atrnegcl[litneg*(gr+1):],w,testname,svmc])        
+        if not(multipr):
+            itr=itertools.imap(train,ltr)        
+        else:
+            itr=mypool.map(train,ltr)
+        waux=numpy.zeros((numcore,len(w)))
+        raux=numpy.zeros((numcore))
+        #lprloss=[]
+        #lenprloss=[]
+        for ii,res in enumerate(itr):
+            waux[ii]=res[0]
+            raux[ii]=res[1]    
+        prloss=res[2]#take the last one
+        w=numpy.mean(waux,0)
+        r=numpy.mean(raux)
+    return w,r,prloss
+
 
 if __name__=="__main__":
 
@@ -1123,8 +1165,8 @@ if __name__=="__main__":
                 w=w/numpy.sqrt(numpy.sum(w**2))
 
             noise=False
-            noiselev=cfg.noiselev
             if noise:
+                noiselev=0.5*(1-float(it)/(cfg.posit-1))+cfg.noiselev*(float(it)/(cfg.posit-1))
                 atrpos=numpy.array(trpos,dtype=object)
                 atrposcl=numpy.array(trposcl,dtype=object)
                 oldoutlyers=numpy.zeros(len(trpos),dtype=numpy.int)
@@ -1138,7 +1180,7 @@ if __name__=="__main__":
                     ntrpos=atrpos[ordered][len(trpos)*noiselev:len(trpos)]
                     ntrposcl=atrposcl[ordered][len(trposcl)*noiselev:len(trposcl)]
                     #w,r,prloss=pegasos.trainComp(ntrpos,trneg,testname+"loss.rpt.txt",ntrposcl,trnegcl,oldw=w,dir="",pc=cfg.svmc,k=10,numthr=numcore)
-                    w,r,prloss=trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,cfg.svmc,cfg.multipr,parallel=True)
+                    w,r,prloss=trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,cfg.svmc,cfg.multipr,parallel=True,numcore=numcore)
                     newoutlyers[ordered[:len(trpos)*noiselev]]=1
                     numout=numpy.sum(numpy.bitwise_and(newoutlyers,oldoutlyers))
                     print ordered
@@ -1152,7 +1194,7 @@ if __name__=="__main__":
                     oldoutlyers=newoutlyers.copy()
                     #raw_input()
             else:
-                w,r,prloss=trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,cfg.svmc,cfg.multipr,parallel=False)
+                w,r,prloss=trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,cfg.svmc,cfg.multipr,parallel=True,numcore=numcore)
 
             old_posl,old_negl,old_reg,old_nobj,old_hpos,old_hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,cfg.svmc)            
             #pylab.figure(300)

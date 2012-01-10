@@ -316,7 +316,13 @@ if __name__=="__main__":
     try:
         if batch=="batch":
             print "Loading Batch configuration"
-            from config_local_batch import * #your own configuration
+            if len(sys.argv)>3: #batch configuration
+                import_name=sys.argv[3]
+                #print "The argument is",import_name
+                #raw_input()
+                exec "from config_%s import *"%import_name
+            else:
+                from config_local_batch import * #your own configuration
         else:
             print "Loading Normal configuration"
             from config_local_pascal import * #your own configuration
@@ -399,26 +405,47 @@ if __name__=="__main__":
             tsImagesFull=getRecord(VOC07Data(select="all",cl="%s_test.txt"%cfg.cls,
                             basepath=cfg.dbpath,
                             usetr=True,usedf=False),5000)
-        elif cfg.year=="2011":
-            trPosImages=getRecord(VOC11Data(select="pos",cl="%s_train.txt"%cfg.cls,
+        elif cfg.year=="2010":
+            trPosImages=getRecord(VOC10Data(select="pos",cl="%s_trainval.txt"%cfg.cls,
                             basepath=cfg.dbpath,#"/home/databases/",
                             usetr=True,usedf=False),cfg.maxpos)
-            trNegImages=getRecord(VOC11Data(select="neg",cl="%s_train.txt"%cfg.cls,
+            trNegImages=getRecord(VOC10Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
                             basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
                             usetr=True,usedf=False),cfg.maxneg)
-            trNegImagesFull=getRecord(VOC11Data(select="neg",cl="%s_train.txt"%cfg.cls,
+            trNegImagesFull=getRecord(VOC10Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
                             basepath=cfg.dbpath,usetr=True,usedf=False),30000)
             #test
-            tsPosImages=getRecord(VOC11Data(select="pos",cl="%s_val.txt"%cfg.cls,
+            tsPosImages=getRecord(VOC10Data(select="pos",cl="%s_val.txt"%cfg.cls,#notice using validation!!!
                             basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
                             usetr=True,usedf=False),cfg.maxtest)
-            tsNegImages=getRecord(VOC11Data(select="neg",cl="%s_val.txt"%cfg.cls,
+            tsNegImages=getRecord(VOC10Data(select="neg",cl="%s_test.txt"%cfg.cls,
                             basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
                             usetr=True,usedf=False),cfg.maxneg)
             tsImages=numpy.concatenate((tsPosImages,tsNegImages),0)
-            tsImagesFull=getRecord(VOC11Data(select="all",cl="%s_val.txt"%cfg.cls,
+            tsImagesFull=getRecord(VOC10Data(select="all",cl="%s_test.txt"%cfg.cls,
+                            basepath=cfg.dbpath,
+                            usetr=True,usedf=False,testavail=False),30000)
+        elif cfg.year=="2011":
+            trPosImages=getRecord(VOC11Data(select="pos",cl="%s_trainval.txt"%cfg.cls,
+                            basepath=cfg.dbpath,#"/home/databases/",
+                            usetr=True,usedf=False),cfg.maxpos)
+            trNegImages=getRecord(VOC11Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
+                            basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
+                            usetr=True,usedf=False),cfg.maxneg)
+            trNegImagesFull=getRecord(VOC11Data(select="neg",cl="%s_trainval.txt"%cfg.cls,
+                            basepath=cfg.dbpath,usetr=True,usedf=False),30000)
+            #test
+            tsPosImages=getRecord(VOC11Data(select="pos",cl="%s_test.txt"%cfg.cls,
+                            basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
+                            usetr=True,usedf=False),cfg.maxtest)
+            tsNegImages=getRecord(VOC11Data(select="neg",cl="%s_test.txt"%cfg.cls,
+                            basepath=cfg.dbpath,#"/home/databases/",#"/share/ISE/marcopede/database/",
+                            usetr=True,usedf=False),cfg.maxneg)
+            tsImages=numpy.concatenate((tsPosImages,tsNegImages),0)
+            tsImagesFull=getRecord(VOC11Data(select="all",cl="%s_test.txt"%cfg.cls,
                             basepath=cfg.dbpath,
                             usetr=True,usedf=False),30000)
+
             
     elif cfg.db=="ivan":
         #trPosImages=getRecord(ImgFile("/media/OS/data/PVTRA101/CLEAR06_PVTRA101a01_502_BboxROI.txt",imgpath="/media/OS/data/PVTRA101/images/"),cfg.maxpos)

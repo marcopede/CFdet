@@ -636,20 +636,33 @@ class VOC07Data(VOC06Data):
         filename=self.annpath+item.split(" ")[0]+".xml"
         return getbboxVOC07(filename,cl,usetr,usedf)
 
-class VOC11Data(VOC07Data):
+class VOC10Data(VOC07Data):
     """
     VOC07 instance (you can choose positive or negative images with the option select)
     """
     def __init__(self,select="all",cl="person_train.txt",
                 basepath="media/DADES-2/",
-                trainfile="VOC2011/VOCdevkit/VOC2011/ImageSets/Main/",
-                imagepath="VOC2011/VOCdevkit/VOC2011/JPEGImages/",
-                annpath="VOC2011/VOCdevkit/VOC2011/Annotations/",
-                local="VOC2011/VOCdevkit/local/VOC2011/",
-                usetr=False,usedf=False):
+                trainfile="VOC2010/VOCdevkit/VOC2010/ImageSets/Main/",
+                imagepath="VOC2010/VOCdevkit/VOC2010/JPEGImages/",
+                annpath="VOC2010/VOCdevkit/VOC2010/Annotations/",
+                local="VOC2010/VOCdevkit/local/VOC2010/",
+                usetr=False,usedf=False,testavail=True):
+        self.testavail=testavail
         VOC07Data.__init__(self,select=select,cl=cl,basepath=basepath,
                 trainfile=trainfile,imagepath=imagepath,
                 annpath=annpath,local=local,usetr=usetr,usedf=usedf)
+
+    def getBBox(self,i,cl=None,usetr=None,usedf=None):
+        #if self.testavail==False:
+        try:
+            aux=VOC07Data.getBBox(self,i,cl=None,usetr=None,usedf=None)
+        except:
+            if self.testavail==False:
+                aux=[]        
+            else:
+                raise "Error file not present"
+        return aux
+
 #        self.cl=cl
 #        self.usetr=usetr
 #        self.usedf=usedf

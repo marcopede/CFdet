@@ -191,7 +191,7 @@ def flip(m):
     return m1    
 
 
-def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000):
+def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000,fastBU=False):
     """Detect objects with RL flip
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -245,29 +245,50 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
             showlabel="Parts"
         else:
             showlabel=False
-        ref=0#enable TD+BU
-        if ref:
+        if fastBU:#enable TD+BU
             t1=time.time()
-            det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
-            detR=[];detL=[]
-            for d in det:
-                if d["rl"]==1:
-                    detR.append(d)
-                else:
-                    detL.append(d)
-            samplesR=tr.goodsamples(detR,initr=initr,ratio=ratio)
-            samplesL=tr.goodsamples(detL,initr=initr,ratio=ratio)
-            scrR,posR=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samplesR)
-            scrL,posL=f.scanRCFLDefBU(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samplesL)
-            lr=[];fscr=[]
-            for idl,l in enumerate(scrR):
+            det=tr.doall(thr=thr,rank=200,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
+            #detR=[];detL=[]
+            #for d in det:
+            #    if d["rl"]==1:
+            #        detR.append(d)
+            #    else:
+            #        detL.append(d)
+            #samplesR=tr.goodsamples(detR,initr=initr,ratio=ratio)
+            #samplesL=tr.goodsamples(detL,initr=initr,ratio=ratio)
+            #scrR,posR=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samplesR)
+            #scrL,posL=f.scanRCFLDefBU(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samplesL)
+            #lr=[];fscr=[]
+            #for idl,l in enumerate(scrR):
+            #    auxscr=numpy.zeros((l.shape[0],l.shape[1],2),numpy.float32)
+            #    auxscr[:,:,0]=scrR[idl]
+            #    auxscr[:,:,1]=scrL[idl]
+            #    fscr.append(numpy.max(auxscr,2))
+            #    lr.append(numpy.argmax(auxscr,2))
+            #tr=TreatDefRL(f,fscr,posR,posL,lr,initr,m["fy"],m["fx"],occl=occl)
+
+            samples=tr.goodsamples(det,initr=initr,ratio=ratio)
+            scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
+            scr1,pos1=f.scanRCFLDefBU(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
+            lr=[]
+            fscr=[]
+            for idl,l in enumerate(scr):
                 auxscr=numpy.zeros((l.shape[0],l.shape[1],2),numpy.float32)
-                auxscr[:,:,0]=scrR[idl]
-                auxscr[:,:,1]=scrL[idl]
+                auxscr[:,:,0]=scr[idl]
+                auxscr[:,:,1]=scr1[idl]
                 fscr.append(numpy.max(auxscr,2))
                 lr.append(numpy.argmax(auxscr,2))
+                if 0:
+                    pylab.figure(101)
+                    pylab.clf()
+                    print auxscr[:,:,0]
+                    print auxscr[:,:,1]
+                    pylab.imshow(lr[-1])
+                    pylab.show()
+                    raw_input()
+            tr=TreatDefRL(f,fscr,pos,pos1,lr,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
+
             print "Refine Time:",time.time()-t1
-            tr=TreatDefRL(f,fscr,posR,posL,lr,initr,m["fy"],m["fx"],occl=occl)
             det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)
         else:
             det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)

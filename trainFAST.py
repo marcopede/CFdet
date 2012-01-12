@@ -157,9 +157,9 @@ def rundet(img,cfg,models,gtbbox):
     res=[]
     for clm,m in enumerate(models):
         if cfg.useRL:
-            res.append(pyrHOG2RL.detectflip(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,usefather=cfg.usefather,useprior=cfg.useprior,K=cfg.k,occl=cfg.occl))
+            res.append(pyrHOG2RL.detectflip(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,usefather=cfg.usefather,useprior=cfg.useprior,K=cfg.k,occl=cfg.occl,fastBU=cfg.fastBU))
         else:
-            res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,usefather=cfg.usefather,useprior=cfg.useprior,K=cfg.k,occl=cfg.occl))
+            res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,usefather=cfg.usefather,useprior=cfg.useprior,K=cfg.k,occl=cfg.occl,fastBU=cfg.fastBU))
     if cfg.show:
         pylab.draw()
         pylab.show()
@@ -535,7 +535,7 @@ if __name__=="__main__":
         tsImagesFull=tsImages
     elif cfg.db=="inria":
         trPosImages=getRecord(InriaPosData(basepath=cfg.dbpath),cfg.maxpos)
-        trNegImages=getRecord(InriaNegData(basepath=cfg.dbpath),cfg.maxneg)
+        trNegImages=getRecord(InriaNegData(basepath=cfg.dbpath),5000)#cfg.maxneg)#check if it works better like this
         trNegImagesFull=getRecord(InriaNegData(basepath=cfg.dbpath),5000)
         #test
         tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
@@ -928,7 +928,10 @@ if __name__=="__main__":
                 mytrpos=numpy.array(mytrpos)
                 cl1=range(0,len(mytrpos),2)
                 cl2=range(1,len(mytrpos),2)
-                for rr in range(3*len(mytrpos)):
+                rrnum=3*len(mytrpos)
+                if cfg.cls=="person": #speed-up the clustering for person because too many examples
+                    rrnum=len(mytrpos)
+                for rr in range(rrnum):
                 #for rr in range(1000):
                     print "Clustering iteration ",rr
                     oldvar=numpy.sum(numpy.var(mytrpos[cl1],0))+numpy.sum(numpy.var(mytrpos[cl2],0))

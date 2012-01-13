@@ -982,14 +982,17 @@ class Treat:
         """    
         lpos=[]
         lneg=[]
-        lnegfull=False
+        #lnegfull=False
         for gt in gtbbox:
             lpos.append(gt.copy())
             lpos[-1]["scr"]=-numpy.inf
             lpos[-1]["ovr"]=1.0
+        fullcount=numpy.ones(len(lpos))*numneg
         for d in det:
-            goodneg=True
-            for gt in lpos: 
+            #goodneg=True
+            #lnegfull=False
+            for idgt,gt in enumerate(lpos): 
+                goodneg=True
                 ovr=util.overlap(d["bbox"],gt["bbox"])
                 incl=util.inclusion(d["bbox"],gt["bbox"])
                 if useMaxOvr:
@@ -1009,17 +1012,21 @@ class Treat:
                         #raw_input()
                 if ovr>negovr or ovr<minnegovr or incl<minnegincl:
                     goodneg=False
-            if goodneg and not(lnegfull):
-                noovr=True
-                for n in lneg:
-                    ovr=util.overlap(d["bbox"],n["bbox"])
-                    if ovr>0.5:
-                        noovr=False
-                if noovr:
-                    if len(lneg)>=numneg:   
-                        lnegfull=True
-                    else:
-                        lneg.append(d)
+                #negative for each gt bbox
+                if goodneg and fullcount[idgt]>0:#not(lnegfull):
+                    noovr=True
+                    for n in lneg:
+                        ovr=util.overlap(d["bbox"],n["bbox"])
+                        if ovr>0.5:
+                            noovr=False
+                    if noovr:
+                        print "XXX",idgt,fullcount[idgt]
+                        if fullcount[idgt]>0:#len(lneg)>=numneg:   
+                            print "Added 1 Negative in GT ",idgt
+                            fullcount[idgt]=fullcount[idgt]-1
+                            lneg.append(d)
+        print "END:",fullcount
+
         lpos2=[]
         for idbbox,gt in enumerate(lpos):
             if gt["scr"]>-numpy.inf:

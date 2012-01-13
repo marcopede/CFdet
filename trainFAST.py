@@ -535,7 +535,7 @@ if __name__=="__main__":
         tsImagesFull=tsImages
     elif cfg.db=="inria":
         trPosImages=getRecord(InriaPosData(basepath=cfg.dbpath),cfg.maxpos)
-        trNegImages=getRecord(InriaNegData(basepath=cfg.dbpath),5000)#cfg.maxneg)#check if it works better like this
+        trNegImages=getRecord(InriaNegData(basepath=cfg.dbpath),cfg.maxneg)#check if it works better like this
         trNegImagesFull=getRecord(InriaNegData(basepath=cfg.dbpath),5000)
         #test
         tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)

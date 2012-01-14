@@ -87,6 +87,137 @@ inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
     return sum;
 }
 
+ftype buffer[5*5*9];//for BOW
+ftype localhist[1000];
+//static variables for the moment
+//int sizevoc=2;
+//int numvoc=100;
+//ftype *voc
+//ftype *mhist
+
+//compute 3d correlation between an image feature img and a mask 
+inline ftype corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx,int occl,int sizevoc,int numvoc,ftype *voc,ftype *mhist
+)//sizevoc=2;numvoc=100;voc=2*2*9*100
+{
+    int dimz2=9;//only first 9 oriented gradients
+    int dimzfull=dimz;
+    if (occl!=0)
+        //with occl
+        dimz=dimz-occl;
+        //printf("Occl:%d Dimzfull:%d Dimz:%d",occl,dimzfull,dimz);
+    if (prec!=NULL)//memoization of the already computed locations
+    {
+        if (posy>=-pady && posy<imgy+pady && posx>=-padx && posx<imgx+padx)
+            if (prec[(posy+pady)*(imgx+2*padx)+(posx+padx)]>-INFINITY)
+            {
+                return prec[(posy+pady)*(imgx+2*padx)+(posx+padx)];
+            }
+    }    
+    ftype sum=0.0,dist,mindist=0.0,bowscr=0.0;
+    int x,y,z,posi,c,cy,cx,bestc=0,toton=0;
+    for (x=0;x<maskx;x++)
+        for (y=0;y<masky;y++)
+        {
+            compHOG++;
+            if (((x+posx)>=0 && (x+posx<imgx)) && ((y+posy)>=0 && (y+posy<imgy)))
+            //inside the image
+            {
+                for (z=0;z<dimz;z++)
+                {   
+                    //printf("%d:%f\n",z,mask[z+x*dimzfull+y*dimzfull*maskx]);
+                    posi=z+(x+posx)*dimz+(y+posy)*dimz*imgx;
+                    sum=sum+img[posi]*mask[z+x*dimzfull+y*dimzfull*maskx];      
+                    /*posi=z+(x+posx)*dimzfull+(y+posy)*dimzfull*imgx;
+                    {
+                        sum=sum+img[posi]*mask[z+x*dimzfull+y*dimzfull*maskx];      
+                    }*/
+                }
+            }
+            else
+            //occlusion using dimz
+            {
+                for (z=dimz;z<dimzfull;z++)
+                {
+                    //printf("%d:%f\n",z,mask[z+x*dimzfull+y*dimzfull*maskx]);
+                    //posi=z+(x+posx)*dimz+(y+posy)*dimz*imgx;
+                    sum=sum+mask[z+x*dimzfull+y*dimzfull*maskx];      
+                }
+            }
+        }
+//bow extraction
+    for (x=0;x<maskx-sizevoc;x++)
+        for (y=0;y<masky-sizevoc;y++)
+        {
+            for (cx=0;cx<sizevoc;cx++)
+                for (cy=0;cy<sizevoc;cy++)
+                {
+                    //compHOG++;
+                    if (((x+posx)>=0 && (x+posx<imgx)) && ((y+posy)>=0 && (y+posy<imgy)))
+                    //inside the image
+                    {
+                        for (z=0;z<dimz2;z++)//using only 9 not oriented
+                        {   
+                            posi=z+(x+posx)*dimzfull+(y+posy)*dimzfull*imgx;
+                            buffer[z+cx*dimz2+cy*dimz2*sizevoc]=img[posi];//mask[z+(x+cx)*dimzfull+(y+cy)*dimzfull*maskx];      
+                            //printf("%d:%f\n",z,mask[z+x*dimzfull+y*dimzfull*maskx]);
+                            //posi=z+(x+posx)*dimz+(y+posy)*dimz*imgx;
+                            //sum=sum+img[posi]*mask[z+x*dimzfull+y*dimzfull*maskx];      
+                            /*posi=z+(x+posx)*dimzfull+(y+posy)*dimzfull*imgx;
+                            {
+                                sum=sum+img[posi]*mask[z+x*dimzfull+y*dimzfull*maskx];      
+                            }*/
+                        }
+                    }
+                    else
+                    //occlusion
+                    {
+                        for (z=0;z<dimz2;z++)
+                        {
+                            buffer[z+cx*dimz2+cy*dimz2*sizevoc]=0;
+                            //printf("%d:%f\n",z,mask[z+x*dimzfull+y*dimzfull*maskx]);
+                            //posi=z+(x+posx)*dimz+(y+posy)*dimz*imgx;
+                            //sum=sum+mask[z+x*dimzfull+y*dimzfull*maskx];      
+                        }
+                    }
+                }
+            //bow assignment (then with lookup table)
+            for (c=0;c<numvoc;c++)
+            {
+                dist=0.0;
+                for (z=0;z<dimz2*sizevoc*sizevoc;z++)
+                {
+                    dist+=(voc[z+c*dimz2*sizevoc*sizevoc]-buffer[z])*(voc[z+c*dimz2*sizevoc*sizevoc]-buffer[z]);
+                }
+                if (dist<mindist)
+                {
+                    mindist=dist;
+                    bestc=c;
+                }
+            }
+            printf("Best C:%d\n",bestc);
+            if (localhist[bestc]==0)
+                toton++;
+            localhist[bestc]=1.0;//maxpooling
+        }
+//normalization l2 + score
+    for (c=0;c<numvoc;c++)
+    {
+        localhist[c]=(ftype)(localhist[c])/sqrt(toton);
+        bowscr+=localhist[c]*mhist[c];
+    }      
+    printf("Bowscr:%f\n",bowscr);
+//end bow
+    if (prec!=NULL)//save computed values in the buffer
+    {
+        if (posy>=-pady && posy<imgy+pady && posx>=-padx && posx<imgx+padx)
+        {
+            prec[(posy+pady)*(imgx+2*padx)+(posx+padx)]=sum;
+        }
+    }
+    return sum+bowscr;
+}
+
+
 //compute the score over the possible values of a defined neighborhood
 inline ftype refineigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,int rady,int radx,int *posedy, int *posedx, ftype *prec,int occl)
 {

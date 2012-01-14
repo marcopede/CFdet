@@ -188,6 +188,15 @@ def flip(m):
         m1["df"]=df1
     if m.has_key("occl"):
         m1["occl"]=m["occl"]
+    #for BOW
+    hh1=[]
+    if m.has_key("hist"):
+        for l in m["hist"]:
+            hh1.append(numpy.ascontiguousarray(l["hist"][::-1]))
+    hh1=[]
+    if m.has_key("voc"):
+        for l in m["voc"]:
+            hh1.append(numpy.ascontiguousarray(l["voc"][::-1]))
     return m1    
 
 

@@ -10,6 +10,7 @@ import time
 
 SMALL=100 #coefficient to multiply resolution features
 DENSE=0 #number of levels to use a dense scan instead of a Ctf
+BOW=True
 K=1.0 #0.3 #coefficient for the deformation featres
 
 from numpy import ctypeslib
@@ -34,9 +35,20 @@ lhog.process.argtypes=[
 #library to compute correlation between object model and HOGs
 ctypes.cdll.LoadLibrary("./libexcorr.so")
 ff= ctypes.CDLL("libexcorr.so")
-
+###
+#corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx,int occl,int sizevoc,int numvoc,ftype *voc,ftype *mhist
+ff.corr3dpadbow.argtypes=[numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,c_int,
+c_int,c_int,ctypes.POINTER(c_float),c_int,c_int,c_int,c_int,c_int,
+numpy.ctypeslib.ndpointer(dtype=c_float,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer
+(dtype=c_float,flags="C_CONTIGUOUS")]
+ff.corr3dpadbow.restype=ctypes.c_float
+###
 ff.scaneigh.argtypes=[numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_float,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer
 (dtype=c_int,flags="C_CONTIGUOUS"),c_int,c_int,c_int,c_int]
+
+ff.scaneighbow.argtypes=[numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_float,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer
+(dtype=c_int,flags="C_CONTIGUOUS"),c_int,c_int,c_int,c_int,
+c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_float,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_float,flags="C_CONTIGUOUS")]
 
 ff.scanDef2.argtypes = [
     ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
@@ -99,6 +111,54 @@ def getfeat(a,y1,y2,x1,x2,trunc=0):
     return b
 
 
+def hog2bow(feat,bin=5,siftsize=2):
+    selbin=numpy.array([0,2,4,5,7])
+    hist=numpy.zeros(bin**(siftsize**2))
+    hog=feat[:,:,18:27].copy()
+    import PySegment
+    bow=PySegment.hogtosift(hog,siftsize,geom=False)
+    #print len(bow)
+    i=0
+    for ll in bow:
+        bow1=ll.reshape((4,9)).astype(numpy.float32)
+        val=2*bow1[:,selbin]+bow1[:,selbin+1]+bow1[:,(selbin+8)%9]
+        pp=numpy.sum(val.argmax(1)*numpy.array([1,bin,bin**2,bin**3]))
+        hist[pp]=0.1#new value
+        #print i,pp,val.argmax(1),val.max(1)
+        i+=1
+    hist=hist/numpy.sqrt(numpy.sum(hist**2))
+    return hist.astype(numpy.float32)
+
+def histflip(bin=5,siftsize=2):
+    flip=[0,4,3,2,1]
+    ftab=numpy.zeros(5**4,dtype=numpy.int)
+    for l0 in range(5):
+        for l1 in range(5):
+            for l2 in range(5):
+                for l3 in range(5):
+                    val=l3+l2*5+l1*25+l0*125
+                    ftab[val]=flip[l3]*5+flip[l2]+flip[l1]*125+flip[l0]*25      
+    return ftab
+
+
+#def hog2bow2(feat,bin=5,siftsize=2):
+#    selbin=numpy.array([0,2,4,5,7])
+#    hist=numpy.zeros(bin**(siftsize**2))
+#    hog=feat[:,:,18:27].copy()
+#    import PySegment
+#    bow=PySegment.hogtosift(hog,siftsize,geom=False)
+#    print len(bow)
+#    i=0
+#    for ll in bow:
+#        bow1=ll.reshape((4,9)).astype(numpy.float32)
+#        val=2*bow1[:,selbin]+bow1[:,selbin+1]+bow1[:,(selbin-1)%9]
+#        pp=numpy.sum(val.argmax(1)*numpy.array([1,bin,bin**2,bin**3]))
+#        hist[pp]=1
+#        print i,val.argmax(1),val.max(1),pp
+#        i+=1
+#    hist=hist/numpy.sqrt(numpy.sum(hist**2))
+#    return bow,hist.astype(numpy.float32)
+
 #wrapper for the HOG computation
 def hog(img,sbin=8):
     """
@@ -121,7 +181,7 @@ def hogflip(feat,obin=9):
     returns the horizontally flipped version of the HOG features
     """
     #feature shape
-    #[9 not oriented][18 oriented][4 normalization]
+    #[18 oriented][9 not oriented][4 normalization]
     if feat.shape[2]==31:
         p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,30,31,28,29])-1
     else:
@@ -319,6 +379,77 @@ class pyrHOG:
                         pparts[-1][1,lev,:,:],
                         r,r,
                         sshape[0]*sshape[1],trunc)
+                    res[i-self.starti]+=auxres
+                    samples[:,:,:]=(samples[:,:,:]+pparts[-1][:,lev,:,:])*2+1
+                else:#resolution occlusion
+                    if len(model["ww"])-1>lev:
+                        res[i-self.starti]+=occl[lev-1]
+            res[i-self.starti]-=rho
+        return res,pparts
+
+
+    def scanRCFLbow(self,model,initr=1,ratio=1,small=True,trunc=0):
+        """
+        scan the HOG pyramid using the CtF algorithm
+        """        
+        ww=model["ww"]
+        rho=model["rho"]
+        siftsize=2#int(numpy.sqrt(model["hist"][0].shape[0]/9))
+        numvoc=625#model["voc"][0].shape[2]        
+        if model.has_key("occl"):
+            print "Occlusions:",model["occl"]
+            occl=numpy.array(model["occl"])*SMALL
+        else:
+            #print "No Occlusions"
+            occl=numpy.zeros(len(model["ww"]))
+        res=[]#score
+        pparts=[]#parts position
+        tot=0
+        if not(small):
+            self.starti=self.interv*(len(ww)-1)
+        else:
+            if type(small)==bool:
+                self.starti=0
+            else:
+                self.starti=self.interv*(len(ww)-1-small)
+        from time import time
+        for i in range(self.starti,len(self.hog)):
+            samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(ctypes.c_int)
+            sshape=samples.shape[1:3]
+            res.append(numpy.zeros(sshape,dtype=ctypes.c_float))
+            pparts.append(numpy.zeros((2,len(ww),sshape[0],sshape[1]),dtype=c_int))
+            for lev in range(len(ww)):
+                if i-self.interv*lev>=0:
+                    if lev==0:
+                        r=initr
+                    else:
+                        r=ratio
+                    auxres=res[-1].copy()
+#                    ff.scaneigh(self.hog[i-self.interv*lev],
+#                        self.hog[i-self.interv*lev].shape[0],
+#                        self.hog[i-self.interv*lev].shape[1],
+#                        ww[lev],
+#                        ww[lev].shape[0],ww[lev].shape[1],ww[lev].shape[2],
+#                        samples[0,:,:],
+#                        samples[1,:,:],
+#                        auxres,
+#                        pparts[-1][0,lev,:,:],
+#                        pparts[-1][1,lev,:,:],
+#                        r,r,
+#                        sshape[0]*sshape[1],trunc)
+                    ff.scaneighbow(self.hog[i-self.interv*lev],
+                        self.hog[i-self.interv*lev].shape[0],
+                        self.hog[i-self.interv*lev].shape[1],
+                        ww[lev],
+                        ww[lev].shape[0],ww[lev].shape[1],ww[lev].shape[2],
+                        samples[0,:,:],
+                        samples[1,:,:],
+                        auxres,
+                        pparts[-1][0,lev,:,:],
+                        pparts[-1][1,lev,:,:],
+                        r,r,
+                        sshape[0]*sshape[1],trunc,
+                        siftsize,numvoc,model["hist"][lev],model["hist"][lev])
                     res[i-self.starti]+=auxres
                     samples[:,:,:]=(samples[:,:,:]+pparts[-1][:,lev,:,:])*2+1
                 else:#resolution occlusion
@@ -868,6 +999,7 @@ class Treat:
             fy=self.fy
             fx=self.fx
             item["feat"]=[]
+            item["feat2"]=[]
             my=0;mx=0;
             for l in range(len(item["def"]["dy"])):
                 if i+self.f.starti-(l)*self.interv>=0:
@@ -875,6 +1007,7 @@ class Treat:
                     mx=2*mx+item["def"]["dx"][l]
                     aux=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1,cy+my+fy*2**l-1,cx+mx-1,cx+mx+fx*2**l-1,self.trunc)
                     item["feat"].append(aux)
+                    #item["feat2"].append(hog2bow(aux))
                     cy=(cy)*2
                     cx=(cx)*2
                 else:
@@ -924,7 +1057,7 @@ class Treat:
             if count>maxnum:
                 break
             
-    def descr(self,det,flip=False,usemrf=False,usefather=False,k=0):
+    def descr(self,det,flip=False,usemrf=False,usefather=False,k=0,usebow=BOW):
         """
         convert each detection in a feature descriptor for the SVM
         """           
@@ -942,6 +1075,16 @@ class Treat:
                         d=numpy.concatenate((d,[0.0]))
                     else:
                         d=numpy.concatenate((d,[1.0*SMALL]))
+            #ld.append(d.astype(numpy.float32))
+            if usebow:#625*3-->later 625*21
+                for l in range(len(item["feat"])):
+                    #hist=numpy.zeros(625,dtype=numpy.float32)
+                    if not(flip):
+                        hist=hog2bow(item["feat"][l])
+                    else:
+                        #hist=hog2bow((item["feat"][l]))
+                        hist=hog2bow(hogflip(item["feat"][l]))
+                    d=numpy.concatenate((d,hist))
             ld.append(d.astype(numpy.float32))
         return ld
 
@@ -954,7 +1097,7 @@ class Treat:
             ld.append(item["cl"])
         return ld
 
-    def model(self,descr,rho,lev,fsz,fy=[],fx=[],usemrf=False,usefather=False):
+    def model(self,descr,rho,lev,fsz,fy=[],fx=[],usemrf=False,usefather=False,usebow=BOW):
         """
         build a new model from the weights of the SVM
         """     
@@ -973,10 +1116,64 @@ class Treat:
             if self.occl:
                 occl[l]=d[p]
                 p+=1
-        m={"ww":ww,"rho":rho,"fy":fy,"fx":fx,"occl":occl}
+        hist=[]
+        if usebow:
+            for l in range(lev):
+                hist.append(d[p:p+625].astype(numpy.float32)) 
+                #hist.append(numpy.zeros(625,dtype=numpy.float32))#remind to remove this line
+                p=p+625
+        m={"ww":ww,"rho":rho,"fy":fy,"fx":fx,"occl":occl,"hist":hist,"voc":[]}
         return m
 
     def getbestworste(self,det,gtbbox,numpos=1,numneg=10,posovr=0.5,negovr=0.2,mpos=0,minnegovr=0,minnegincl=0,emptybb=True,useMaxOvr=False):
+        """
+        returns the detection that best overlap with the ground truth and also the best not overlapping
+        """    
+        lpos=[]
+        lneg=[]
+        lnegfull=False
+        for gt in gtbbox:
+            lpos.append(gt.copy())
+            lpos[-1]["scr"]=-numpy.inf
+            lpos[-1]["ovr"]=1.0
+        for d in det:
+            goodneg=True
+            for gt in lpos: 
+                ovr=util.overlap(d["bbox"],gt["bbox"])
+                incl=util.inclusion(d["bbox"],gt["bbox"])
+                if ovr>posovr:
+                    if d["scr"]-mpos*(1-ovr)>gt["scr"]-mpos*(1-gt["ovr"]):
+                        gt["scr"]=d["scr"]
+                        gt["ovr"]=ovr
+                        gt["data"]=d.copy()
+                if ovr>negovr or ovr<minnegovr or incl<minnegincl:
+                    goodneg=False
+            if goodneg and not(lnegfull):
+                noovr=True
+                for n in lneg:
+                    ovr=util.overlap(d["bbox"],n["bbox"])
+                    if ovr>0.5:
+                        noovr=False
+                if noovr:
+                    if len(lneg)>=numneg:   
+                        lnegfull=True
+                    else:
+                        lneg.append(d)
+        lpos2=[]
+        for idbbox,gt in enumerate(lpos):
+            if gt["scr"]>-numpy.inf:
+                lpos2.append(gt["data"])
+                lpos2[-1]["ovr"]=gt["ovr"]
+                lpos2[-1]["gtbb"]=gt["bbox"]
+                lpos2[-1]["bbid"]=idbbox
+                if gt.has_key("img"):
+                    lpos2[-1]["img"]=gt["img"]
+            else:
+                if emptybb:
+                    lpos2.append({"scr":-10,"bbox":gt["bbox"],"notfound":True})#not detected bbox
+        return lpos2,lneg
+
+    def getbestworste_wrong(self,det,gtbbox,numpos=1,numneg=10,posovr=0.5,negovr=0.2,mpos=0,minnegovr=0,minnegincl=0,emptybb=True,useMaxOvr=False):
         """
         returns the detection that best overlap with the ground truth and also the best not overlapping
         """    
@@ -1020,12 +1217,12 @@ class Treat:
                         if ovr>0.5:
                             noovr=False
                     if noovr:
-                        print "XXX",idgt,fullcount[idgt]
+                        #print "XXX",idgt,fullcount[idgt]
                         if fullcount[idgt]>0:#len(lneg)>=numneg:   
-                            print "Added 1 Negative in GT ",idgt
+                            #print "Added 1 Negative in GT ",idgt
                             fullcount[idgt]=fullcount[idgt]-1
                             lneg.append(d)
-        print "END:",fullcount
+        #print "END:",fullcount
 
         lpos2=[]
         for idbbox,gt in enumerate(lpos):
@@ -1254,7 +1451,12 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,trunc=trunc)
         tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
     else:
-        scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
+        bow=BOW
+        if bow:
+            scr,pos=f.scanRCFLbow(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
+            #scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
+        else:
+            scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
         tr=Treat(f,scr,pos,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
     print "Scan: %.3f s"%(time.time()-t)    
     if gtbbox==None:#test

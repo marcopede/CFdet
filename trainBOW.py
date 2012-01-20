@@ -544,36 +544,194 @@ if __name__=="__main__":
     from PySegment import *
     maxsift=10000
     siftsize=2
-    numbow=100
+    numbow=625
     recVOC=False
     name=testname+"_book%d_%d_%s_"%(siftsize,numbow,cfg.cls)
-    try:
-	    rbook=numpy.load('%s.npz'%(name))["arr_0"]
-    except:
-        print "Computing Vocabulary"
-        recVOC=True
-    if recVOC:
-        pos=0
-        svect=numpy.zeros((2*maxsift,siftsize**2*9))
-        for l in trPosImages:
-            img=util.myimread(l["name"])
-            feat=pyrHOG2.pyrHOG(img,interv=1)
-            him=feat.hog[1]
-            feat=hogtosift(feat.hog[1][:,:,:9],siftsize)
-            himy=him.shape[0]-siftsize+1
-            himx=him.shape[1]-siftsize+1
-            svect[pos:pos+himy*himx]=feat
-            pos+=himy*himx
-            print pos
-            if pos>maxsift:
-                pos-=himy*himx
-                break
-        print "Kmaens"
-        rbook,di=vq.kmeans(svect[:pos],numbow,3)
-        numpy.savez('%s.npz'%(name), rbook)
+#    try:
+#	    rbook=numpy.load('%s.npz'%(name))["arr_0"]
+#    except:
+#        print "Computing Vocabulary"
+#        recVOC=True
+#    if recVOC:
+#        pos=0
+#        svect=numpy.zeros((2*maxsift,siftsize**2*9))
+#        for l in trPosImages:
+#            img=util.myimread(l["name"])
+#            feat=pyrHOG2.pyrHOG(img,interv=1)
+#            him=feat.hog[1]
+#            feat=hogtosift(feat.hog[1][:,:,:9],siftsize)
+#            himy=him.shape[0]-siftsize+1
+#            himx=him.shape[1]-siftsize+1
+#            svect[pos:pos+himy*himx]=feat
+#            pos+=himy*himx
+#            print pos
+#            if pos>maxsift:
+#                pos-=himy*himx
+#                break
+#        print "Kmaens"
+#        rbook,di=vq.kmeans(svect[:pos],numbow,3)
+#        numpy.savez('%s.npz'%(name), rbook) 
+    rbook=numpy.zeros((625,9*siftsize*siftsize))
 
-    #showBook(rbook,siftsize)
-    raw_input()
+##    r2book=numpy.concatenate((rbook,numpy.zeros((numbow,22))),1)
+##    showBook(r2book,siftsize)
+#    #generate samples
+#    table2=-numpy.ones((10000,10),dtype=numpy.int)
+#    table=-numpy.ones((10000),dtype=numpy.int)
+#    tablep=-numpy.zeros((10000),dtype=numpy.int)
+#    tablen=-numpy.zeros((10000),dtype=numpy.int)
+#    dtable=-numpy.ones(10000)
+##    for c in range(siftsize*siftsize):
+##        for z in range(10):
+##            desc=numpy.zeros((9,siftsize*siftsize),dtype=numpy.float32)
+##            if z!=9:
+##                descr[z,c]=1.0;
+#    pos=0
+#    maxsift=50000
+#    svect=numpy.zeros((2*maxsift,siftsize**2*9))
+#    for l in trPosImages:
+#        img=util.myimread(l["name"])
+#        feat=pyrHOG2.pyrHOG(img,interv=1)
+#        him=feat.hog[1]
+#        feat=hogtosift(feat.hog[1][:,:,:9],siftsize)
+#        himy=him.shape[0]-siftsize+1
+#        himx=him.shape[1]-siftsize+1
+#        svect[pos:pos+himy*himx]=feat
+#        pos+=himy*himx
+#        print pos
+#        if pos>maxsift:
+#            pos-=himy*himx
+#            break
+
+#    svect2=numpy.zeros((2*maxsift,siftsize**2*9))
+#    neg=0
+#    for l in trNegImages:
+#        img=util.myimread(l["name"])
+#        feat=pyrHOG2.pyrHOG(img,interv=1)
+#        him=feat.hog[1]
+#        feat=hogtosift(feat.hog[1][:,:,:9],siftsize)
+#        himy=him.shape[0]-siftsize+1
+#        himx=him.shape[1]-siftsize+1
+#        svect2[neg:neg+himy*himx]=feat
+#        neg+=himy*himx
+#        print neg
+#        if neg>maxsift:
+#            neg-=himy*himx
+#            break
+#        
+#    for val in range(pos):
+#        desc=svect[val].reshape((siftsize*siftsize,9))
+#        aa=numpy.argmax(desc,1)
+#        bb=numpy.max(desc,1)
+#        pp=0
+#        auxdesc=numpy.zeros((4,9))
+#        for c in range(siftsize*siftsize):
+#            if bb[c]<0.1:
+#                aa[c]=9
+#            else:
+#                auxdesc[c,aa[c]]=1.0
+#            pp+=aa[c]*10**c
+#        tablep[pp]+=1
+#        
+#    for val in range(neg):
+#        desc=svect2[val].reshape((siftsize*siftsize,9))
+#        aa=numpy.argmax(desc,1)
+#        bb=numpy.max(desc,1)
+#        pp=0
+#        auxdesc=numpy.zeros((4,9))
+#        for c in range(siftsize*siftsize):
+#            if bb[c]<0.1:
+#                aa[c]=9
+#            else:
+#                auxdesc[c,aa[c]]=1.0
+#            pp+=aa[c]*10**c
+#        tablen[pp]+=1
+
+#    dis=tablep/(tablep+tablen+0.0001)
+#    print dis
+#    raw_input()
+
+#    descr2=numpy.zeros((2,31*4))
+#    rbook2=numpy.zeros(rbook.shape)
+#    for idel,el in enumerate(rbook):
+#        desc=el.reshape((siftsize*siftsize,9))
+#        descr2[0]=numpy.concatenate((desc,numpy.zeros((4,22))),1).flatten()
+#        aa=numpy.argmax(desc,1)
+#        bb=numpy.max(desc,1)
+#        pp=0
+#        auxdesc=numpy.zeros((4,9))
+#        for c in range(siftsize*siftsize):
+#            if bb[c]<0.1:
+#                aa[c]=9
+#            else:
+#                auxdesc[c,aa[c]]=1.0
+#            pp+=aa[c]*10**c
+#        rbook2[idel]=auxdesc.flatten()
+#    
+#    coll=0
+#    descr2=numpy.zeros((2,31*4))
+#    for val in range(pos):
+#        desc=svect[val].reshape((siftsize*siftsize,9))
+#        descr2[0]=numpy.concatenate((desc,numpy.zeros((4,22))),1).flatten()
+#        aa=numpy.argmax(desc,1)
+#        bb=numpy.max(desc,1)
+#        pp=0
+#        auxdesc=numpy.zeros((4,9))
+#        for c in range(siftsize*siftsize):
+#            if bb[c]<0.1:
+#                aa[c]=9
+#            else:
+#                auxdesc[c,aa[c]]=1.0
+#            pp+=aa[c]*10**c
+#        descr2[1]=numpy.concatenate((auxdesc,numpy.zeros((4,22))),1).flatten()
+#        #showBook(descr2,siftsize)
+#        #raw_input()
+##        print pp
+##        print aa,bb
+##        raw_input()
+##            if pp<9:
+##                desc[c,pp]=0.3
+#        fdesc=desc.flatten()
+#        #dd=numpy.sum((fdesc-rbook)**2,1)
+#        dd=numpy.sum((auxdesc.flatten()-rbook)**2,1)
+#        cc=0
+#        while (table2[pp,cc]!=-1 and cc<9):
+#            cc+=1
+#        table2[pp,cc]=numpy.argmin(dd)
+#        table[pp]=numpy.argmin(dd)
+#        dtable[pp]=numpy.min(dd)
+##        if table[pp]==-1:
+##            table[pp]=numpy.argmin(dd)
+##        else:   
+##            if table[pp]!=numpy.argmin(dd):
+##                coll+=1    
+##            table[pp]=numpy.argmin(dd)    
+##        dtable[pp]=numpy.min(dd)
+#        print pp,dtable[pp]    
+#    print coll
+
+##    for val in range(10000):
+##        desc=numpy.zeros((siftsize*siftsize,9),dtype=numpy.float32)
+##        strval="%04d"%val
+##        for c in range(siftsize*siftsize):
+##            pp=int(strval[c])
+##            if pp<9:
+##                desc[c,pp]=0.3
+##        fdesc=desc.flatten()
+##        dd=numpy.sum((fdesc-rbook)**2,1)
+##        table[val]=numpy.argmin(dd)
+##        dtable[val]=numpy.min(dd)
+##        print val,dtable[val]
+
+#    maux=-numpy.zeros(numbow)
+#    maux2=-numpy.ones(numbow)
+#    for c in range(numbow):
+#        maux[c]=numpy.any(table==c)
+#        if maux[c]==True:
+#            maux2[c]=numpy.min(dtable[table==c])
+#    print int(numpy.sum(maux)),"/",numbow
+#    print maux2
+#    raw_input()
     
     #cluster bounding boxes
     name,bb,r,a=extractInfo(trPosImages)
@@ -667,13 +825,16 @@ if __name__=="__main__":
                 lowf[(fy*2**l)/2:,:,18+7]=0.1/31
                 #lowf=lowf/(numpy.sum(lowf**2))
             else:
-                lowf1=numpy.ones((fy*2**l,fx*2**l,31)).astype(numpy.float32)
+                lowf=numpy.ones((fy*2**l,fx*2**l,31)).astype(numpy.float32)
                 #lowf=lowf1/(numpy.sum(lowf1**2))
             lowd=-numpy.ones((1*2**l,1*2**l,4)).astype(numpy.float32)
             ww.append(lowf)
-            hww.append(numpy.zeros((2**l,2**l,numbow)))
-            voc.append(numpy.zeros((2**l,2**l,numbow,siftsize**2*9)))
-            voc[:,:]=rbook
+            #hww.append(numpy.ones((2**l,2**l,numbow),dtype=numpy.float32))
+            hww.append(0.001*numpy.ones((numbow),dtype=numpy.float32))
+            #hww.append(numpy.random.random(numbow).astype(numpy.float32))
+            #hww.append(numpy.zeros((2**l,2**l,numbow),dtype=numpy.float32))
+            #voc.append(numpy.zeros((2**l,2**l,numbow,siftsize**2*9),dtype=numpy.float32))
+            #voc[-1][:,:]=rbook
             dd.append(lowd)
             rho=0
         mynorm=0
@@ -681,7 +842,32 @@ if __name__=="__main__":
             mynorm+=numpy.sum(wc**2)
         for idw,wc in enumerate(ww):
             ww[idw]=wc*0.1/numpy.sqrt(mynorm)
-        models.append({"ww":ww,"hist":hww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1],"voc":voc})
+        models.append({"ww":ww,"hist":hww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1]})
+
+#check model
+    BOW=pyrHOG2.BOW
+    import model
+    waux=[]
+    w=numpy.array([])
+    rr=[]
+    #from model to w
+    for l in range(cfg.numcl):
+        waux.append(model.model2w(models[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,useBOW=BOW))
+        rr.append(models[l]["rho"])
+        w=numpy.concatenate((w,waux[-1],numpy.array([models[l]["rho"]])))
+    #from w to model m1
+    m1=[]
+    for l in range(cfg.numcl):
+        m1.append(model.w2model(waux[l],rr[l],cfg.lev[0],31,fy=models[l]["fy"],fx=models[l]["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather,useoccl=cfg.occl,usebow=BOW))
+
+    #from m1 to w1
+    waux1=[]
+    w1=numpy.array([])
+    for l in range(cfg.numcl):
+        waux1.append(model.model2w(m1[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,useBOW=BOW))
+        w1=numpy.concatenate((w1,waux1[-1],numpy.array([m1[l]["rho"]])))
+    
+    assert(numpy.all(w1==w))
 
     if 0:        
         print "Show model"
@@ -706,9 +892,12 @@ if __name__=="__main__":
     posratio=[-1]
     nexratio=[-1]
     fobj=[]
-    cumsize=None
+    #cumsize=None
+    cumsize=numpy.zeros(numcl+1,dtype=numpy.int)
+    for idl,l in enumerate(waux):
+        cumsize[idl+1]=cumsize[idl]+len(l)+1
     last_round=False
-    w=None
+    #w=None
     oldprloss=numpy.zeros((0,6))
     totPosEx=0
     for i in range(len(trPosImages)):
@@ -882,7 +1071,7 @@ if __name__=="__main__":
             print "Pos:",len(nfuse),"Neg:",len(nfuseneg)
             print "Tot Pos:",len(dtrpos)," Neg:",len(trneg)+len(newtrneg)
             #check score
-            if (nfuse!=[] and not(nfuse[0].has_key("notfound")) and it>0):
+            if (nfuse!=[] and not(nfuse[0].has_key("notfound")) and it>=0):
                 #if cfg.deform:
                 aux=tr.descr(nfuse,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
                 #else:
@@ -894,9 +1083,33 @@ if __name__=="__main__":
                 if abs(nfuse[0]["scr"]-dscr)>0.0001:
                     print "Warning: the two scores must be the same!!!"
                     print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
+                    import ctypes
+                    descr=numpy.sum(dns[-1-625*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]]*w[-1-625*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]])
+                    hogd=numpy.sum(dns[cumsize[auxcl]:cumsize[auxcl+1]-625*3-1]*w[cumsize[auxcl]:cumsize[auxcl+1]-625*3-1])
+                    bbias=numpy.sum(100*w[cumsize[auxcl+1]-1])
+                    descr2=numpy.sum(aux[-625*3:]*numpy.concatenate(models[auxcl]["hist"]))
+                    shy=nfuse[0]["feat"][0].shape[0] 
+                    shx=nfuse[0]["feat"][0].shape[1] 
+#                    if nfuse[0]["rl"]==1:
+#                        mm=[]
+#                        for l in models:
+#                            mm.append(pyrHOG2RL.flip(l))
+#                    else:
+                    mm=models
+                    aa=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][0]).astype(numpy.float32),shy,shx,mm[auxcl]["ww"][0],shy,shx,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,mm[auxcl]["hist"][0])
+                    bb=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][1]).astype(numpy.float32),shy*2,shx*2,mm[auxcl]["ww"][1],shy*2,shx*2,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,mm[auxcl]["hist"][1])
+                    cc=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][2]).astype(numpy.float32),shy*4,shx*4,mm[auxcl]["ww"][2],shy*4,shx*4,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,mm[auxcl]["hist"][2])
+#                    else:
+#                        aa=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][0]).astype(numpy.float32),shy,shx,models[auxcl]["ww"][0],shy,shx,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][0][pyrHOG2.histflip()])
+#                        bb=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][1]).astype(numpy.float32),shy*2,shx*2,models[auxcl]["ww"][1],shy*2,shx*2,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][1][pyrHOG2.histflip()])
+#                        cc=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][2]).astype(numpy.float32),shy*4,shx*4,models[auxcl]["ww"][2],shy*4,shx*4,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][2][pyrHOG2.histflip()])
+                    print "BOW dense:",aa+bb+cc,"descr",descr,"descr2",descr2
+                    print "HOG dense",hogd
+                    print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
                     raw_input()
+            #raw_input()
             #check score
-            if (nfuseneg!=[] and it>0):
+            if (nfuseneg!=[] and it>=0):
                 if cfg.deform:
                     aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
                 else:
@@ -1109,7 +1322,7 @@ if __name__=="__main__":
                             newtrneg+=inegflip
                             newtrnegcl+=tr.mixture(nfuseneg)
                         #check score
-                        if (nfuseneg!=[] and nit>0):
+                        if (nfuseneg!=[] and nit>=0):
                             if cfg.deform:
                                 aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
                             else:
@@ -1119,6 +1332,20 @@ if __name__=="__main__":
                             dscr=numpy.sum(dns*w)
                             if abs(nfuseneg[0]["scr"]-dscr)>0.0001:
                                 print "Warning: the two scores must be the same!!!"
+                                print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
+                                import ctypes
+                                descr=numpy.sum(dns[-1-625*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]]*w[-1-625*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]])
+                                hogd=numpy.sum(dns[cumsize[auxcl]:cumsize[auxcl+1]-625*3-1]*w[cumsize[auxcl]:cumsize[auxcl+1]-625*3-1])
+                                bbias=numpy.sum(100*w[cumsize[auxcl+1]-1])
+                                descr2=numpy.sum(aux[-625*3:]*numpy.concatenate(models[auxcl]["hist"]))
+                                shy=nfuseneg[0]["feat"][0].shape[0] 
+                                shx=nfuseneg[0]["feat"][0].shape[1] 
+                                aa=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuseneg[0]["feat"][0]).astype(numpy.float32),shy,shx,models[auxcl]["ww"][0],shy,shx,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][0])
+                                bb=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuseneg[0]["feat"][1]).astype(numpy.float32),shy*2,shx*2,models[auxcl]["ww"][1],shy*2,shx*2,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][1])
+                                cc=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuseneg[0]["feat"][2]).astype(numpy.float32),shy*4,shx*4,models[auxcl]["ww"][2],shy*4,shx*4,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][2])
+
+                                print "BOW dense:",aa+bb+cc,"descr",descr,"descr2",descr2
+                                print "HOG dense",hogd
                                 print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
                                 raw_input()
 
@@ -1148,7 +1375,7 @@ if __name__=="__main__":
 
             print "Building Feature Vector"
             clsize=numpy.zeros(numcl,dtype=numpy.int)#get clusters sizes
-            cumsize=numpy.zeros(numcl+1,dtype=numpy.int)
+            #cumsize=numpy.zeros(numcl+1,dtype=numpy.int)
             for l in range(numcl):
                 npcl=(l,numpy.sum(numpy.array(trposcl)==l))
                 nncl=(l,numpy.sum(numpy.array(trnegcl)==l))
@@ -1159,7 +1386,7 @@ if __name__=="__main__":
                 while trnegcl[c]!=l:
 				    c+=1
                 clsize[l]=len(trneg[c])+1
-                cumsize[l+1]=numpy.sum(clsize[:l+1])
+                #cumsize[l+1]=numpy.sum(clsize[:l+1])
 
             #show pos examples
             if 0:

@@ -87,18 +87,31 @@ inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
     return sum;
 }
 
-ftype buffer[5*5*9];//for BOW
-ftype localhist[1000];
+static ftype buffer[5*5*9];//for BOW
+static ftype localhist[1000];
+//static int table[10000];//(9 max orient+ null)^4
 //static variables for the moment
 //int sizevoc=2;
 //int numvoc=100;
 //ftype *voc
 //ftype *mhist
 
+/*void filltable(int *tab)
+{
+    int c;
+    for (c=0;c<625;c++)
+        table[c]=tab[c];
+}*/
+
+#define NUMOR 5
+static int sel[NUMOR]={0,2,4,5,7};//selected orientations
+static ftype pow5[]={1,5,5*5,5*5*5};
+
 //compute 3d correlation between an image feature img and a mask 
 inline ftype corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx,int occl,int sizevoc,int numvoc,ftype *voc,ftype *mhist
 )//sizevoc=2;numvoc=100;voc=2*2*9*100
 {
+    //printf("PARAM: %d %d\n",sizevoc,numvoc);
     int dimz2=9;//only first 9 oriented gradients
     int dimzfull=dimz;
     if (occl!=0)
@@ -113,8 +126,10 @@ inline ftype corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int
                 return prec[(posy+pady)*(imgx+2*padx)+(posx+padx)];
             }
     }    
-    ftype sum=0.0,dist,mindist=0.0,bowscr=0.0;
+    ftype sum=0.0,dist,mindist=10000.0;//,bowscr=0.0;
     int x,y,z,posi,c,cy,cx,bestc=0,toton=0;
+    for (c=0;c<numvoc;c++)
+        localhist[c]=0.0;
     for (x=0;x<maskx;x++)
         for (y=0;y<masky;y++)
         {
@@ -145,27 +160,22 @@ inline ftype corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int
             }
         }
 //bow extraction
-    for (x=0;x<maskx-sizevoc;x++)
-        for (y=0;y<masky-sizevoc;y++)
+    for (x=0;x<maskx-sizevoc+1;x++)
+    {
+        for (y=0;y<masky-sizevoc+1;y++)
         {
-            for (cx=0;cx<sizevoc;cx++)
-                for (cy=0;cy<sizevoc;cy++)
+            for (cy=0;cy<sizevoc;cy++)
+            {
+                for (cx=0;cx<sizevoc;cx++)
                 {
                     //compHOG++;
-                    if (((x+posx)>=0 && (x+posx<imgx)) && ((y+posy)>=0 && (y+posy<imgy)))
+                    if (((x+cx+posx)>=0 && (x+cx+posx<imgx)) && ((y+cy+posy)>=0 && (y+cy+posy<imgy)))
                     //inside the image
                     {
                         for (z=0;z<dimz2;z++)//using only 9 not oriented
                         {   
-                            posi=z+(x+posx)*dimzfull+(y+posy)*dimzfull*imgx;
-                            buffer[z+cx*dimz2+cy*dimz2*sizevoc]=img[posi];//mask[z+(x+cx)*dimzfull+(y+cy)*dimzfull*maskx];      
-                            //printf("%d:%f\n",z,mask[z+x*dimzfull+y*dimzfull*maskx]);
-                            //posi=z+(x+posx)*dimz+(y+posy)*dimz*imgx;
-                            //sum=sum+img[posi]*mask[z+x*dimzfull+y*dimzfull*maskx];      
-                            /*posi=z+(x+posx)*dimzfull+(y+posy)*dimzfull*imgx;
-                            {
-                                sum=sum+img[posi]*mask[z+x*dimzfull+y*dimzfull*maskx];      
-                            }*/
+                            posi=18+z+(x+cx+posx)*dimz+(y+cy+posy)*dimz*imgx;
+                            buffer[z+cx*dimz2+cy*dimz2*sizevoc]=img[posi];
                         }
                     }
                     else
@@ -174,13 +184,12 @@ inline ftype corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int
                         for (z=0;z<dimz2;z++)
                         {
                             buffer[z+cx*dimz2+cy*dimz2*sizevoc]=0;
-                            //printf("%d:%f\n",z,mask[z+x*dimzfull+y*dimzfull*maskx]);
-                            //posi=z+(x+posx)*dimz+(y+posy)*dimz*imgx;
-                            //sum=sum+mask[z+x*dimzfull+y*dimzfull*maskx];      
                         }
                     }
                 }
+            }
             //bow assignment (then with lookup table)
+            /*numvoc=1;
             for (c=0;c<numvoc;c++)
             {
                 dist=0.0;
@@ -188,24 +197,79 @@ inline ftype corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int
                 {
                     dist+=(voc[z+c*dimz2*sizevoc*sizevoc]-buffer[z])*(voc[z+c*dimz2*sizevoc*sizevoc]-buffer[z]);
                 }
+                //printf("Dist:%f\n",dist);
                 if (dist<mindist)
                 {
                     mindist=dist;
                     bestc=c;
                 }
+            }*/
+            //lookup table
+            ftype maxval,val;
+            int maxpos=0;
+            int aux,pos=0;
+            for (c=0;c<sizevoc*sizevoc;c++)
+            {
+                maxval=0.0;
+                maxpos=0;
+                for (z=0;z<NUMOR;z++)
+                {
+                    aux=sel[z];
+                    val=2.0*buffer[aux+c*dimz2]+buffer[aux+1+c*dimz2]+buffer[(aux+8)%9+c*dimz2];
+                    //val=buffer[sel[z]+c*dimz2];
+                    if (val>maxval)
+                    {
+                        maxval=val;
+                        maxpos=z;
+                    }
+                }
+                if (voc[0]==10.0)
+                    printf("%d %3f ",maxpos,maxval);
+                pos+=maxpos*pow5[c];//compute the hash code
             }
-            printf("Best C:%d\n",bestc);
-            if (localhist[bestc]==0)
-                toton++;
-            localhist[bestc]=1.0;//maxpooling
+            //pos=0;
+            //bestc=pos;//table[pos];
+            /*if (voc[0]==10.0)
+                printf(" Best C:%d\n",pos);*/
+//            if (localhist[pos]!=1.0)
+//                toton++;
+//            localhist[pos]=1.0;//maxpooling*/
+            localhist[pos]=0.1;
+            //localhist[pos]= (localhist[pos]==0.0)?toton++
         }
-//normalization l2 + score
+    }
+    ftype nval=0.0;
     for (c=0;c<numvoc;c++)
     {
-        localhist[c]=(ftype)(localhist[c])/sqrt(toton);
-        bowscr+=localhist[c]*mhist[c];
-    }      
-    printf("Bowscr:%f\n",bowscr);
+        nval+=localhist[c]*localhist[c];
+    }
+//normalization l2 + score
+    ftype bowscr=0.0;
+    for (c=0;c<numvoc;c++)
+    {
+        //printf("toton%d\n",toton);
+        //if (localhist[c]==1.0)
+        //localhist[c]=localhist[c]/sqrt(toton);
+        localhist[c]=(ftype)(localhist[c])/sqrt(nval);
+        //else
+        //    localhist[c]=0.0;          
+        bowscr+=(localhist[c])*(mhist[c]);
+        /*if (bowscr>1000)
+        {
+            printf("%f %f %f \n",bowscr,localhist[c],mhist[c]);
+            scanf("%f",&voc[0]);
+        }*/
+            //flush();
+            //exit(1);
+        if (voc[0]==10.0)
+            printf("%f ",localhist[c]);
+    }
+    //printf("\nNorm:%d\n",toton);
+    /*if (voc[0]==10.0)
+    {
+        printf("Scr:%f\n",sum);
+        printf("Bowscr:%f\n",bowscr);
+    }*/
 //end bow
     if (prec!=NULL)//save computed values in the buffer
     {
@@ -214,7 +278,9 @@ inline ftype corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int
             prec[(posy+pady)*(imgx+2*padx)+(posx+padx)]=sum;
         }
     }
-    return sum+bowscr;
+    /*if (voc[0]==10.0)
+        return bowscr;*/
+    return sum+(ftype)bowscr;
 }
 
 
@@ -228,6 +294,27 @@ inline ftype refineigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
         for (ix=-radx;ix<=radx;ix++)
         {
             val=corr3dpad(img,imgy,imgx,mask,masky,maskx,dimz,posy+iy,posx+ix,prec,0,0,occl);
+            if (val>maxval)
+            {
+                maxval=val;
+                *posedy=iy;
+                *posedx=ix;
+            }
+        }
+    }
+    return maxval;
+}
+
+//compute the score over the possible values of a defined neighborhood
+inline ftype refineighbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,int rady,int radx,int *posedy, int *posedx, ftype *prec,int occl,int sizevoc,int numvoc,ftype *voc,ftype *mhist)
+{
+    int iy,ix;  
+    ftype val,maxval=-1000;
+    for (iy=-rady;iy<=rady;iy++)
+    {
+        for (ix=-radx;ix<=radx;ix++)
+        {
+            val=corr3dpadbow(img,imgy,imgx,mask,masky,maskx,dimz,posy+iy,posx+ix,prec,0,0,occl,sizevoc,numvoc,voc,mhist);
             if (val>maxval)
             {
                 maxval=val;
@@ -274,6 +361,20 @@ void scaneigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int d
         val[i]=refineigh(img,imgy,imgx,mask,masky,maskx,dimz,posy[i],posx[i],rady,radx,posey++,posex++,NULL,occl);       
     }
 }
+
+void scaneighbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int *posy,int *posx,ftype *val,int *posey,int *posex,int rady, int radx,int len,int occl,int sizevoc,int numvoc,ftype *voc,ftype *mhist)
+{   
+    //return;
+    int i;
+    for (i=0;i<len;i++)
+    {
+        //if (posy[i]==-1  && posx[i]==-1)
+        //    val[i]=0.0;
+        //else
+        val[i]=refineighbow(img,imgy,imgx,mask,masky,maskx,dimz,posy[i],posx[i],rady,radx,posey++,posex++,NULL,occl,sizevoc,numvoc,voc,mhist);       
+    }
+}
+
 
 #define maxrad 5
 static ftype scr[4*(2*maxrad+1)*(2*maxrad+1)];

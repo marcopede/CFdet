@@ -192,11 +192,15 @@ def flip(m):
     hh1=[]
     if m.has_key("hist"):
         for l in m["hist"]:
-            hh1.append(numpy.ascontiguousarray(l["hist"][::-1]))
-    hh1=[]
+            #hh1.append(numpy.ascontiguousarray(l[::-1]))
+            hh1.append(numpy.ascontiguousarray(l[pyrHOG2.histflip()]).astype(numpy.float32))
+            #hh1.append((l[pyrHOG2.histflip()]).astype(numpy.float32))
+        m1["hist"]=hh1
+    vv1=[]
     if m.has_key("voc"):
         for l in m["voc"]:
-            hh1.append(numpy.ascontiguousarray(l["voc"][::-1]))
+            vv1.append(numpy.ascontiguousarray(l[::-1]))
+        m1["voc"]=vv1
     return m1    
 
 
@@ -225,8 +229,14 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
             #scr1,pos1=f.scanRCFLDefThr(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
             scr1,pos1=f.scanRCFLDef(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,trunc=trunc)
     else:
-        scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
-        scr1,pos1=f.scanRCFL(m1,initr=initr,ratio=ratio,small=small,trunc=trunc)
+        bow=pyrHOG2.BOW
+        if bow:
+            scr,pos=f.scanRCFLbow(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
+            scr1,pos1=f.scanRCFLbow(m1,initr=initr,ratio=ratio,small=small,trunc=trunc)
+        else:
+            scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
+            scr1,pos1=f.scanRCFL(m1,initr=initr,ratio=ratio,small=small,trunc=trunc)
+            
     lr=[]
     fscr=[]
     for idl,l in enumerate(scr):

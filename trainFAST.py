@@ -550,7 +550,8 @@ if __name__=="__main__":
     minfy=3
     minfx=3
     #maxArea=25*(4-cfg.lev[0])
-    maxArea=40*(4-cfg.lev[0])
+    #maxArea=40*(4-cfg.lev[0])
+    maxArea=30*(4-cfg.lev[0])
     usekmeans=False
 
     #using kmeans

@@ -11,6 +11,8 @@ import time
 import copy
 import itertools
 
+approx=0.0008
+
 class config(object):
     pass
 
@@ -157,9 +159,15 @@ def rundet(img,cfg,models,gtbbox):
     res=[]
     for clm,m in enumerate(models):
         if cfg.useRL:
-            res.append(pyrHOG2RL.detectflip(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,usefather=cfg.usefather,useprior=cfg.useprior,K=cfg.k,occl=cfg.occl,fastBU=cfg.fastBU))
+            res.append(pyrHOG2RL.detectflip(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,
+bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,
+minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,
+usefather=cfg.usefather,useprior=cfg.useprior,K=cfg.k,occl=cfg.occl,fastBU=cfg.fastBU,usebow=cfg.usebow))
         else:
-            res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,usefather=cfg.usefather,useprior=cfg.useprior,K=cfg.k,occl=cfg.occl,fastBU=cfg.fastBU))
+            res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,
+bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,
+minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,
+usefather=cfg.usefather,useprior=cfg.useprior,K=cfg.k,occl=cfg.occl,fastBU=cfg.fastBU,usebow=cfg.usebow))
     if cfg.show:
         pylab.draw()
         pylab.show()
@@ -253,12 +261,12 @@ def myunique(old,new,oldcl,newcl,numcl):
 def extract_feat(tr,dtrpos,cumsize,useRL):
     ls=[];lscl=[]
     for el in dtrpos:
-        aux=(tr.descr(dtrpos[el],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k))
+        aux=(tr.descr(dtrpos[el],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow))
         ls+=aux
         auxcl=tr.mixture(dtrpos[el])
         lscl+=auxcl
         if not(useRL):
-            ls+=(tr.descr(dtrpos[el],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k))
+            ls+=(tr.descr(dtrpos[el],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow))
             lscl+=tr.mixture(dtrpos[el])
         if cumsize!=None:
             dns=buildense(aux,auxcl,cumsize)
@@ -271,12 +279,12 @@ def extract_feat(tr,dtrpos,cumsize,useRL):
 def extract_feat2(tr,dtrpos,cumsize,useRL):
     ls=[];lscl=[]
     for el in dtrpos:
-        aux=(tr.descr(dtrpos[el],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k))
+        aux=(tr.descr(dtrpos[el],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow))
         #ls+=aux
         auxcl=tr.mixture(dtrpos[el])
         #lscl+=auxcl
         if not(useRL):
-            aux2=(tr.descr(dtrpos[el],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k))
+            aux2=(tr.descr(dtrpos[el],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow))
             auxcl2=tr.mixture(dtrpos[el])
         for l in range(len(aux)):
             ls.append(aux[l])
@@ -349,7 +357,7 @@ def trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,svmc,multipr,parallel=T
             itr=itertools.imap(train,ltr)        
         else:
             itr=mypool.map(train,ltr)
-        waux=numpy.zeros((numcore,len(w)))
+        waux=numpy.zeros((numcore,len(w)),dtype=numpy.float32)
         raux=numpy.zeros((numcore))
         #lprloss=[]
         #lenprloss=[]
@@ -361,46 +369,46 @@ def trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,svmc,multipr,parallel=T
         r=numpy.mean(raux)
     return w,r,prloss
 
-def trainParallel2(trpos,trneg,testname,trposcl,trnegcl,w,svmc,multipr,parallel=True,numcore=4,mypool=None):
-    
-    if not(parallel):
-        w,r,prloss=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,oldw=w,dir="",pc=svmc)
-    else:
-        #atrpos=numpy.array(trpos,dtype=object)
-        #atrposcl=numpy.array(trposcl,dtype=object)
-        #atrneg=numpy.array(trneg,dtype=object)
-        #atrnegcl=numpy.array(trnegcl,dtype=object)
-        ltrpos=len(trpos);ltrneg=len(trneg)
-        reordpos=range(ltrpos);numpy.random.shuffle(reordpos)
-        reordneg=range(ltrneg);numpy.random.shuffle(reordneg)
-        ltr=[]
-        litpos=ltrpos/numcore;litneg=ltrneg/numcore
-        atrpos=[];atrposcl=[]
-        atrneg=[];atrnegcl=[]
-        for ll in range(ltrpos):
-            atrpos.append(trpos[reordpos[ll]])                   
-            atrposcl.append(trposcl[reordpos[ll]])                   
-        for ll in range(ltrneg):
-            atrneg.append(trneg[reordneg[ll]])                   
-            atrnegcl.append(trnegcl[reordneg[ll]])                   
-        for gr in range(numcore-1):
-            ltr.append([atrpos[litpos*gr:litpos*(gr+1)],atrneg[litneg*gr:litneg*(gr+1)],atrposcl[litpos*gr:litpos*(gr+1)],atrnegcl[litneg*gr:litneg*(gr+1)],w,testname,svmc])        
-        ltr.append([atrpos[litpos*(gr+1):],atrneg[litneg*(gr+1):],atrposcl[litpos*(gr+1):],atrnegcl[litneg*(gr+1):],w,testname,svmc])        
-        if not(multipr):
-            itr=itertools.imap(train,ltr)        
-        else:
-            itr=mypool.map(train,ltr)
-        waux=numpy.zeros((numcore,len(w)))
-        raux=numpy.zeros((numcore))
-        #lprloss=[]
-        #lenprloss=[]
-        for ii,res in enumerate(itr):
-            waux[ii]=res[0]
-            raux[ii]=res[1]    
-        prloss=res[2]#take the last one
-        w=numpy.mean(waux,0)
-        r=numpy.mean(raux)
-    return w,r,prloss
+#def trainParallel2(trpos,trneg,testname,trposcl,trnegcl,w,svmc,multipr,parallel=True,numcore=4,mypool=None):
+#    
+#    if not(parallel):
+#        w,r,prloss=pegasos.trainComp(trpos,trneg,testname+"loss.rpt.txt",trposcl,trnegcl,oldw=w,dir="",pc=svmc)
+#    else:
+#        #atrpos=numpy.array(trpos,dtype=object)
+#        #atrposcl=numpy.array(trposcl,dtype=object)
+#        #atrneg=numpy.array(trneg,dtype=object)
+#        #atrnegcl=numpy.array(trnegcl,dtype=object)
+#        ltrpos=len(trpos);ltrneg=len(trneg)
+#        reordpos=range(ltrpos);numpy.random.shuffle(reordpos)
+#        reordneg=range(ltrneg);numpy.random.shuffle(reordneg)
+#        ltr=[]
+#        litpos=ltrpos/numcore;litneg=ltrneg/numcore
+#        atrpos=[];atrposcl=[]
+#        atrneg=[];atrnegcl=[]
+#        for ll in range(ltrpos):
+#            atrpos.append(trpos[reordpos[ll]])                   
+#            atrposcl.append(trposcl[reordpos[ll]])                   
+#        for ll in range(ltrneg):
+#            atrneg.append(trneg[reordneg[ll]])                   
+#            atrnegcl.append(trnegcl[reordneg[ll]])                   
+#        for gr in range(numcore-1):
+#            ltr.append([atrpos[litpos*gr:litpos*(gr+1)],atrneg[litneg*gr:litneg*(gr+1)],atrposcl[litpos*gr:litpos*(gr+1)],atrnegcl[litneg*gr:litneg*(gr+1)],w,testname,svmc])        
+#        ltr.append([atrpos[litpos*(gr+1):],atrneg[litneg*(gr+1):],atrposcl[litpos*(gr+1):],atrnegcl[litneg*(gr+1):],w,testname,svmc])        
+#        if not(multipr):
+#            itr=itertools.imap(train,ltr)        
+#        else:
+#            itr=mypool.map(train,ltr)
+#        waux=numpy.zeros((numcore,len(w)))
+#        raux=numpy.zeros((numcore))
+#        #lprloss=[]
+#        #lenprloss=[]
+#        for ii,res in enumerate(itr):
+#            waux[ii]=res[0]
+#            raux[ii]=res[1]    
+#        prloss=res[2]#take the last one
+#        w=numpy.mean(waux,0)
+#        r=numpy.mean(raux)
+#    return w,r,prloss
 
 
 if __name__=="__main__":
@@ -544,7 +552,8 @@ if __name__=="__main__":
     from PySegment import *
     maxsift=10000
     siftsize=2
-    numbow=625
+    numbin=6
+    numbow=numbin**(siftsize**2)#625
     recVOC=False
     name=testname+"_book%d_%d_%s_"%(siftsize,numbow,cfg.cls)
 #    try:
@@ -571,7 +580,7 @@ if __name__=="__main__":
 #        print "Kmaens"
 #        rbook,di=vq.kmeans(svect[:pos],numbow,3)
 #        numpy.savez('%s.npz'%(name), rbook) 
-    rbook=numpy.zeros((625,9*siftsize*siftsize))
+    #rbook=numpy.zeros((numbow,9*siftsize*siftsize))
 
 ##    r2book=numpy.concatenate((rbook,numpy.zeros((numbow,22))),1)
 ##    showBook(r2book,siftsize)
@@ -845,29 +854,31 @@ if __name__=="__main__":
         models.append({"ww":ww,"hist":hww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1]})
 
 #check model
-    BOW=pyrHOG2.BOW
+    #pyrHOG2.BOW=cfg.usebow
+    #BOW=pyrHOG2.BOW
     import model
     waux=[]
     w=numpy.array([])
     rr=[]
     #from model to w
     for l in range(cfg.numcl):
-        waux.append(model.model2w(models[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,useBOW=BOW))
+        waux.append(model.model2w(models[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow))
         rr.append(models[l]["rho"])
         w=numpy.concatenate((w,waux[-1],numpy.array([models[l]["rho"]])))
     #from w to model m1
     m1=[]
     for l in range(cfg.numcl):
-        m1.append(model.w2model(waux[l],rr[l],cfg.lev[0],31,fy=models[l]["fy"],fx=models[l]["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather,useoccl=cfg.occl,usebow=BOW))
+        m1.append(model.w2model(waux[l],rr[l],cfg.lev[0],31,siftsize=siftsize,bin=numbin,fy=models[l]["fy"],fx=models[l]["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather,useoccl=cfg.occl,usebow=cfg.usebow))
 
     #from m1 to w1
     waux1=[]
     w1=numpy.array([])
     for l in range(cfg.numcl):
-        waux1.append(model.model2w(m1[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,useBOW=BOW))
+        waux1.append(model.model2w(m1[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow))
         w1=numpy.concatenate((w1,waux1[-1],numpy.array([m1[l]["rho"]])))
     
     assert(numpy.all(w1==w))
+    models=m1
 
     if 0:        
         print "Show model"
@@ -979,10 +990,10 @@ if __name__=="__main__":
                 if arg[ii][5]:
                     flipstr="_filp"
             imname=arg[ii][1].split("/")[-1]+flipstr
-            ineg=tr.descr(nfuseneg,flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
+            ineg=tr.descr(nfuseneg,flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)
             newtrneg+=ineg
             if not(cfg.useRL):
-                inegflip=tr.descr(nfuseneg,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
+                inegflip=tr.descr(nfuseneg,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)
                 newtrneg+=inegflip
                 newtrnegcl+=tr.mixture(nfuseneg)     
             newtrnegcl+=tr.mixture(nfuseneg)     
@@ -1022,23 +1033,23 @@ if __name__=="__main__":
                                 if dt["bbid"]==dtold["bbid"]:
                                     print "OLD BB ID:",dtold["bbid"]
                                     exmatch=True
-                                    aux=tr.descr([dtold],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
+                                    aux=tr.descr([dtold],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)[0]
                                     auxcl=tr.mixture([dtold])[0]
                                     dns=buildense([aux],[auxcl],cumsize)
                                     oldscr=numpy.sum(dns*w)#-r
-                                    dtaux=tr.descr([dt],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
+                                    dtaux=tr.descr([dt],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)[0]
                                     dtauxcl=tr.mixture([dt])[0]
                                     dtdns=buildense([dtaux],[dtauxcl],cumsize)
                                     newscr=numpy.sum(dtdns*w)#-r
-                                    if abs(newscr-dt["scr"])>0.0001:
+                                    if abs(newscr-dt["scr"])>approx:
                                         print "Warning dense score and scan score are different!!!!"
                                         raw_input() 
                                     print "New:",dt["scr"],"Old",oldscr
-                                    if abs(dt["scr"]-oldscr)<0.0001:
+                                    if abs(dt["scr"]-oldscr)<approx:
                                         print "No change between old and new labeling! (%f)"%(dt["scr"])
                                         cntnochange+=1
                                         dtrpos[imname][idold]["scr"]=oldscr
-                                    elif dt["scr"]-oldscr>0:
+                                    elif dt["scr"]-oldscr>approx:
                                         print "New score (%f) higher than previous (%f)!"%(dt["scr"],oldscr)
                                         cntgoodchnage+=1
                                         #dtold=dt
@@ -1073,21 +1084,22 @@ if __name__=="__main__":
             #check score
             if (nfuse!=[] and not(nfuse[0].has_key("notfound")) and it>=0):
                 #if cfg.deform:
-                aux=tr.descr(nfuse,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
+                aux=tr.descr(nfuse,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)[0]
                 #else:
                 #    aux=tr.descr(nfuse)[0]
                 auxcl=tr.mixture(nfuse)[0]
                 dns=buildense([aux],[auxcl],cumsize)[0]
                 dscr=numpy.sum(dns*w)
                 #print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
-                if abs(nfuse[0]["scr"]-dscr)>0.0001:
+                if abs(nfuse[0]["scr"]-dscr)>approx:
                     print "Warning: the two scores must be the same!!!"
                     print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
                     import ctypes
-                    descr=numpy.sum(dns[-1-625*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]]*w[-1-625*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]])
-                    hogd=numpy.sum(dns[cumsize[auxcl]:cumsize[auxcl+1]-625*3-1]*w[cumsize[auxcl]:cumsize[auxcl+1]-625*3-1])
+                    #bowsize=numbin**(siftsize**2)
+                    descr=numpy.sum(dns[-1-numbow*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]]*w[-1-numbow*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]])
+                    hogd=numpy.sum(dns[cumsize[auxcl]:cumsize[auxcl+1]-numbow*3-1]*w[cumsize[auxcl]:cumsize[auxcl+1]-numbow*3-1])
                     bbias=numpy.sum(100*w[cumsize[auxcl+1]-1])
-                    descr2=numpy.sum(aux[-625*3:]*numpy.concatenate(models[auxcl]["hist"]))
+                    descr2=numpy.sum(aux[-numbow*3:]*numpy.concatenate(models[auxcl]["hist"]))
                     shy=nfuse[0]["feat"][0].shape[0] 
                     shx=nfuse[0]["feat"][0].shape[1] 
 #                    if nfuse[0]["rl"]==1:
@@ -1096,9 +1108,9 @@ if __name__=="__main__":
 #                            mm.append(pyrHOG2RL.flip(l))
 #                    else:
                     mm=models
-                    aa=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][0]).astype(numpy.float32),shy,shx,mm[auxcl]["ww"][0],shy,shx,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,mm[auxcl]["hist"][0])
-                    bb=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][1]).astype(numpy.float32),shy*2,shx*2,mm[auxcl]["ww"][1],shy*2,shx*2,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,mm[auxcl]["hist"][1])
-                    cc=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][2]).astype(numpy.float32),shy*4,shx*4,mm[auxcl]["ww"][2],shy*4,shx*4,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,mm[auxcl]["hist"][2])
+                    aa=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][0]).astype(numpy.float32),shy,shx,mm[auxcl]["ww"][0],shy,shx,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,numbow,pyrHOG2.hog2bow(nfuse[0]["feat"][0],code=True),shx-1,mm[auxcl]["hist"][0])
+                    bb=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][1]).astype(numpy.float32),shy*2,shx*2,mm[auxcl]["ww"][1],shy*2,shx*2,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,numbow,pyrHOG2.hog2bow(nfuse[0]["feat"][1],code=True),shx*2-1,mm[auxcl]["hist"][1])
+                    cc=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][2]).astype(numpy.float32),shy*4,shx*4,mm[auxcl]["ww"][2],shy*4,shx*4,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,numbow,pyrHOG2.hog2bow(nfuse[0]["feat"][2],code=True),shx*4-1,mm[auxcl]["hist"][2])
 #                    else:
 #                        aa=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][0]).astype(numpy.float32),shy,shx,models[auxcl]["ww"][0],shy,shx,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][0][pyrHOG2.histflip()])
 #                        bb=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][1]).astype(numpy.float32),shy*2,shx*2,models[auxcl]["ww"][1],shy*2,shx*2,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][1][pyrHOG2.histflip()])
@@ -1111,14 +1123,14 @@ if __name__=="__main__":
             #check score
             if (nfuseneg!=[] and it>=0):
                 if cfg.deform:
-                    aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
+                    aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)[0]
                 else:
-                    aux=tr.descr(nfuseneg)[0]
+                    aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)[0]
                 auxcl=tr.mixture(nfuseneg)[0]
                 dns=buildense([aux],[auxcl],cumsize)[0]
                 dscr=numpy.sum(dns*w)
                 #print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
-                if abs(nfuseneg[0]["scr"]-dscr)>0.0001:
+                if abs(nfuseneg[0]["scr"]-dscr)>approx:
                     print "Warning: the two scores must be the same!!!"
                     print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
                     raw_input()
@@ -1181,9 +1193,10 @@ if __name__=="__main__":
                 mytrpos=numpy.array(mytrpos)
                 cl1=range(0,len(mytrpos),2)
                 cl2=range(1,len(mytrpos),2)
-                rrnum=3*len(mytrpos)
-                if cfg.cls=="person": #speed-up the clustering for person because too many examples
-                    rrnum=len(mytrpos)
+                rrnum=len(mytrpos)
+                #rrnum=3*len(mytrpos)
+                #if cfg.cls=="person": #speed-up the clustering for person because too many examples
+                #    rrnum=len(mytrpos)
                 for rr in range(rrnum):
                 #for rr in range(1000):
                     print "Clustering iteration ",rr
@@ -1301,7 +1314,7 @@ if __name__=="__main__":
                         nfuseneg=tr.cluster(rfuseneg,ovr=cfg.ovrasp)
                         #if cfg.deform:
                         #trpos+=tr.descr(nfuse,usemrf=cfg.usemrf,usefather=cfg.usefather)         
-                        newtrneg+=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
+                        newtrneg+=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)
                         #else:
                         #trpos+=tr.descr(nfuse)         
                         #    newtrneg+=tr.descr(nfuseneg)
@@ -1316,37 +1329,37 @@ if __name__=="__main__":
                         #    trposcl+=tr.mixture(nfuse)
                         if cfg.useflineg and not(cfg.useRL):
                             if cfg.deform:
-                                inegflip=tr.descr(nfuseneg,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)
+                                inegflip=tr.descr(nfuseneg,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)
                             else:
-                                inegflip=tr.descr(nfuseneg,flip=True)
+                                inegflip=tr.descr(nfuseneg,flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)
                             newtrneg+=inegflip
                             newtrnegcl+=tr.mixture(nfuseneg)
                         #check score
                         if (nfuseneg!=[] and nit>=0):
                             if cfg.deform:
-                                aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k)[0]
+                                aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)[0]
                             else:
-                                aux=tr.descr(nfuseneg)[0]
+                                aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)[0]
                             auxcl=tr.mixture(nfuseneg)[0]
                             dns=buildense([aux],[auxcl],cumsize)[0]
                             dscr=numpy.sum(dns*w)
-                            if abs(nfuseneg[0]["scr"]-dscr)>0.0001:
+                            if abs(nfuseneg[0]["scr"]-dscr)>approx:
                                 print "Warning: the two scores must be the same!!!"
                                 print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
                                 import ctypes
-                                descr=numpy.sum(dns[-1-625*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]]*w[-1-625*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]])
-                                hogd=numpy.sum(dns[cumsize[auxcl]:cumsize[auxcl+1]-625*3-1]*w[cumsize[auxcl]:cumsize[auxcl+1]-625*3-1])
+                                descr=numpy.sum(dns[-1-numbow*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]]*w[-1-numbow*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]])
+                                hogd=numpy.sum(dns[cumsize[auxcl]:cumsize[auxcl+1]-numbow*3-1]*w[cumsize[auxcl]:cumsize[auxcl+1]-numbow*3-1])
                                 bbias=numpy.sum(100*w[cumsize[auxcl+1]-1])
-                                descr2=numpy.sum(aux[-625*3:]*numpy.concatenate(models[auxcl]["hist"]))
-                                shy=nfuseneg[0]["feat"][0].shape[0] 
-                                shx=nfuseneg[0]["feat"][0].shape[1] 
-                                aa=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuseneg[0]["feat"][0]).astype(numpy.float32),shy,shx,models[auxcl]["ww"][0],shy,shx,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][0])
-                                bb=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuseneg[0]["feat"][1]).astype(numpy.float32),shy*2,shx*2,models[auxcl]["ww"][1],shy*2,shx*2,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][1])
-                                cc=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuseneg[0]["feat"][2]).astype(numpy.float32),shy*4,shx*4,models[auxcl]["ww"][2],shy*4,shx*4,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][2])
+                                descr2=numpy.sum(aux[-numbow*3:]*numpy.concatenate(models[auxcl]["hist"]))
+#                                shy=nfuseneg[0]["feat"][0].shape[0] 
+#                                shx=nfuseneg[0]["feat"][0].shape[1] 
+#                                aa=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuseneg[0]["feat"][0]).astype(numpy.float32),shy,shx,models[auxcl]["ww"][0],shy,shx,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,numbow,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][0])
+#                                bb=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuseneg[0]["feat"][1]).astype(numpy.float32),shy*2,shx*2,models[auxcl]["ww"][1],shy*2,shx*2,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,numbow,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][1])
+#                                cc=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuseneg[0]["feat"][2]).astype(numpy.float32),shy*4,shx*4,models[auxcl]["ww"][2],shy*4,shx*4,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,numbow,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][2])
 
-                                print "BOW dense:",aa+bb+cc,"descr",descr,"descr2",descr2
-                                print "HOG dense",hogd
-                                print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
+#                                print "BOW dense:",aa+bb+cc,"descr",descr,"descr2",descr2
+#                                print "HOG dense",hogd
+#                                print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
                                 raw_input()
 
                         print "----Neg Image %d----"%ii
@@ -1482,7 +1495,8 @@ if __name__=="__main__":
 
             bias=100
             for idm,m in enumerate(models):
-                models[idm]=tr.model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather)
+                #models[idm]=tr.model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather,usebow=cfg.usebow)
+                models[idm]=model.w2model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],bin=numbin,siftsize=siftsize,usemrf=cfg.usemrf,usefather=cfg.usefather,usebow=cfg.usebow)
                 #models[idm]["ra"]=w[cumsize[idm+1]-1]
             util.save("%s%d.model"%(testname,it),models)
             if cfg.deform:

@@ -10,7 +10,7 @@ import time
 
 SMALL=100 #coefficient to multiply resolution features
 DENSE=0 #number of levels to use a dense scan instead of a Ctf
-BOW=True
+#BOW=False
 K=1.0 #0.3 #coefficient for the deformation featres
 
 from numpy import ctypeslib
@@ -39,7 +39,7 @@ ff= ctypes.CDLL("libexcorr.so")
 #corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx,int occl,int sizevoc,int numvoc,ftype *voc,ftype *mhist
 ff.corr3dpadbow.argtypes=[numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,c_int,
 c_int,c_int,ctypes.POINTER(c_float),c_int,c_int,c_int,c_int,c_int,
-numpy.ctypeslib.ndpointer(dtype=c_float,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer
+numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),c_int,numpy.ctypeslib.ndpointer
 (dtype=c_float,flags="C_CONTIGUOUS")]
 ff.corr3dpadbow.restype=ctypes.c_float
 ###
@@ -49,6 +49,7 @@ ff.scaneigh.argtypes=[numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CO
 ff.scaneighbow.argtypes=[numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_float,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer
 (dtype=c_int,flags="C_CONTIGUOUS"),c_int,c_int,c_int,c_int,
 c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_float,flags="C_CONTIGUOUS"),numpy.ctypeslib.ndpointer(dtype=c_float,flags="C_CONTIGUOUS")]
+
 
 ff.scanDef2.argtypes = [
     ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
@@ -111,7 +112,7 @@ def getfeat(a,y1,y2,x1,x2,trunc=0):
     return b
 
 
-def hog2bow(feat,bin=5,siftsize=2):
+def hog2bow_5(feat,bin=5,siftsize=2):
     selbin=numpy.array([0,2,4,5,7])
     hist=numpy.zeros(bin**(siftsize**2))
     hog=feat[:,:,18:27].copy()
@@ -123,13 +124,39 @@ def hog2bow(feat,bin=5,siftsize=2):
         bow1=ll.reshape((4,9)).astype(numpy.float32)
         val=2*bow1[:,selbin]+bow1[:,selbin+1]+bow1[:,(selbin+8)%9]
         pp=numpy.sum(val.argmax(1)*numpy.array([1,bin,bin**2,bin**3]))
-        hist[pp]=0.1#new value
+        hist[pp]=1.0#new value
         #print i,pp,val.argmax(1),val.max(1)
         i+=1
     hist=hist/numpy.sqrt(numpy.sum(hist**2))
     return hist.astype(numpy.float32)
 
-def histflip(bin=5,siftsize=2):
+def hog2bow(feat,bin=6,siftsize=2,pr=False,code=False):
+    selbin=numpy.array([0,2,4,5,7])
+    hist=numpy.zeros(bin**(siftsize**2))
+    hog=feat[:,:,18:27].copy()
+    import PySegment
+    bow=PySegment.hogtosift(hog,siftsize,geom=False)
+    #print len(bow)
+    i=0
+    bcode=numpy.zeros((numpy.array(feat.shape[:2])-siftsize+1),dtype=numpy.int)
+    for ll in bow:
+        bow1=ll.reshape((4,9)).astype(numpy.float32)
+        val=2*bow1[:,selbin]+bow1[:,selbin+1]+bow1[:,(selbin+8)%9]
+        mmax=val.argmax(1)
+        mmax[val.max(1)==0.0]=bin-1
+        pp=numpy.sum(mmax*numpy.array([1,bin,bin**2,bin**3]))
+        hist[pp]=1.0#new value
+        bcode[i/bcode.shape[1],i%bcode.shape[1]]=pp
+        if pr:
+            print i,pp,mmax,val.max(1)
+        i+=1
+    hist=hist/numpy.sqrt(numpy.sum(hist**2))
+    if code:
+        return bcode.astype(numpy.int32)
+    return hist.astype(numpy.float32)
+
+
+def histflip_5(bin=5,siftsize=2):
     flip=[0,4,3,2,1]
     ftab=numpy.zeros(5**4,dtype=numpy.int)
     for l0 in range(5):
@@ -138,6 +165,17 @@ def histflip(bin=5,siftsize=2):
                 for l3 in range(5):
                     val=l3+l2*5+l1*25+l0*125
                     ftab[val]=flip[l3]*5+flip[l2]+flip[l1]*125+flip[l0]*25      
+    return ftab
+
+def histflip(bin=6,siftsize=2):
+    flip=[0,4,3,2,1,5]
+    ftab=numpy.zeros(bin**(siftsize**2),dtype=numpy.int)
+    for l0 in range(bin):
+        for l1 in range(bin):
+            for l2 in range(bin):
+                for l3 in range(bin):
+                    val=l3+l2*bin+l1*(bin**2)+l0*(bin**3)
+                    ftab[val]=flip[l3]*bin+flip[l2]+flip[l1]*(bin**3)+flip[l0]*(bin**2)      
     return ftab
 
 
@@ -391,11 +429,13 @@ class pyrHOG:
     def scanRCFLbow(self,model,initr=1,ratio=1,small=True,trunc=0):
         """
         scan the HOG pyramid using the CtF algorithm
-        """        
+        """ 
+        #print "Hist",len(model["hist"][0])       
         ww=model["ww"]
         rho=model["rho"]
         siftsize=2#int(numpy.sqrt(model["hist"][0].shape[0]/9))
-        numvoc=625#model["voc"][0].shape[2]        
+        bin=6
+        numvoc=bin**(siftsize**2)#model["voc"][0].shape[2]       
         if model.has_key("occl"):
             print "Occlusions:",model["occl"]
             occl=numpy.array(model["occl"])*SMALL
@@ -450,6 +490,8 @@ class pyrHOG:
                         r,r,
                         sshape[0]*sshape[1],trunc,
                         siftsize,numvoc,model["hist"][lev],model["hist"][lev])
+                    #print "Check",numpy.any(model["hist"][lev]>1000.0),"size",len(model["hist"][lev])
+                    #raw_input()
                     res[i-self.starti]+=auxres
                     samples[:,:,:]=(samples[:,:,:]+pparts[-1][:,lev,:,:])*2+1
                 else:#resolution occlusion
@@ -1057,13 +1099,13 @@ class Treat:
             if count>maxnum:
                 break
             
-    def descr(self,det,flip=False,usemrf=False,usefather=False,k=0,usebow=BOW):
+    def descr(self,det,flip=False,usemrf=False,usefather=False,k=0,usebow=False):
         """
         convert each detection in a feature descriptor for the SVM
         """           
         ld=[]
         for item in det:
-            d=numpy.array([])
+            d=numpy.array([],dtype=numpy.float32)
             for l in range(len(item["feat"])):
                 if not(flip):
                     aux=item["feat"][l]
@@ -1076,7 +1118,7 @@ class Treat:
                     else:
                         d=numpy.concatenate((d,[1.0*SMALL]))
             #ld.append(d.astype(numpy.float32))
-            if usebow:#625*3-->later 625*21
+            if usebow:#usebow:#625*3-->later 625*21
                 for l in range(len(item["feat"])):
                     #hist=numpy.zeros(625,dtype=numpy.float32)
                     if not(flip):
@@ -1097,7 +1139,7 @@ class Treat:
             ld.append(item["cl"])
         return ld
 
-    def model(self,descr,rho,lev,fsz,fy=[],fx=[],usemrf=False,usefather=False,usebow=BOW):
+    def model(self,descr,rho,lev,fsz,fy=[],fx=[],usemrf=False,usefather=False,usebow=False,numbow=6**4):
         """
         build a new model from the weights of the SVM
         """     
@@ -1117,11 +1159,11 @@ class Treat:
                 occl[l]=d[p]
                 p+=1
         hist=[]
-        if usebow:
+        if usebow:#usebow:
             for l in range(lev):
-                hist.append(d[p:p+625].astype(numpy.float32)) 
+                hist.append(d[p:p+numbow].astype(numpy.float32)) 
                 #hist.append(numpy.zeros(625,dtype=numpy.float32))#remind to remove this line
-                p=p+625
+                p=p+numbow
         m={"ww":ww,"rho":rho,"fy":fy,"fx":fx,"occl":occl,"hist":hist,"voc":[]}
         return m
 
@@ -1425,7 +1467,7 @@ class TreatDef(Treat):
 
 import time
 
-def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000,fastBU=False):
+def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000,fastBU=False,usebow=False):
     """Detect objects in an image
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -1451,8 +1493,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,trunc=trunc)
         tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
     else:
-        bow=BOW
-        if bow:
+        if usebow:
             scr,pos=f.scanRCFLbow(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
             #scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
         else:

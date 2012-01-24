@@ -47,7 +47,7 @@ class TreatRL(pyrHOG2.Treat):
                 bbox=item["bbox"]
                 pylab.text(bbox[3]-10,bbox[2]-10,"%d"%(item["rl"]),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
 
-    def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0): 
+    def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0,usebow=False): 
         """
         convert each detection in a feature descriptor for the SVM
         """  
@@ -57,7 +57,7 @@ class TreatRL(pyrHOG2.Treat):
                 auxflip=not(flip)
             else:
                 auxflip=flip
-            dd=pyrHOG2.Treat.descr(self,[item],flip=auxflip,usemrf=usemrf,usefather=usefather,k=k)
+            dd=pyrHOG2.Treat.descr(self,[item],flip=auxflip,usemrf=usemrf,usefather=usefather,k=k,usebow=usebow)
             ld.append(dd[0])
         return ld
 
@@ -204,7 +204,7 @@ def flip(m):
     return m1    
 
 
-def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000,fastBU=False):
+def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000,fastBU=False,usebow=False):
     """Detect objects with RL flip
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -229,8 +229,7 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
             #scr1,pos1=f.scanRCFLDefThr(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
             scr1,pos1=f.scanRCFLDef(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,trunc=trunc)
     else:
-        bow=pyrHOG2.BOW
-        if bow:
+        if usebow:
             scr,pos=f.scanRCFLbow(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
             scr1,pos1=f.scanRCFLbow(m1,initr=initr,ratio=ratio,small=small,trunc=trunc)
         else:

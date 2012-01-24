@@ -63,6 +63,20 @@ ff.scanDef2.argtypes = [
     ctypes.POINTER(c_float),c_int,c_int,c_int]
 ff.scanDef2.restype=ctypes.c_float
 
+ff.scanDefbow.argtypes = [
+    ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
+    c_int,c_int,c_int,
+    ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),ctypeslib.ndpointer(c_float),
+    ctypeslib.ndpointer(c_float),
+    c_int,c_int,ctypeslib.ndpointer(c_int),ctypeslib.ndpointer(c_int),
+    ctypeslib.ndpointer(c_int),
+    ctypeslib.ndpointer(c_float),
+    c_int,c_int,c_int,ctypeslib.ndpointer(c_float),c_int,
+    ctypes.POINTER(c_float),c_int,c_int,c_int,
+    c_int,c_int,ctypes.POINTER(c_float),ctypes.POINTER(c_float)]
+ff.scanDef2.restype=ctypes.c_float
+
+
 ff.setK.argtypes = [c_float]
 ff.setK(K)
 
@@ -465,18 +479,6 @@ class pyrHOG:
                     else:
                         r=ratio
                     auxres=res[-1].copy()
-#                    ff.scaneigh(self.hog[i-self.interv*lev],
-#                        self.hog[i-self.interv*lev].shape[0],
-#                        self.hog[i-self.interv*lev].shape[1],
-#                        ww[lev],
-#                        ww[lev].shape[0],ww[lev].shape[1],ww[lev].shape[2],
-#                        samples[0,:,:],
-#                        samples[1,:,:],
-#                        auxres,
-#                        pparts[-1][0,lev,:,:],
-#                        pparts[-1][1,lev,:,:],
-#                        r,r,
-#                        sshape[0]*sshape[1],trunc)
                     ff.scaneighbow(self.hog[i-self.interv*lev],
                         self.hog[i-self.interv*lev].shape[0],
                         self.hog[i-self.interv*lev].shape[1],
@@ -576,6 +578,104 @@ class pyrHOG:
         parts=numpy.zeros((2,2,4,res.shape[0],res.shape[1]),dtype=c_int)
         auxres=numpy.zeros(res.shape,numpy.float32)
         ff.scanDef2(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,numpy.array([],dtype=numpy.float32),0,ctypes.POINTER(c_float)(),0,0,trunc)
+        res+=auxres
+        pparts[lev][(locy+0):(locy+2),(locx+0):(locx+2),:,:,:]=parts
+        if i-self.interv>=0 and len(model["ww"])-1>lev:
+            samples1=(samples+parts[0,0,:2,:,:])*2+1
+            self.scanRCFLPart(model,samples1.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+0),ratio,usemrf,occl,trunc)
+            samples2=((samples.T+parts[0,1,:2,:,:].T+numpy.array([0,fx],dtype=c_int).T)*2+1).T
+            self.scanRCFLPart(model,samples2.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+1),ratio,usemrf,occl,trunc)
+            samples3=((samples.T+parts[1,0,:2,:,:].T+numpy.array([fy,0],dtype=c_int).T)*2+1).T
+            self.scanRCFLPart(model,samples3.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+0),ratio,usemrf,occl,trunc)
+            samples4=((samples.T+parts[1,1,:2,:,:].T+numpy.array([fy,fx],dtype=c_int).T)*2+1).T
+            self.scanRCFLPart(model,samples4.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf,occl,trunc)
+        else:
+            if len(model["ww"])-1>lev:
+                res+=numpy.sum(occl[lev+1:])
+
+    def scanRCFLDefbow(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None,trunc=0):
+        """
+        scan the HOG pyramid using the CtF algorithm but using deformations
+        """     
+        ww=model["ww"]
+        rho=model["rho"]
+        df=model["df"]
+        if model.has_key("occl"):
+            print "Occlusions:",model["occl"]
+            occl=numpy.array(model["occl"])*SMALL
+        else:
+            #print "No Occlusions"
+            occl=numpy.zeros(len(model["ww"]))
+        res=[]#score
+        pparts=[]#parts position
+        tot=0
+        if not(small):
+            self.starti=self.interv*(len(ww)-1)
+        else:
+            if type(small)==bool:
+                self.starti=0
+            else:
+                self.starti=self.interv*(len(ww)-1-small)
+        from time import time
+        for i in range(self.starti,len(self.hog)):
+            if mysamples==None:
+                samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(c_int)
+            else:
+                samples=mysamples[i]
+            sshape=samples.shape[1:3]
+            res.append(numpy.zeros(sshape,dtype=ctypes.c_float))
+            pparts.append([])
+            nelem=(sshape[0]*sshape[1])
+            for l in range(len(ww)):
+                pparts[-1].append(numpy.zeros((2**l,2**l,4,sshape[0],sshape[1]),dtype=c_int))
+            ff.scaneighbow(self.hog[i],
+                self.hog[i].shape[0],
+                self.hog[i].shape[1],
+                ww[0],
+                ww[0].shape[0],ww[0].shape[1],ww[0].shape[2],
+                samples[0,:,:],
+                samples[1,:,:],
+                res[-1],
+                pparts[-1][0][0,0,0,:,:],
+                pparts[-1][0][0,0,1,:,:],
+                initr,initr,
+                nelem,trunc,
+                siftsize,numvoc,model["hist"][lev],model["hist"][lev])
+            samples[:,:,:]=(samples[:,:,:]+pparts[-1][0][0,0,:2,:,:])*2+1
+            if i-self.interv>=0 and len(model["ww"])-1>0:
+                self.scanRCFLPart(model,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf,occl,trunc) 
+            else:
+                res[i-self.starti]+=numpy.sum(occl[1:])
+            res[i-self.starti]-=rho
+        return res,pparts
+
+
+    def scanRCFLPartbow(self,model,samples,pparts,res,i,lev,locy,locx,ratio,usemrf,occl,trunc):
+        """
+        auxiliary function for the recursive search of the parts
+        """     
+        siftsize=2
+        numvoc=6**(siftsize**2)
+        locy=locy*2
+        locx=locx*2
+        fy=model["ww"][0].shape[0]
+        fx=model["ww"][0].shape[1]
+        ww1=model["ww"][lev][(locy+0)*fy:(locy+1)*fy,(locx+0)*fx:(locx+1)*fx,:].copy()
+        ww2=model["ww"][lev][(locy+0)*fy:(locy+1)*fy,(locx+1)*fx:(locx+2)*fx,:].copy()
+        ww3=model["ww"][lev][(locy+1)*fy:(locy+2)*fy,(locx+0)*fx:(locx+1)*fx,:].copy()
+        ww4=model["ww"][lev][(locy+1)*fy:(locy+2)*fy,(locx+1)*fx:(locx+2)*fx,:].copy()
+        df1=model["df"][lev][(locy+0):(locy+1),(locx+0):(locx+1),:].copy()
+        df2=model["df"][lev][(locy+0):(locy+1),(locx+1):(locx+2),:].copy()
+        df3=model["df"][lev][(locy+1):(locy+2),(locx+0):(locx+1),:].copy()
+        df4=model["df"][lev][(locy+1):(locy+2),(locx+1):(locx+2),:].copy()
+        hst=numpy.zeros((4,len(model["hist"][0])),dtype=numpy.float32)
+        hst[0]=model["hist"][lev][(locy+0):(locy+1),(locx+0):(locx+1),:]
+        hst[1]=model["hist"][lev][(locy+0):(locy+1),(locx+1):(locx+2),:]
+        hst[2]=model["hist"][lev][(locy+1):(locy+2),(locx+0):(locx+1),:]
+        hst[3]=model["hist"][lev][(locy+1):(locy+2),(locx+1):(locx+2),:]
+        parts=numpy.zeros((2,2,4,res.shape[0],res.shape[1]),dtype=c_int)
+        auxres=numpy.zeros(res.shape,numpy.float32)
+        ff.scanDefbow(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,numpy.array([],dtype=numpy.float32),0,ctypes.POINTER(c_float)(),0,0,trunc,siftsize,numvoc,model["hist"][0],hst)
         res+=auxres
         pparts[lev][(locy+0):(locy+2),(locx+0):(locx+2),:,:,:]=parts
         if i-self.interv>=0 and len(model["ww"])-1>lev:
@@ -1490,7 +1590,10 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
         else:
             #scr,pos=f.scanRCFLDefThr(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mythr=mythr)
-            scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,trunc=trunc)
+            if usebow:
+                scr,pos=f.scanRCFLDefbow(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,trunc=trunc)
+            else:
+                scr,pos=f.scanRCFLDef(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,trunc=trunc)
         tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
     else:
         if usebow:

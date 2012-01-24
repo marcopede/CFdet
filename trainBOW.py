@@ -11,7 +11,7 @@ import time
 import copy
 import itertools
 
-approx=0.0008
+approx=0.001 #there should be some problem with BOW because it should be 0.0001
 
 class config(object):
     pass
@@ -839,7 +839,10 @@ if __name__=="__main__":
             lowd=-numpy.ones((1*2**l,1*2**l,4)).astype(numpy.float32)
             ww.append(lowf)
             #hww.append(numpy.ones((2**l,2**l,numbow),dtype=numpy.float32))
-            hww.append(0.001*numpy.ones((numbow),dtype=numpy.float32))
+            if cfg.deform:
+                hww.append(0.001*numpy.ones((2**l,2**l,numbow),dtype=numpy.float32))
+            else:
+                hww.append(0.001*numpy.ones((numbow),dtype=numpy.float32))
             #hww.append(numpy.random.random(numbow).astype(numpy.float32))
             #hww.append(numpy.zeros((2**l,2**l,numbow),dtype=numpy.float32))
             #voc.append(numpy.zeros((2**l,2**l,numbow,siftsize**2*9),dtype=numpy.float32))

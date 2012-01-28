@@ -87,7 +87,7 @@ inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
     return sum;
 }
 
-static ftype buffer[5*5*9];//for BOW part should be smaller than 50
+static ftype buffer[5*5*13];//for BOW part should be smaller than 50
 static int bcode[50*50];//for BOW
 static ftype localhist[2000];
 //static int table[10000];//(9 max orient+ null)^4
@@ -106,6 +106,7 @@ static ftype localhist[2000];
 
 #define NUMOR 5
 static int sel[NUMOR]={0,2,4,5,7};//selected orientations
+static int norm[4]={3,1,2,0};//selected orientations
 static ftype pow5[]={1,5,5*5,5*5*5};
 static ftype pow6[]={1,6,6*6,6*6*6};
 
@@ -114,6 +115,7 @@ inline ftype corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int
 )//sizevoc=2;numvoc=100;voc=2*2*9*100
 {
     //printf("PARAM: %d %d\n",sizevoc,numvoc);
+    //printf("using BOW\n");
     int dimz2=9;//only first 9 oriented gradients
     int dimzfull=dimz;
     if (occl!=0)
@@ -273,10 +275,10 @@ inline ftype corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int
         //else
         //    localhist[c]=0.0;          
         bowscr+=(localhist[c])*(mhist[c]);
-        /*if (mhist[c]>1000.0)
+        /*if (mhist[c]-0.001>0.00001)
         {
             printf("%d %f %f %f \n",c,bowscr,localhist[c],mhist[c]);
-            return;
+            return 0;
             //scanf("%f",&voc[0]);
         }*/
             //flush();
@@ -298,6 +300,7 @@ inline ftype corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int
             prec[(posy+pady)*(imgx+2*padx)+(posx+padx)]=sum;
         }
     }
+    //printf("BOW%f Norm%d ",bowscr,toton);
     //if (voc[0]==10.0)
     //    return bowscr;
     return sum+(ftype)bowscr;
@@ -325,12 +328,13 @@ inline ftype refineigh(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
     return maxval;
 }
 
-inline ftype hog2bow(ftype *img,int imgx,int imgy,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,int sizevoc,int *code)
+void hog2bow(ftype *img,int imgx,int imgy,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,int sizevoc,int *code)
 {
     //bow extraction
-    int dimz2=9;
+    int dimz2=13;
     int x,y,z,cy,cx,posi,c,maxpos,aux,pos;
     ftype maxval,val;
+    //printf("Mask%f ",mask[0]);
     for (x=0;x<maskx-sizevoc+1;x++)
     {
         for (y=0;y<masky-sizevoc+1;y++)
@@ -375,14 +379,18 @@ inline ftype hog2bow(ftype *img,int imgx,int imgy,ftype *mask,int masky,int mask
                         maxpos=z;
                     }
                 }
-                if (maxval==0.0)
+                if (maxval==0.0)//outside image
+                    maxpos=NUMOR;
+                aux=9+norm[c];
+                if (buffer[aux+c*dimz2]<0.1)//low contrast
                     maxpos=NUMOR;
                 /*if (voc[0]==10.0)
                     printf("%d %3f ",maxpos,maxval);*/
                 pos+=maxpos*pow6[c];//compute the hash code
             }
             code[x+y*(maskx-sizevoc+1)]=pos;
-            //printf("code y=%d x=%d is %d\n",y,x,pos);
+            //if (mask[0]==10.0)
+            //    printf("code y=%d x=%d is %d\n",y,x,pos);
         }
     }            
 }

@@ -30,7 +30,16 @@ lhog.process.argtypes=[
     ,c_int #hx
     ,c_int #hz
     ]
-
+#lhog.process.argtypes=[
+#    numpy.ctypeslib.ndpointer(dtype=c_double,ndim=3,flags="F_CONTIGUOUS")#im
+#    ,c_int #dimy
+#    ,c_int #dimx
+#    ,c_int #sbin
+#    ,numpy.ctypeslib.ndpointer(dtype=c_double,ndim=3,flags="F_CONTIGUOUS")# *hog (round(dimy/float(sbin))-2,round(dimx/float(sbin))-2,31)
+#    ,c_int #hy
+#    ,c_int #hx
+#    ,c_int #hz
+#    ]
 
 #library to compute correlation between object model and HOGs
 ctypes.cdll.LoadLibrary("./libexcorr.so")
@@ -144,7 +153,7 @@ def hog2bow_5(feat,bin=5,siftsize=2):
     hist=hist/numpy.sqrt(numpy.sum(hist**2))
     return hist.astype(numpy.float32)
 
-def hog2bow(feat,bin=6,siftsize=2,pr=False,code=False):
+def hog2bow_old(feat,bin=6,siftsize=2,pr=False,code=False):
     selbin=numpy.array([0,2,4,5,7])
     hist=numpy.zeros(bin**(siftsize**2))
     hog=feat[:,:,18:27].copy()
@@ -169,6 +178,155 @@ def hog2bow(feat,bin=6,siftsize=2,pr=False,code=False):
         return bcode.astype(numpy.int32)
     return hist.astype(numpy.float32)
 
+#inline ftype hog2bow(ftype *img,int imgx,int imgy,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,int sizevoc,int *code)
+ff.hog2bow.argtypes=[numpy.ctypeslib.ndpointer(dtype=c_float,ndim=3,flags="C_CONTIGUOUS"),c_int,c_int,numpy.ctypeslib.ndpointer(dtype=c_float,flags="C_CONTIGUOUS"),c_int,c_int,c_int,c_int,c_int,c_int,
+numpy.ctypeslib.ndpointer(dtype=c_int,flags="C_CONTIGUOUS")]
+#ff.hog2bow.restype=ctypes.c_float
+
+def hog2bow(feat,bin=6,siftsize=2,pr=False,code=False,db=False):
+    hist=numpy.zeros(bin**(siftsize**2),dtype=numpy.float32)
+    shy=feat.shape[0]
+    shx=feat.shape[1]
+    bcode=numpy.zeros((shy-1,shx-1),dtype=numpy.int32)
+    feat1=feat.astype(numpy.float32)#.copy()
+    numvoc=ctypes.c_int(bin**(siftsize**2))
+    mask=numpy.zeros((10,10),dtype=numpy.float32)
+    if db:
+        mask[:]=10.0
+    ff.hog2bow(feat1,shx,shy,mask,shy,shx,31,0,0,2,bcode)
+    for l in bcode.flatten():
+        hist[l]=1.0
+    hist=hist/numpy.sqrt(numpy.sum(hist**2))
+    if code:
+        return bcode
+    return hist
+
+def hog2bow_slow(feat,bin=6,siftsize=2,pr=False,code=False):
+    selbin=numpy.array([0,2,4,5,7])
+    nrm=numpy.array([3,1,2,0],dtype=numpy.int)
+    hist=numpy.zeros(bin**(siftsize**2))
+    hog=feat[:,:,18:].astype(numpy.float32)#copy()
+    import PySegment
+    bow=PySegment.hogtosift(hog,siftsize,geom=False)
+    #print len(bow)
+    i=0
+    bcode=numpy.zeros((numpy.array(feat.shape[:2])-siftsize+1),dtype=numpy.int)
+    for ll in bow:
+        bow1=ll.reshape((4,13)).astype(numpy.float32)
+        val=2*bow1[:,selbin]+bow1[:,selbin+1]+bow1[:,(selbin+8)%9]
+        mmax=val.argmax(1)
+        mmax[val.max(1)==0.0]=bin-1
+        mmax[bow1[numpy.arange(4),9+nrm]<0.1]=bin-1
+        pp=numpy.sum(mmax*numpy.array([1,bin,bin**2,bin**3]))
+        hist[pp]=1.0#new value
+        bcode[i%bcode.shape[0],i/bcode.shape[0]]=pp
+        if pr:
+            print i,pp,mmax,val.max(1)
+        i+=1
+    hist=hist/numpy.sqrt(numpy.sum(hist**2))
+    if code:
+        return bcode.astype(numpy.int32)
+    return hist.astype(numpy.float32)
+
+
+def hogtosift(hog,siftsize,geom=False):
+    him=hog#numpy.ascontiguousarray(hog)
+    #print hog.flags
+    #raw_input()
+    himy=him.shape[0]-siftsize+1
+    himx=him.shape[1]-siftsize+1
+    sift=numpy.zeros((himy,himx,siftsize,siftsize,hog.shape[2]))
+    for sy in range(siftsize):
+        for sx in range(siftsize):
+            sift[:,:,sy,sx]=him[sy:sy+himy,sx:sx+himx]		
+    sim=sift.reshape((himy,himx,siftsize**2*hog.shape[2]))	
+    #sim=sift.reshape((himx,himy,siftsize**2*hog.shape[2]))
+    #showImage(sim)
+    feat=sim.T.reshape((sim.shape[2],himy*himx)).T
+    if 0:
+        pylab.figure()
+        showHOGflat(hog,siftsize)
+        pylab.figure()
+        showBook(feat[:100],siftsize)
+        pylab.draw()
+        pylab.show()
+        raw_input()
+    if geom:
+        return feat,sim
+    return feat
+
+def hog2bowrec(feat,bin=6,siftsize=2,pr=False,code=False):
+    sel=numpy.array([0,2,4,5,7])#orientations
+    nrm=numpy.array([3,1,2,0],dtype=numpy.int)#normalizations
+    #nrm=numpy.array([3,2,1,0],dtype=numpy.int)#normalizations
+    hist=numpy.zeros(bin**(siftsize**2))
+    hog=feat[:,:,18:].copy()
+    #import PySegment
+    bow,bowg=hogtosift(hog,siftsize,geom=True)
+    #print len(bow)
+    i=0
+    import drawHOG
+    pylab.gray()
+    pylab.figure()
+    im1=drawHOG.drawHOG(feat)
+    pylab.axis("off")
+    pylab.imshow(im1)     
+    #bcode=numpy.zeros((numpy.array(feat.shape[:2])-siftsize+1),dtype=numpy.int)
+    rec=numpy.zeros(feat.shape,dtype=numpy.float32)
+    for ly in range(bowg.shape[0]):
+        for lx in range(bowg.shape[1]):
+            bow1=bowg[ly,lx].reshape((4,13))
+            val=2*bow1[:,sel]+bow1[:,sel+1]+bow1[:,(sel+8)%9]
+            mmax=val.argmax(1)
+            mmax[val.max(1)==0.0]=bin-1
+            mmax[bow1[numpy.arange(4),9+nrm]<0.15]=bin-1
+            print bow1[numpy.arange(4),9+nrm]
+            pp=numpy.sum(mmax*numpy.array([1,bin,bin**2,bin**3]))
+            hist[pp]=1.0#new value
+            #bcode[i/bcode.shape[1],i%bcode.shape[1]]=pp
+            for y in range(2):
+                for x in range(2):
+                    pp=mmax[x+y*2]
+                    if pp!=5:
+                        rec[ly+y,lx+x,18+sel[pp]]+=1.0
+            #rec[ly:ly+sizesift,lx:lx+sizesift]=
+            if pr:
+                print i,pp,mmax,val.max(1)
+            i+=1
+    pylab.figure()
+    im2=drawHOG.drawHOG(rec)
+    pylab.axis("off")
+    pylab.imshow(im2)    
+    hist=hist/numpy.sqrt(numpy.sum(hist**2))
+    if code:
+        return bcode.astype(numpy.int32)
+    return hist.astype(numpy.float32)
+
+def showbow(hist,num=100,order=1):
+    sel=numpy.array([0,2,4,5,7])
+    srt=numpy.argsort(-order*numpy.abs(hist))
+    pylab.figure()
+    ny=numpy.sqrt(num)
+    nx=num/ny+1
+    from util import baseconvert as baseconvert
+    import drawHOG
+    pylab.axis("off")
+    pylab.gray()
+    for i in range(num):
+        nn=baseconvert(srt[i],tondigits=6, mindigits=4)
+        print i,nn,hist[srt[i]]
+        hog=numpy.zeros((2,2,31))    
+        for y in range(2):
+            for x in range(2):
+                pp=int(nn[x+2*y])
+                if pp!=5:
+                    hog[y,x,18+sel[pp]]=1.0
+        im=drawHOG.drawHOG(hog)
+        pylab.subplot(nx,ny,i+1)        
+        pylab.axis("off")
+        pylab.text(0,0,"%.3f"%(hist[srt[i]]*1000),fontsize=8)
+        pylab.imshow(im)
+    pylab.show()
 
 def histflip_5(bin=5,siftsize=2):
     flip=[0,4,3,2,1]
@@ -190,6 +348,7 @@ def histflip(bin=6,siftsize=2):
                 for l3 in range(bin):
                     val=l3+l2*bin+l1*(bin**2)+l0*(bin**3)
                     ftab[val]=flip[l3]*bin+flip[l2]+flip[l1]*(bin**3)+flip[l0]*(bin**2)      
+                    #ftab[val]=flip[l3]*(bin**2)+flip[l2]*(bin**3)+flip[l1]+flip[l0]*(bin**1)      
     return ftab
 
 
@@ -227,6 +386,21 @@ def hog(img,sbin=8):
     lhog.process(numpy.asfortranarray(img,dtype=mtype),img.shape[0],img.shape[1],sbin,hog,hy,hx,31)
     return hog;#mfeatures.mfeatures(img , sbin);
 
+def hogd(img,sbin=8):
+    """
+    Compute the HOG descriptor of an image
+    """
+    if type(img)!=numpy.ndarray:
+        raise "img must be a ndarray"
+    if img.ndim!=3:
+        raise "img must have 3 dimensions"
+    hy=int(round(img.shape[0]/float(sbin)))-2
+    hx=int(round(img.shape[1]/float(sbin)))-2
+    mtype=c_double
+    hog=numpy.zeros((hy,hx,31),dtype=mtype,order="f")
+    lhog.process(numpy.asfortranarray(img,dtype=mtype),img.shape[0],img.shape[1],sbin,hog,hy,hx,31)
+    return hog;#mfeatures.mfeatures(img , sbin);
+
 
 def hogflip(feat,obin=9):
     """    
@@ -236,10 +410,26 @@ def hogflip(feat,obin=9):
     #[18 oriented][9 not oriented][4 normalization]
     if feat.shape[2]==31:
         p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,30,31,28,29])-1
+        #p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,29,28,31,30])-1
     else:
         p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,30,31,28,29,32])-1
     aux=feat[:,::-1,p]
     return numpy.ascontiguousarray(aux)
+
+def hogflip_wrong(feat,obin=9):
+    """    
+    returns the horizontally flipped version of the HOG features
+    """
+    #feature shape
+    #[18 oriented][9 not oriented][4 normalization]
+    if feat.shape[2]==31:
+        #p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,30,31,28,29])-1
+        p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,29,28,31,30])-1
+    else:
+        p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,30,31,28,29,32])-1
+    aux=feat[:,::-1,p]
+    return numpy.ascontiguousarray(aux)
+
 
 def defflip(feat):
     """    
@@ -459,6 +649,7 @@ class pyrHOG:
         res=[]#score
         pparts=[]#parts position
         tot=0
+        #print "Using BOW"
         if not(small):
             self.starti=self.interv*(len(ww)-1)
         else:
@@ -597,6 +788,8 @@ class pyrHOG:
         """
         scan the HOG pyramid using the CtF algorithm but using deformations
         """     
+        siftsize=2
+        numvoc=6**(siftsize**2)
         ww=model["ww"]
         rho=model["rho"]
         df=model["df"]
@@ -640,7 +833,7 @@ class pyrHOG:
                 pparts[-1][0][0,0,1,:,:],
                 initr,initr,
                 nelem,trunc,
-                siftsize,numvoc,model["hist"][lev],model["hist"][lev])
+                siftsize,numvoc,model["hist"][0],model["hist"][0])
             samples[:,:,:]=(samples[:,:,:]+pparts[-1][0][0,0,:2,:,:])*2+1
             if i-self.interv>=0 and len(model["ww"])-1>0:
                 self.scanRCFLPart(model,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf,occl,trunc) 
@@ -1225,7 +1418,8 @@ class Treat:
                         hist=hog2bow(item["feat"][l])
                     else:
                         #hist=hog2bow((item["feat"][l]))
-                        hist=hog2bow(hogflip(item["feat"][l]))
+                        #hist=hog2bow(hogflip(item["feat"][l].astype(numpy.float32)))
+                        hist=hog2bow((item["feat"][l]))[histflip()]#why this works and the other no?
                     d=numpy.concatenate((d,hist))
             ld.append(d.astype(numpy.float32))
         return ld
@@ -1488,7 +1682,7 @@ class TreatDef(Treat):
                     break
         Treat.show(self,ldet,colors=colors,thr=thr,maxnum=maxnum,scr=scr,cls=cls)        
 
-    def descr(self,det,flip=False,usemrf=True,usefather=True,k=K):
+    def descr(self,det,flip=False,usemrf=True,usefather=True,k=K,usebow=False):
         """
         convert each detection in a feature descriptor for the SVM
         """      
@@ -1523,10 +1717,27 @@ class TreatDef(Treat):
                         d=numpy.concatenate((d,[0.0]))
                     else:
                         d=numpy.concatenate((d,[1.0*SMALL]))
+            if usebow:
+                fy=item["feat"][0].shape[0]
+                fx=item["feat"][0].shape[1]
+                for l in range(len(item["feat"])):
+                    if not(flip):
+                        #d=numpy.concatenate((d,pyrHOG2.hog2bow(item["feat"][l].flatten())))
+                        auxd=numpy.zeros((2**l,2**l,6**4),dtype=numpy.float32)
+                        for py in range(2**l):
+                            for px in range(2**l):
+                                auxd[py,px,:]=hog2bow(item["feat"][l][py*fy:(py+1)*fy,px*fx:(px+1)*fx])
+                                
+                    else:
+                        auxd=numpy.zeros((2**l,2**l,6**4),dtype=numpy.float32)
+                        for py in range(2**l):
+                            for px in range(2**l):
+                                auxd[py,px,:]=hog2bow(hogflip(item["feat"][l][py*fy:(py+1)*fy,px*fx:(px+1)*fx]))
+                    d=numpy.concatenate((d,auxd.flatten()))
             ld.append(d.astype(numpy.float32))
         return ld
 
-    def model(self,descr,rho,lev,fsz,fy=[],fx=[],mindef=0.001,usemrf=True,usefather=True): 
+    def model(self,descr,rho,lev,fsz,fy=[],fx=[],mindef=0.001,usemrf=True,usefather=True,usebow=False): 
         """
         build a new model from the weights of the SVM
         """     

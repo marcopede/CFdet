@@ -154,7 +154,7 @@ class TreatDefRL(pyrHOG2.TreatDef):
                 pylab.text(bbox[3]-5,bbox[2]-5,"%s"%(rl),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
 		
 
-    def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0):   
+    def descr(self,det,flip=False,usemrf=True,usefather=True,k=1.0,usebow=False):   
         """
         convert each detection in a feature descriptor for the SVM
         """  
@@ -164,7 +164,7 @@ class TreatDefRL(pyrHOG2.TreatDef):
                 auxflip=not(flip)
             else:
                 auxflip=flip
-            dd=pyrHOG2.TreatDef.descr(self,[item],flip=auxflip,usemrf=usemrf,usefather=usefather,k=k)
+            dd=pyrHOG2.TreatDef.descr(self,[item],flip=auxflip,usemrf=usemrf,usefather=usefather,k=k,usebow=usebow)
             ld.append(dd[0])
         return ld
 
@@ -191,9 +191,16 @@ def flip(m):
     #for BOW
     hh1=[]
     if m.has_key("hist"):
-        for l in m["hist"]:
+        for idl,l in enumerate(m["hist"]):
             #hh1.append(numpy.ascontiguousarray(l[::-1]))
-            hh1.append(numpy.ascontiguousarray(l[pyrHOG2.histflip()]).astype(numpy.float32))
+            if m.has_key("df"):
+                auxh=numpy.zeros((2**idl,2**idl,l.shape[2]),dtype=numpy.float32)
+                for py in range(l.shape[0]):
+                    for px in range(l.shape[1]):
+                        auxh[py,2**idl-px-1,:]=l[py,px,pyrHOG2.histflip()]
+                hh1.append(auxh)
+            else:
+                hh1.append(l[pyrHOG2.histflip()].copy())
             #hh1.append((l[pyrHOG2.histflip()]).astype(numpy.float32))
         m1["hist"]=hh1
     vv1=[]

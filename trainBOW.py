@@ -11,7 +11,7 @@ import time
 import copy
 import itertools
 
-approx=0.001 #there should be some problem with BOW because it should be 0.0001
+approx=0.00001 #there should be some problem with BOW because it should be 0.0001
 
 class config(object):
     pass
@@ -556,6 +556,7 @@ if __name__=="__main__":
     numbow=numbin**(siftsize**2)#625
     recVOC=False
     name=testname+"_book%d_%d_%s_"%(siftsize,numbow,cfg.cls)
+#    fdgfd
 #    try:
 #	    rbook=numpy.load('%s.npz'%(name))["arr_0"]
 #    except:
@@ -822,7 +823,7 @@ if __name__=="__main__":
         voc=[]
         dd=[]    
         for l in range(cfg.lev[c]):
-            if cfg.useRL:
+            if 0:#cfg.useRL:
                 lowf=numpy.zeros((fy*2**l,fx*2**l,31)).astype(numpy.float32)
                 #lowf[:,:,2]=0.1/31
                 #lowf[:,:,18+2]=0.1/31
@@ -843,7 +844,7 @@ if __name__=="__main__":
                 hww.append(0.001*numpy.ones((2**l,2**l,numbow),dtype=numpy.float32))
             else:
                 hww.append(0.001*numpy.ones((numbow),dtype=numpy.float32))
-            #hww.append(numpy.random.random(numbow).astype(numpy.float32))
+                #hww.append(1.0*numpy.random.random(numbow).astype(numpy.float32))
             #hww.append(numpy.zeros((2**l,2**l,numbow),dtype=numpy.float32))
             #voc.append(numpy.zeros((2**l,2**l,numbow,siftsize**2*9),dtype=numpy.float32))
             #voc[-1][:,:]=rbook
@@ -865,19 +866,28 @@ if __name__=="__main__":
     rr=[]
     #from model to w
     for l in range(cfg.numcl):
-        waux.append(model.model2w(models[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow))
+        if cfg.deform:
+            waux.append(model.model2wDef(models[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow))
+        else:
+            waux.append(model.model2w(models[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow))
         rr.append(models[l]["rho"])
         w=numpy.concatenate((w,waux[-1],numpy.array([models[l]["rho"]])))
     #from w to model m1
     m1=[]
     for l in range(cfg.numcl):
-        m1.append(model.w2model(waux[l],rr[l],cfg.lev[0],31,siftsize=siftsize,bin=numbin,fy=models[l]["fy"],fx=models[l]["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather,useoccl=cfg.occl,usebow=cfg.usebow))
+        if cfg.deform:
+            m1.append(model.w2modelDef(waux[l],rr[l],cfg.lev[0],31,siftsize=siftsize,bin=numbin,fy=models[l]["fy"],fx=models[l]["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather,useoccl=cfg.occl,usebow=cfg.usebow))
+        else:
+            m1.append(model.w2model(waux[l],rr[l],cfg.lev[0],31,siftsize=siftsize,bin=numbin,fy=models[l]["fy"],fx=models[l]["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather,useoccl=cfg.occl,usebow=cfg.usebow))
 
     #from m1 to w1
     waux1=[]
     w1=numpy.array([])
     for l in range(cfg.numcl):
-        waux1.append(model.model2w(m1[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow))
+        if cfg.deform:
+            waux1.append(model.model2wDef(m1[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow))
+        else:
+            waux1.append(model.model2w(m1[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow))
         w1=numpy.concatenate((w1,waux1[-1],numpy.array([m1[l]["rho"]])))
     
     assert(numpy.all(w1==w))
@@ -1093,34 +1103,35 @@ if __name__=="__main__":
                 auxcl=tr.mixture(nfuse)[0]
                 dns=buildense([aux],[auxcl],cumsize)[0]
                 dscr=numpy.sum(dns*w)
+                print "Approx:",abs(nfuse[0]["scr"]-dscr)
                 #print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
                 if abs(nfuse[0]["scr"]-dscr)>approx:
                     print "Warning: the two scores must be the same!!!"
                     print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
-                    import ctypes
-                    #bowsize=numbin**(siftsize**2)
-                    descr=numpy.sum(dns[-1-numbow*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]]*w[-1-numbow*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]])
-                    hogd=numpy.sum(dns[cumsize[auxcl]:cumsize[auxcl+1]-numbow*3-1]*w[cumsize[auxcl]:cumsize[auxcl+1]-numbow*3-1])
-                    bbias=numpy.sum(100*w[cumsize[auxcl+1]-1])
-                    descr2=numpy.sum(aux[-numbow*3:]*numpy.concatenate(models[auxcl]["hist"]))
-                    shy=nfuse[0]["feat"][0].shape[0] 
-                    shx=nfuse[0]["feat"][0].shape[1] 
-#                    if nfuse[0]["rl"]==1:
-#                        mm=[]
-#                        for l in models:
-#                            mm.append(pyrHOG2RL.flip(l))
-#                    else:
-                    mm=models
-                    aa=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][0]).astype(numpy.float32),shy,shx,mm[auxcl]["ww"][0],shy,shx,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,numbow,pyrHOG2.hog2bow(nfuse[0]["feat"][0],code=True),shx-1,mm[auxcl]["hist"][0])
-                    bb=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][1]).astype(numpy.float32),shy*2,shx*2,mm[auxcl]["ww"][1],shy*2,shx*2,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,numbow,pyrHOG2.hog2bow(nfuse[0]["feat"][1],code=True),shx*2-1,mm[auxcl]["hist"][1])
-                    cc=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][2]).astype(numpy.float32),shy*4,shx*4,mm[auxcl]["ww"][2],shy*4,shx*4,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,numbow,pyrHOG2.hog2bow(nfuse[0]["feat"][2],code=True),shx*4-1,mm[auxcl]["hist"][2])
-#                    else:
-#                        aa=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][0]).astype(numpy.float32),shy,shx,models[auxcl]["ww"][0],shy,shx,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][0][pyrHOG2.histflip()])
-#                        bb=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][1]).astype(numpy.float32),shy*2,shx*2,models[auxcl]["ww"][1],shy*2,shx*2,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][1][pyrHOG2.histflip()])
-#                        cc=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][2]).astype(numpy.float32),shy*4,shx*4,models[auxcl]["ww"][2],shy*4,shx*4,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][2][pyrHOG2.histflip()])
-                    print "BOW dense:",aa+bb+cc,"descr",descr,"descr2",descr2
-                    print "HOG dense",hogd
-                    print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
+#                    import ctypes
+#                    #bowsize=numbin**(siftsize**2)
+#                    descr=numpy.sum(dns[-1-numbow*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]]*w[-1-numbow*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]])
+#                    hogd=numpy.sum(dns[cumsize[auxcl]:cumsize[auxcl+1]-numbow*3-1]*w[cumsize[auxcl]:cumsize[auxcl+1]-numbow*3-1])
+#                    bbias=numpy.sum(100*w[cumsize[auxcl+1]-1])
+#                    descr2=numpy.sum(aux[-numbow*3:]*numpy.concatenate(models[auxcl]["hist"]))
+#                    shy=nfuse[0]["feat"][0].shape[0] 
+#                    shx=nfuse[0]["feat"][0].shape[1] 
+##                    if nfuse[0]["rl"]==1:
+##                        mm=[]
+##                        for l in models:
+##                            mm.append(pyrHOG2RL.flip(l))
+##                    else:
+#                    mm=models
+#                    aa=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][0]).astype(numpy.float32),shy,shx,mm[auxcl]["ww"][0],shy,shx,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,numbow,pyrHOG2.hog2bow(nfuse[0]["feat"][0],code=True),shx-1,mm[auxcl]["hist"][0])
+#                    bb=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][1]).astype(numpy.float32),shy*2,shx*2,mm[auxcl]["ww"][1],shy*2,shx*2,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,numbow,pyrHOG2.hog2bow(nfuse[0]["feat"][1],code=True),shx*2-1,mm[auxcl]["hist"][1])
+#                    cc=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][2]).astype(numpy.float32),shy*4,shx*4,mm[auxcl]["ww"][2],shy*4,shx*4,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,numbow,pyrHOG2.hog2bow(nfuse[0]["feat"][2],code=True),shx*4-1,mm[auxcl]["hist"][2])
+##                    else:
+##                        aa=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][0]).astype(numpy.float32),shy,shx,models[auxcl]["ww"][0],shy,shx,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][0][pyrHOG2.histflip()])
+##                        bb=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][1]).astype(numpy.float32),shy*2,shx*2,models[auxcl]["ww"][1],shy*2,shx*2,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][1][pyrHOG2.histflip()])
+##                        cc=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuse[0]["feat"][2]).astype(numpy.float32),shy*4,shx*4,models[auxcl]["ww"][2],shy*4,shx*4,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,625,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][2][pyrHOG2.histflip()])
+#                    print "BOW dense:",aa+bb+cc,"descr",descr,"descr2",descr2
+#                    print "HOG dense",hogd
+#                    print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
                     raw_input()
             #raw_input()
             #check score

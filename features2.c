@@ -28,9 +28,29 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // small value, used to avoid division by zero
 #define eps 0.0001
-#define ftype float
+#define ftype float//double
+#define ftype2 float//double
 
 // unit vectors used to compute gradient orientation
+/*ftype2 uu[9] = {1.0000, 
+		0.939692620785908, 
+		0.76604444311897, 
+		0.500, 
+		0.1736481776669304, 
+		-0.1736481776669304, 
+		-0.5000, 
+		-0.76604444311897, 
+		-0.939692620785908};
+ftype2 vv[9] = {0.0000, 
+		0.342020143325668, 
+		0.642787609686539, 
+		0.866025403784438,
+		0.984807753012208, 
+		0.984807753012208, 
+		0.866025403784438, 
+		0.642787609686539, 
+		0.342020143325668};*/
+
 ftype uu[9] = {1.0000, 
 		0.9397, 
 		0.7660, 
@@ -50,8 +70,8 @@ ftype vv[9] = {0.0000,
 		0.6428, 
 		0.3420};
 
-static inline ftype min(ftype x, ftype y) { return (x <= y ? x : y); }
-static inline ftype max(ftype x, ftype y) { return (x <= y ? y : x); }
+static inline ftype2 min(ftype2 x, ftype2 y) { return (x <= y ? x : y); }
+static inline ftype2 max(ftype2 x, ftype2 y) { return (x <= y ? y : x); }
 
 static inline int mini(int x, int y) { return (x <= y ? x : y); }
 static inline int maxi(int x, int y) { return (x <= y ? y : x); }
@@ -63,10 +83,10 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
 
   // memory for caching orientation histograms & their norms
   int blocks[2];
-  blocks[0] = (int)round((ftype)dimy/(ftype)sbin);
-  blocks[1] = (int)round((ftype)dimx/(ftype)sbin);
-  ftype *hist = (ftype *)calloc(blocks[0]*blocks[1]*18, sizeof(ftype));
-  ftype *norm = (ftype *)calloc(blocks[0]*blocks[1], sizeof(ftype));
+  blocks[0] = (int)round((ftype2)dimy/(ftype2)sbin);
+  blocks[1] = (int)round((ftype2)dimx/(ftype2)sbin);
+  ftype2 *hist = (ftype2 *)calloc(blocks[0]*blocks[1]*18, sizeof(ftype2));
+  ftype2 *norm = (ftype2 *)calloc(blocks[0]*blocks[1], sizeof(ftype2));
 
   // memory for HOG features
   int out[3];
@@ -88,21 +108,21 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
     for (y = 1; y < visible[0]-1; y++) {
       // first color channel
       ftype *s = im + mini(x, dimx-2)*dimy + mini(y, dimy-2);
-      ftype dy = *(s+1) - *(s-1);
-      ftype dx = *(s+dimy) - *(s-dimy);
-      ftype v = dx*dx + dy*dy;
+      ftype2 dy = *(s+1) - *(s-1);
+      ftype2 dx = *(s+dimy) - *(s-dimy);
+      ftype2 v = dx*dx + dy*dy;
 
       // second color channel
       s += dimy*dimx;
-      ftype dy2 = *(s+1) - *(s-1);
-      ftype dx2 = *(s+dimy) - *(s-dimy);
-      ftype v2 = dx2*dx2 + dy2*dy2;
+      ftype2 dy2 = *(s+1) - *(s-1);
+      ftype2 dx2 = *(s+dimy) - *(s-dimy);
+      ftype2 v2 = dx2*dx2 + dy2*dy2;
 
       // third color channel
       s += dimy*dimx;
-      ftype dy3 = *(s+1) - *(s-1);
-      ftype dx3 = *(s+dimy) - *(s-dimy);
-      ftype v3 = dx3*dx3 + dy3*dy3;
+      ftype2 dy3 = *(s+1) - *(s-1);
+      ftype2 dx3 = *(s+dimy) - *(s-dimy);
+      ftype2 v3 = dx3*dx3 + dy3*dy3;
 
       // pick channel with strongest gradient
       if (v2 > v) {
@@ -117,7 +137,7 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
       }
 
       // snap to one of 18 orientations
-      ftype dot,best_dot = 0;
+      ftype2 dot,best_dot = 0;
       int best_o = 0, o = 0;
       for (o = 0; o < 9; o++) {
 	dot = uu[o]*dx + vv[o]*dy;
@@ -128,17 +148,28 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
 	  best_dot = -dot;
 	  best_o = o+9;
 	}
+    /*if (dy==0) //wiothout this make things not symmetric
+    {
+        if (dx<=0)
+        {
+            best_o = 4 + rand()%2;
+        }
+        else
+        {
+            best_o = 4+9 + rand()%2;
+        }
+    }*/
       }
       
       // add to 4 histograms around pixel using linear interpolation
-      ftype xp = ((ftype)x+0.5)/(ftype)sbin - 0.5;
-      ftype yp = ((ftype)y+0.5)/(ftype)sbin - 0.5;
+      ftype2 xp = ((ftype2)x+0.5)/(ftype2)sbin - 0.5;
+      ftype2 yp = ((ftype2)y+0.5)/(ftype2)sbin - 0.5;
       int ixp = (int)floor(xp);
       int iyp = (int)floor(yp);
-      ftype vx0 = xp-ixp;
-      ftype vy0 = yp-iyp;
-      ftype vx1 = 1.0-vx0;
-      ftype vy1 = 1.0-vy0;
+      ftype2 vx0 = xp-ixp;
+      ftype2 vy0 = yp-iyp;
+      ftype2 vx1 = 1.0-vx0;
+      ftype2 vy1 = 1.0-vy0;
       v = sqrt(v);
 
       if (ixp >= 0 && iyp >= 0) {
@@ -164,10 +195,10 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
   }
   // compute energy in each block by summing over orientations
   for (o = 0; o < 9; o++) {
-    ftype *src1 = hist + o*blocks[0]*blocks[1];
-    ftype *src2 = hist + (o+9)*blocks[0]*blocks[1];
-    ftype *dst = norm;
-    ftype *end = norm + blocks[1]*blocks[0];
+    ftype2 *src1 = hist + o*blocks[0]*blocks[1];
+    ftype2 *src2 = hist + (o+9)*blocks[0]*blocks[1];
+    ftype2 *dst = norm;
+    ftype2 *end = norm + blocks[1]*blocks[0];
     while (dst < end) {
       *(dst++) += (*src1 + *src2) * (*src1 + *src2);
       src1++;
@@ -179,7 +210,7 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
   for (x = 0; x < out[1]; x++) {
     for (y = 0; y < out[0]; y++) {
       ftype *dst = feat + x*out[0] + y;      
-      ftype *src, *p, n1, n2, n3, n4;
+      ftype2 *src, *p, n1, n2, n3, n4;
 
       p = norm + (x+1)*blocks[0] + y+1;
       n1 = 1.0 / sqrt(*p + *(p+1) + *(p+blocks[0]) + *(p+blocks[0]+1) + eps);
@@ -190,10 +221,10 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
       p = norm + x*blocks[0] + y;      
       n4 = 1.0 / sqrt(*p + *(p+1) + *(p+blocks[0]) + *(p+blocks[0]+1) + eps);
 
-      ftype h1,t1 = 0;
-      ftype h2,t2 = 0;
-      ftype h3,t3 = 0;
-      ftype h4,t4 = 0;
+      ftype2 h1,t1 = 0;
+      ftype2 h2,t2 = 0;
+      ftype2 h3,t3 = 0;
+      ftype2 h4,t4 = 0;
 
       // contrast-sensitive features
       src = hist + (x+1)*blocks[0] + (y+1);
@@ -214,11 +245,11 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
       // contrast-insensitive features
       src = hist + (x+1)*blocks[0] + (y+1);
       for (o = 0; o < 9; o++) {
-	ftype sum = *src + *(src + 9*blocks[0]*blocks[1]);
-	ftype h1 = min(sum * n1, 0.2);
-	ftype h2 = min(sum * n2, 0.2);
-	ftype h3 = min(sum * n3, 0.2);
-	ftype h4 = min(sum * n4, 0.2);
+	ftype2 sum = *src + *(src + 9*blocks[0]*blocks[1]);
+	ftype2 h1 = min(sum * n1, 0.2);
+	ftype2 h2 = min(sum * n2, 0.2);
+	ftype2 h3 = min(sum * n3, 0.2);
+	ftype2 h4 = min(sum * n4, 0.2);
 	*dst = 0.5 * (h1 + h2 + h3 + h4);
 	dst += out[0]*out[1];
 	src += blocks[0]*blocks[1];

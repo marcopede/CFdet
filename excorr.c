@@ -133,7 +133,10 @@ inline ftype corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int
     ftype sum=0.0,dist,mindist=10000.0;//,bowscr=0.0;
     int x,y,z,posi,c,cy,cx,bestc=0,toton=0;
     for (c=0;c<numvoc;c++)
+    {
         localhist[c]=0.0;
+        //printf(" %.3f");
+    }
     for (x=0;x<maskx;x++)
         for (y=0;y<masky;y++)
         {
@@ -390,9 +393,10 @@ void hog2bow(ftype *img,int imgx,int imgy,ftype *mask,int masky,int maskx,int di
             }
             code[x+y*(maskx-sizevoc+1)]=pos;
             //if (mask[0]==10.0)
-            //    printf("code y=%d x=%d is %d\n",y,x,pos);
+            //printf("code y=%d x=%d is %d\n",y,x,pos);
         }
-    }            
+    }  
+    //printf("\n");          
 }
 
 
@@ -445,7 +449,7 @@ inline ftype refineighbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int
 {
     int iy,ix;  
     ftype val,maxval=-1000;
-    int codey=(masky+2*radx)-sizevoc+1;
+    int codey=(masky+2*rady)-sizevoc+1;
     int codex=(maskx+2*radx)-sizevoc+1;
     //precompute sift
     hog2bow(img,imgx,imgy,mask,masky+2*rady,maskx+2*radx,dimz,posy-rady,posx-radx,sizevoc,bcode);
@@ -494,11 +498,16 @@ inline ftype refineighfull(ftype *img,int imgy,int imgx,ftype *mask,int masky,in
 
 inline ftype refineighfullbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,ftype dy,ftype dx,int posy,int posx,int rady,int radx,ftype *scr,int *rdy,int *rdx,ftype *prec,int pady,int padx,int occl,int sizevoc,int numvoc,ftype *voc,ftype *mhist)
 {
-    int iy,ix;  
+    int iy,ix,c;  
     ftype val,maxval=-1000;
-    int codey=(masky+2*radx)-sizevoc+1;
+    int codey=(masky+2*rady)-sizevoc+1;
     int codex=(maskx+2*radx)-sizevoc+1;
     hog2bow(img,imgx,imgy,mask,masky+2*rady,maskx+2*radx,dimz,posy-rady,posx-radx,sizevoc,bcode);
+    /*for (c=0;c<numvoc;c++)
+    {
+        //localhist[c]=0.0;
+        printf(" %f",mhist[c]);
+    }*/
     for (iy=-rady;iy<=rady;iy++)
     {
         for (ix=-radx;ix<=radx;ix++)

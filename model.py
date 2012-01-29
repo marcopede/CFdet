@@ -19,7 +19,7 @@ def model2w(model,deform,usemrf,usefather,k,lastlev=0,usebow=False):
             w=numpy.concatenate((w,model["hist"][l].flatten()))
     return w
 
-def model2wDef(model,k,flip=False,usemrf=True,usefather=True,lastlev=0,useoccl=False,usebow=False):
+def model2wDef(model,k,deform=False,usemrf=True,usefather=True,lastlev=0,useoccl=False,usebow=False):
         """
         convert each detection in a feature descriptor for the SVM
         """      
@@ -28,14 +28,21 @@ def model2wDef(model,k,flip=False,usemrf=True,usefather=True,lastlev=0,useoccl=F
             d=numpy.concatenate((d,model["ww"][l].flatten()))       
             if l>0 : #skip deformations level 0
                 if usefather:
-                    d=numpy.concatenate((d, k*k*(model["df"][l][:,:,0].flatten()**2)  ))
-                    d=numpy.concatenate((d, k*k*(model["df"][l][:,:,1].flatten()**2)  ))
+                    d=numpy.concatenate((d, (model["df"][l][:,:,0].flatten())  ))
+                    d=numpy.concatenate((d, (model["df"][l][:,:,1].flatten())  ))
                 if usemrf:
-                    d=numpy.concatenate((d,k*k*model["df"][l][:,:,2].flatten()))
-                    d=numpy.concatenate((d,k*k*model["df"][l][:,:,3].flatten()))
+                    d=numpy.concatenate((d,model["df"][l][:,:,2].flatten()))
+                    d=numpy.concatenate((d,model["df"][l][:,:,3].flatten()))
             if useoccl:
                 d=numpy.concatenate((d,model["occl"]))
         if usebow:
+#            for l in range(len(model["hist"])-lastlev):
+#                auxd=numpy.zeros((2**l,2**l,6**4),dtype=numpy.float32)
+#                for px in range(2**l):
+#                    for py in range(2**l):
+#                        auxd[py,px,:]=model["hist"][l][py:(py+1),px:(px+1)]
+#pyrHOG2.hog2bow((item["feat"][l][py*fy:(py+1)*fy,px*fx:(px+1)*fx]).copy())
+            #d=numpy.concatenate((d,auxd.flatten()))
             for l in range(len(model["hist"])-lastlev):
                 d=numpy.concatenate((d,model["hist"][l].flatten()))
         return d

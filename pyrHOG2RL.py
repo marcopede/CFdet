@@ -193,7 +193,7 @@ def flip(m):
     if m.has_key("hist"):
         for idl,l in enumerate(m["hist"]):
             #hh1.append(numpy.ascontiguousarray(l[::-1]))
-            if m.has_key("df"):
+            if len(l.shape)>1:
                 auxh=numpy.zeros((2**idl,2**idl,l.shape[2]),dtype=numpy.float32)
                 for py in range(l.shape[0]):
                     for px in range(l.shape[1]):

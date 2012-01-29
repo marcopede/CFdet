@@ -823,7 +823,7 @@ if __name__=="__main__":
         voc=[]
         dd=[]    
         for l in range(cfg.lev[c]):
-            if 0:#cfg.useRL:
+            if cfg.useRL:
                 lowf=numpy.zeros((fy*2**l,fx*2**l,31)).astype(numpy.float32)
                 #lowf[:,:,2]=0.1/31
                 #lowf[:,:,18+2]=0.1/31
@@ -837,11 +837,22 @@ if __name__=="__main__":
             else:
                 lowf=numpy.ones((fy*2**l,fx*2**l,31)).astype(numpy.float32)
                 #lowf=lowf1/(numpy.sum(lowf1**2))
-            lowd=-numpy.ones((1*2**l,1*2**l,4)).astype(numpy.float32)
+            if l==0:
+                lowd=numpy.zeros((1*2**l,1*2**l,4)).astype(numpy.float32)
+                #lowd=-numpy.ones((1*2**l,1*2**l,4)).astype(numpy.float32)
+            else:
+                lowd=-numpy.ones((1*2**l,1*2**l,4)).astype(numpy.float32)
             ww.append(lowf)
             #hww.append(numpy.ones((2**l,2**l,numbow),dtype=numpy.float32))
             if cfg.deform:
-                hww.append(0.001*numpy.ones((2**l,2**l,numbow),dtype=numpy.float32))
+                #if l!=3:
+                hww.append(0.001*numpy.ones((2**l,2**l,numbow)).astype(numpy.float32))
+                #else:
+                #hww.append(0.001*numpy.zeros((2**l,2**l,numbow),dtype=numpy.float32))
+                    #hww[-1][0,0]=0.001*numpy.ones((numbow),dtype=numpy.float32)
+                #hww.append(0.001*numpy.random.random((2**l,2**l,numbow)).astype(numpy.float32))
+                #else:
+                #hww.append(0.001*numpy.zeros((2**l,2**l,numbow),dtype=numpy.float32))
             else:
                 hww.append(0.001*numpy.ones((numbow),dtype=numpy.float32))
                 #hww.append(1.0*numpy.random.random(numbow).astype(numpy.float32))
@@ -856,7 +867,6 @@ if __name__=="__main__":
         for idw,wc in enumerate(ww):
             ww[idw]=wc*0.1/numpy.sqrt(mynorm)
         models.append({"ww":ww,"hist":hww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1]})
-
 #check model
     #pyrHOG2.BOW=cfg.usebow
     #BOW=pyrHOG2.BOW
@@ -867,7 +877,7 @@ if __name__=="__main__":
     #from model to w
     for l in range(cfg.numcl):
         if cfg.deform:
-            waux.append(model.model2wDef(models[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow))
+            waux.append(model.model2wDef(models[l],cfg.k,deform=cfg.deform,usemrf=cfg.usemrf,usefather=cfg.usefather,usebow=cfg.usebow))
         else:
             waux.append(model.model2w(models[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow))
         rr.append(models[l]["rho"])
@@ -891,7 +901,7 @@ if __name__=="__main__":
         w1=numpy.concatenate((w1,waux1[-1],numpy.array([m1[l]["rho"]])))
     
     assert(numpy.all(w1==w))
-    models=m1
+    #models=m1
 
     if 0:        
         print "Show model"
@@ -1491,7 +1501,7 @@ if __name__=="__main__":
                     oldoutlyers=newoutlyers.copy()
                     #raw_input()
             else:
-                w,r,prloss=trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,cfg.svmc,cfg.multipr,parallel=True,numcore=numcore)
+                w,r,prloss=trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,cfg.svmc,cfg.multipr,parallel=False,numcore=numcore)
 
             old_posl,old_negl,old_reg,old_nobj,old_hpos,old_hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,cfg.svmc)            
             #pylab.figure(300)
@@ -1510,7 +1520,10 @@ if __name__=="__main__":
             bias=100
             for idm,m in enumerate(models):
                 #models[idm]=tr.model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather,usebow=cfg.usebow)
-                models[idm]=model.w2model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],bin=numbin,siftsize=siftsize,usemrf=cfg.usemrf,usefather=cfg.usefather,usebow=cfg.usebow)
+                if cfg.deform:
+                    models[idm]=model.w2modelDef(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],bin=numbin,siftsize=siftsize,usemrf=cfg.usemrf,usefather=cfg.usefather,usebow=cfg.usebow)
+                else:
+                    models[idm]=model.w2model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],bin=numbin,siftsize=siftsize,usemrf=cfg.usemrf,usefather=cfg.usefather,usebow=cfg.usebow)
                 #models[idm]["ra"]=w[cumsize[idm+1]-1]
             util.save("%s%d.model"%(testname,it),models)
             if cfg.deform:

@@ -302,9 +302,12 @@ def hog2bowrec(feat,bin=6,siftsize=2,pr=False,code=False):
         return bcode.astype(numpy.int32)
     return hist.astype(numpy.float32)
 
-def showbow(hist,num=100,order=1):
+def showbow(hist,num=100,order=1,onlypos=True):
     sel=numpy.array([0,2,4,5,7])
-    srt=numpy.argsort(-order*numpy.abs(hist))
+    if onlypos:
+        srt=numpy.argsort(-order*(hist))
+    else:
+        srt=numpy.argsort(-order*numpy.abs(hist))
     pylab.figure()
     ny=numpy.sqrt(num)
     nx=num/ny+1

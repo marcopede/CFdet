@@ -11,7 +11,7 @@ import time
 import copy
 import itertools
 
-approx=0.00001 #there should be some problem with BOW because it should be 0.0001
+approx=0.0001 #there should be some problem with BOW because it should be 0.0001
 
 class config(object):
     pass
@@ -753,7 +753,7 @@ if __name__=="__main__":
     minfy=3
     minfx=3
     #maxArea=25*(4-cfg.lev[0])
-    maxArea=40*(4-cfg.lev[0])
+    maxArea=30*(4-cfg.lev[0])
     usekmeans=False
 
     #using kmeans
@@ -1370,11 +1370,11 @@ if __name__=="__main__":
                             if abs(nfuseneg[0]["scr"]-dscr)>approx:
                                 print "Warning: the two scores must be the same!!!"
                                 print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
-                                import ctypes
-                                descr=numpy.sum(dns[-1-numbow*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]]*w[-1-numbow*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]])
-                                hogd=numpy.sum(dns[cumsize[auxcl]:cumsize[auxcl+1]-numbow*3-1]*w[cumsize[auxcl]:cumsize[auxcl+1]-numbow*3-1])
-                                bbias=numpy.sum(100*w[cumsize[auxcl+1]-1])
-                                descr2=numpy.sum(aux[-numbow*3:]*numpy.concatenate(models[auxcl]["hist"]))
+#                                import ctypes
+#                                descr=numpy.sum(dns[-1-numbow*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]]*w[-1-numbow*3+cumsize[auxcl+1]:-1+cumsize[auxcl+1]])
+#                                hogd=numpy.sum(dns[cumsize[auxcl]:cumsize[auxcl+1]-numbow*3-1]*w[cumsize[auxcl]:cumsize[auxcl+1]-numbow*3-1])
+#                                bbias=numpy.sum(100*w[cumsize[auxcl+1]-1])
+#                                descr2=numpy.sum(aux[-numbow*3:]*numpy.concatenate(models[auxcl]["hist"]))
 #                                shy=nfuseneg[0]["feat"][0].shape[0] 
 #                                shx=nfuseneg[0]["feat"][0].shape[1] 
 #                                aa=pyrHOG2.ff.corr3dpadbow(pyrHOG2.hogflip(nfuseneg[0]["feat"][0]).astype(numpy.float32),shy,shx,models[auxcl]["ww"][0],shy,shx,31,0,0,ctypes.POINTER(ctypes.c_float)(),0,0,0,2,numbow,numpy.ones(10,dtype=numpy.float32)*10,models[auxcl]["hist"][0])
@@ -1501,7 +1501,7 @@ if __name__=="__main__":
                     oldoutlyers=newoutlyers.copy()
                     #raw_input()
             else:
-                w,r,prloss=trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,cfg.svmc,cfg.multipr,parallel=False,numcore=numcore)
+                w,r,prloss=trainParallel(trpos,trneg,testname,trposcl,trnegcl,w,cfg.svmc,cfg.multipr,parallel=True,numcore=numcore)
 
             old_posl,old_negl,old_reg,old_nobj,old_hpos,old_hneg=pegasos.objective(trpos,trneg,trposcl,trnegcl,clsize,w,cfg.svmc)            
             #pylab.figure(300)

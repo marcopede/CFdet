@@ -224,7 +224,8 @@ def trainComp(trpos,trneg,fname="",trposcl=None,trnegcl=None,oldw=None,dir="./sa
     posl,negl,reg,nobj,hpos,hneg=objective(trpos,trneg,trposcl,trnegcl,compx,w,pc)
     loss.append([posl,negl,reg,nobj,hpos,hneg])
     for tt in range(maxtimes):
-        lpeg.fast_pegasos_comp(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,pc,ntimes*10,tt+10)#added tt+10 to not restart form scratch
+        #lpeg.fast_pegasos_comp(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,pc,ntimes*10,tt+10)#added tt+10 to not restart form scratch
+        lpeg.fast_pegasos_comp_parall(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,pc,ntimes*10,tt+10,k,numthr)#added tt+10 to not restart form scratch
         #lpeg.fast_pegasos_comp_parall(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,pc,ntimes*10,tt,numthr*4,numthr)
         #lpeg.fast_pegasos_comp(w,ncomp,arrint(*compx),arrint(*compy),arrfloat(*newtrcomp),ntimes,alabel,trcompcl,lamd,ntimes*10*numcomp/k,tt,k,numthr)
         #nobj=lpeg.objective(w,fdim,bigm,ntimes,labels,lamd)

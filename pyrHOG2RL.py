@@ -275,8 +275,9 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
         else:
             showlabel=False
         if fastBU:#enable TD+BU
+            print "Fast BU"
             t1=time.time()
-            det=tr.doall(thr=thr,rank=200,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
+            det=tr.doall(thr=thr,rank=10,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
             #detR=[];detL=[]
             #for d in det:
             #    if d["rl"]==1:

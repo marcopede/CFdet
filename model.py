@@ -2,6 +2,62 @@
 import numpy
 #danger: code dupicated in pyrHOG2.py: find a solution
 
+def initmodel(fy,fx,lev,useRL,deform,numbow=6**4,onlybow=False):
+    #fy=cfg.fy[c]
+    #fx=cfg.fx[c]
+    ww=[]
+    hww=[]
+    voc=[]
+    dd=[]    
+    for l in range(lev):
+        if useRL:
+            lowf=numpy.zeros((fy*2**l,fx*2**l,31)).astype(numpy.float32)
+            #lowf[:,:,2]=0.1/31
+            #lowf[:,:,18+2]=0.1/31
+            lowf[:(fy*2**l)/2,:,2]=0.1/31
+            lowf[(fy*2**l)/2:,:,7]=0.1/31
+            lowf[:(fy*2**l)/2,:,11]=0.1/31
+            lowf[(fy*2**l)/2:,:,16]=0.1/31
+            lowf[:(fy*2**l)/2,:,18+2]=0.1/31
+            lowf[(fy*2**l)/2:,:,18+7]=0.1/31
+            #lowf=lowf/(numpy.sum(lowf**2))
+        else:
+            lowf=numpy.ones((fy*2**l,fx*2**l,31)).astype(numpy.float32)
+            #lowf=lowf1/(numpy.sum(lowf1**2))
+        if l==0:
+            lowd=numpy.zeros((1*2**l,1*2**l,4)).astype(numpy.float32)
+            #lowd=-numpy.ones((1*2**l,1*2**l,4)).astype(numpy.float32)
+        else:
+            lowd=-numpy.ones((1*2**l,1*2**l,4)).astype(numpy.float32)
+        ww.append(lowf)
+        #hww.append(numpy.ones((2**l,2**l,numbow),dtype=numpy.float32))
+        if deform:
+            #if l!=3:
+            hww.append(0.001*numpy.ones((2**l,2**l,numbow)).astype(numpy.float32))
+            #else:
+            #hww.append(0.001*numpy.zeros((2**l,2**l,numbow),dtype=numpy.float32))
+                #hww[-1][0,0]=0.001*numpy.ones((numbow),dtype=numpy.float32)
+            #hww.append(0.001*numpy.random.random((2**l,2**l,numbow)).astype(numpy.float32))
+            #else:
+            #hww.append(0.001*numpy.zeros((2**l,2**l,numbow),dtype=numpy.float32))
+        else:
+            hww.append(0.001*numpy.ones((numbow),dtype=numpy.float32))
+            #hww.append(1.0*numpy.random.random(numbow).astype(numpy.float32))
+        #hww.append(numpy.zeros((2**l,2**l,numbow),dtype=numpy.float32))
+        #voc.append(numpy.zeros((2**l,2**l,numbow,siftsize**2*9),dtype=numpy.float32))
+        #voc[-1][:,:]=rbook
+        dd.append(lowd)
+        rho=0
+    mynorm=0
+    for wc in ww:
+        mynorm+=numpy.sum(wc**2)
+    for idw,wc in enumerate(ww):
+        ww[idw]=wc*0.1/numpy.sqrt(mynorm)
+        if onlybow:
+            ww[idw][:,:,:]=0.0
+            dd[idw][:,:,:]=0.0
+    return {"ww":ww,"hist":hww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1]}
+
 def model2w(model,deform,usemrf,usefather,k,lastlev=0,usebow=False):
     w=numpy.zeros(0,dtype=numpy.float32)
     for l in range(len(model["ww"])-lastlev):

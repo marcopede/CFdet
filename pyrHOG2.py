@@ -196,7 +196,7 @@ def hog2bow(feat,bin=6,siftsize=2,pr=False,code=False,db=False):
     ff.hog2bow(feat1,shx,shy,mask,shy,shx,31,0,0,2,bcode)
     for l in bcode.flatten():
         hist[l]=1.0
-    hist=hist/numpy.sqrt(numpy.sum(hist**2))
+    hist=10.0*hist/numpy.sqrt(numpy.sum(hist**2))
     if code:
         return bcode
     return hist
@@ -985,7 +985,11 @@ class pyrHOG:
             else:
                 self.starti=self.interv*(len(ww)-1-small)
         from time import time
+        ttt=0
         for i in range(self.starti,len(self.hog)):
+            #print "Level",i,"--------------------------------------------------"
+            #print "Time:",time()-ttt
+            ttt=time()
             if mysamples==None:
                 samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(c_int)
             else:
@@ -1080,7 +1084,9 @@ class pyrHOG:
                     auxparts[3,(dy+ratio)*(2*ratio+1)+(dx+ratio)]=self.scanRCFLPartBU(model,samples4.copy(),pparts,ct.ptr[3,(dy+ratio)*(2*ratio+1)+(dx+ratio)],pres[3,(dy+ratio),(dx+ratio),:,:],i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf,prec,pady,padx)
         
         auxprec=prec[lev][((locy/2)*2+(locx/2))*4:((locy/2)*2+(locx/2)+1)*4]
+        tt=time.time()
         ff.scanDef2(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,pres,1,auxprec.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),pady,padx,0)
+        #print time.time()-tt
         res+=auxres
         ct.best=[parts]
 
@@ -1685,7 +1691,7 @@ class TreatDef(Treat):
                     break
         Treat.show(self,ldet,colors=colors,thr=thr,maxnum=maxnum,scr=scr,cls=cls)        
 
-    def descr(self,det,flip=False,usemrf=True,usefather=True,k=K,usebow=False):
+    def descr(self,det,flip=False,usemrf=True,usefather=True,k=K,usebow=False,onlybow=False):
         """
         convert each detection in a feature descriptor for the SVM
         """      
@@ -1720,6 +1726,8 @@ class TreatDef(Treat):
                         d=numpy.concatenate((d,[0.0]))
                     else:
                         d=numpy.concatenate((d,[1.0*SMALL]))
+            if onlybow:#set everything to 0
+                d[:]=0.0
             if usebow:
                 fy=item["feat"][0].shape[0]
                 fx=item["feat"][0].shape[1]

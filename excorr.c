@@ -106,7 +106,7 @@ static ftype localhist[2000];
 
 #define NUMOR 5
 static int sel[NUMOR]={0,2,4,5,7};//selected orientations
-static int norm[4]={3,1,2,0};//selected orientations
+static int norm[4]={2,3,0,1};//selected orientations
 static ftype pow5[]={1,5,5*5,5*5*5};
 static ftype pow6[]={1,6,6*6,6*6*6};
 
@@ -273,7 +273,7 @@ inline ftype corr3dpadbow(ftype *img,int imgy,int imgx,ftype *mask,int masky,int
     {
         //printf("toton%d\n",toton);
         //if (localhist[c]==1.0)
-        localhist[c]=localhist[c]/sqrt(toton);
+        localhist[c]=10.0*localhist[c]/sqrt(toton);
         //localhist[c]=(ftype)(localhist[c])/sqrt(nval);
         //else
         //    localhist[c]=0.0;          

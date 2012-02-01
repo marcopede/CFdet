@@ -134,6 +134,98 @@ void fast_pegasos_comp(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsam
 void fast_pegasos_comp_parall(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsamplescomp,int totsamples,int *label,int *comp,ftype C,int iter,int part,int k,int numthr)
 {
     int wx=0,wxtot=0,wcx;
+    #ifdef _OPENMP
+    omp_set_num_threads(numthr);
+    #endif
+    printf("k=%d\n",k);
+    srand48(3+part);
+    int c,cp,bcp,d,y,t,pex,pexcomp,totsz,sumszx[10],sumszy[10];//max 10 components
+    ftype *x,n,scr,norm,val,ptrc,wscr,bwscr=-1.0;
+    totsz=0;
+    sumszx[0]=0;
+    sumszy[0]=0;
+    int *pares,*pexarray,kk;
+    pares   =malloc(sizeof(int)*k);
+    pexarray=malloc(sizeof(int)*k);
+    for (c=0;c<numcomp;c++)
+    {
+        wxtot+=compx[c];
+        totsz+=compy[c];
+        sumszx[c+1]=wxtot;
+        sumszy[c+1]=totsz;
+    }
+    for (c=0;c<iter;c++)
+    {
+        t=c+part*iter+1;
+        n=1.0/(t);
+        //only the component l2_max*/
+        bwscr=-1.0;
+        for (cp=0;cp<numcomp;cp++)
+        {   
+            wscr=score(w+sumszx[cp],w+sumszx[cp],compx[cp]);
+            //printf("Wscore(%d)=%f\n",cp,wscr);
+            if (wscr>bwscr)
+            {
+                bwscr=wscr;
+                bcp=cp;
+            }
+        }
+        //printf("Regularize Component %d \n",bcp);
+        mul(w+sumszx[bcp],1-n,compx[bcp]);    
+        //all the vector
+        //mul(w,1-n*lambda,wxtot);
+        for (kk=0;kk<k;kk++)
+        {
+            pexarray[kk]=(int)(drand48()*(totsamples-0.5));
+        }
+        //printf("here2!!!\n");
+        #pragma omp parallel for private(scr,pex,x,y,wx)
+        for (kk=0;kk<k;kk++)
+        {          
+            pex=pexarray[kk];
+            wx=compx[comp[pex]];
+            x=ptrsamplescomp[comp[pex]]+(pex-sumszy[comp[pex]])*wx;
+            //printf("here2.3!!!\n");
+            y=label[pex];
+            //printf("Y %d ",y);
+            //printf("C %d ",comp[pex]);
+            scr=score(x,w+sumszx[comp[pex]],wx);
+            //printf("here2.5!!!\n");
+            if (scr*y<1.0)
+            {
+                pares[kk]=pex;
+            }
+            else
+            {
+                pares[kk]=-1;
+            }
+        }
+        //printf("here3!!!\n");
+        for (kk=0;kk<k;kk++)
+        {
+            if (pares[kk]!=-1)
+            {
+                //addmul(w,ex+pares[kk]*wx,(float)(label[pares[kk]])*n/(float)k,wx);            
+                pex=pares[kk];
+                wx=compx[comp[pex]];
+                x=ptrsamplescomp[comp[pex]]+(pex-sumszy[comp[pex]])*wx;
+                addmul(w+sumszx[comp[pex]],x,(float)(label[pex])*n*C*totsamples/(float)k,wx);            
+            }
+        }
+        /*if (scr*y<1.0)
+        {
+            addmul(w+sumszx[comp[pex]],x,C*y*n*totsamples,wx);            
+        }*/
+    }
+    printf("N:%g t:%d\n",n,t);
+    free(pares);
+    free(pexarray);
+}
+
+
+void fast_pegasos_comp_parall_old(ftype *w,int numcomp,int *compx,int *compy,ftype **ptrsamplescomp,int totsamples,int *label,int *comp,ftype C,int iter,int part,int k,int numthr)
+{
+    int wx=0,wxtot=0,wcx;
     srand48(3+part);
     #ifdef _OPENMP
     omp_set_num_threads(numthr);

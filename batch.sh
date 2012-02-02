@@ -5,7 +5,7 @@ apply()
     for ARG in "$@" 
     do 
         echo "Training on " $ARG 
-        python trainFAST.py $ARG batch
+        python trainBOW.py $ARG batch
     done 
 } 
 

@@ -419,20 +419,6 @@ def hogflip(feat,obin=9):
     aux=feat[:,::-1,p]
     return numpy.ascontiguousarray(aux)
 
-def hogflip_wrong(feat,obin=9):
-    """    
-    returns the horizontally flipped version of the HOG features
-    """
-    #feature shape
-    #[18 oriented][9 not oriented][4 normalization]
-    if feat.shape[2]==31:
-        #p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,30,31,28,29])-1
-        p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,29,28,31,30])-1
-    else:
-        p=numpy.array([10,9,8,7,6,5,4,3,2,1,18,17,16,15,14,13,12,11,19,27,26,25,24,23,22,21,20,30,31,28,29,32])-1
-    aux=feat[:,::-1,p]
-    return numpy.ascontiguousarray(aux)
-
 
 def defflip(feat):
     """    
@@ -451,14 +437,15 @@ class container(object):
         self.obj=objarray
         self.ptr=ptrarray
 
+hogbuffer={}
+
 class pyrHOG:
-    def __init__(self,im,interv=10,sbin=8,savedir="./",compress=False,notload=False,notsave=False,hallucinate=0,cformat=False,flip=False):
+    def __init__(self,im,interv=10,sbin=8,savedir="./",compress=False,notload=False,notsave=False,hallucinate=0,cformat=False,flip=False,usebuffer=False):
         """
         Compute the HOG pyramid of an image
         if im is a string call precomputed
         if im is an narray call compute
         """
-
         import time
         t=time.time()       
         self.hog=[]#hog pyramid as a list of hog features
@@ -470,7 +457,23 @@ class pyrHOG:
             self.__copy(im)
             #return
         if isinstance(im,str):
-            self._precompute(im,interv,sbin,savedir,compress,notload,notsave,hallucinate,cformat=cformat)
+            rim=im.split("/")[-1]
+            if usebuffer:
+                if hogbuffer.has_key(rim):
+                    print "Using Buffer"
+                    aux=hogbuffer[rim]
+                    self.interv=aux.interv
+                    self.oct=aux.oct
+                    self.sbin=aux.sbin
+                    self.hog=aux.hog
+                    self.scale=aux.scale
+                    self.hallucinate=aux.hallucinate
+                else:
+                    print "Computing Buffer"
+                    self._precompute(im,interv,sbin,savedir,compress,notload,notsave,hallucinate,cformat=cformat)
+                    hogbuffer[rim]=self
+            else:
+                self._precompute(im,interv,sbin,savedir,compress,notload,notsave,hallucinate,cformat=cformat)
             #return
         if type(im)==numpy.ndarray:
             self._compute(im,interv,sbin,hallucinate,cformat=cformat)
@@ -553,6 +556,9 @@ class pyrHOG:
             print "Computing Hog"
             img=None
             img=util.myimread(imname,self.flip)
+            if imname.split("_")[-1]=="_flip":  
+                print "Flipping Image!"  
+                img=img[:,::-1].copy()
             if img.ndim<3:
                 aux=numpy.zeros((img.shape[0],img.shape[1],3))
                 aux[:,:,0]=img
@@ -897,6 +903,7 @@ class pyrHOG:
         res=[]
         pparts=[]
         tot=0
+        #print "MyTHR",mythr
         if not(small):
             self.starti=self.interv*(len(ww)-1)
         else:
@@ -955,13 +962,13 @@ class pyrHOG:
         pparts[lev][(locy+0):(locy+2),(locx+0):(locx+2),:,:,:]=parts
         if i-self.interv>=0 and len(model["ww"])-1>lev:
             samples1=(samples+parts[0,0,:2,:,:])*2+1
-            self.scanRCFLPart(model,samples1.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+0),ratio,usemrf)
+            self.scanRCFLPartThr(model,samples1.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+0),ratio,usemrf,mythr)
             samples2=((samples.T+parts[0,1,:2,:,:].T+numpy.array([0,fx],dtype=c_int).T)*2+1).T
-            self.scanRCFLPart(model,samples2.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+1),ratio,usemrf)
+            self.scanRCFLPartThr(model,samples2.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+1),ratio,usemrf,mythr)
             samples3=((samples.T+parts[1,0,:2,:,:].T+numpy.array([fy,0],dtype=c_int).T)*2+1).T
-            self.scanRCFLPart(model,samples3.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+0),ratio,usemrf)
+            self.scanRCFLPartThr(model,samples3.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+0),ratio,usemrf,mythr)
             samples4=((samples.T+parts[1,1,:2,:,:].T+numpy.array([fy,fx],dtype=c_int).T)*2+1).T
-            self.scanRCFLPart(model,samples4.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf)
+            self.scanRCFLPartThr(model,samples4.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf,mythr)
 
     def scanRCFLDefBU(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None):
         """
@@ -1838,11 +1845,12 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             showlabel=False
         if fastBU:#enable TD+BU
             t1=time.time()
-            det=tr.doall(thr=thr,rank=200,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
+            det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
             samples=tr.goodsamples(det,initr=initr,ratio=ratio)
             scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
             print "Refine Time:",time.time()-t1
             tr=TreatDef(f,scr,pos,initr,m["fy"],m["fx"])
+            print len(det)
             det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)
         else:
             det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=nms,show=False,inclusion=inclusion,cl=cl)

@@ -26,7 +26,7 @@ m=util2.load("%s%d.model"%(modelname,it))
 import pylab
 
 #show the model
-if True:
+if 0:
     print "Show model"
     pylab.figure(100)
     pylab.clf()
@@ -47,20 +47,32 @@ dettime1=res[2]
 numhog1=res[3]
 print "Number of computed HOGs:",numhog1
 print
+print "Coarse-to-Fine plus exact refinement (10hyps)"
+showImage(img,title="Coarse-to-Fine plus exact refinement (10hyps)")
+res=pyrHOG2.detect(f,m,bottomup=False,deform=True,usemrf=True,small=False,show=True,fastBU=True)
+pylab.axis((0,img.shape[1],img.shape[0],0))
+dettime15=res[2]
+numhog15=res[3]
+print "Number of computed HOGs:",numhog15
+print
 print "Coarse-to-Fine search"
 import pylab
 showImage(img,title="Coarse-to-Fine")
 res=pyrHOG2.detect(f,m,bottomup=False,deform=True,usemrf=True,small=False,show=True)
 pylab.axis((0,img.shape[1],img.shape[0],0))
-pylab.draw()
-pylab.show()
 dettime2=res[2]
 numhog2=res[3]
 print "Number of computed HOGs:",numhog2
 print 
+print "Coarse-to-Fine"
 print "Time Speed-up: %.3f "%(dettime1/dettime2)
 print "HOG Speed-up: %.3f "%(numhog1/float(numhog2))
-
+print
+print "Coarse-to-Fine plus exact refinement (10hyps)"
+print "Time Speed-up: %.3f "%(dettime1/dettime15)
+print "HOG Speed-up: %.3f "%(numhog1/float(numhog15))
+pylab.draw()
+pylab.show()
 
 
 

@@ -674,6 +674,7 @@ void scanDefbow(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int di
     {
         if (posy[i]<-100)//if score too low skip (used for some threshold based filtering) 
         {
+            printf("Using thr\n");
             continue;
         }
         int aord[]={0,1,3,2};

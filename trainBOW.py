@@ -424,10 +424,16 @@ if __name__=="__main__":
     try:
         if batch=="batch":
             print "Loading Batch configuration"
-            from config_local_batch import * #your own configuration
+            if len(sys.argv)>3: #batch configuration
+                import_name=sys.argv[3]
+                #print "The argument is",import_name
+                #raw_input()
+                exec "from config_%s import *"%import_name
+            else:
+                from config_local_batch import * #your own configuration
         else:
             print "Loading Normal configuration"
-            from config_local_pascal import * #your own configuration
+            from config_local_pascal import * #your own configuration    
     except:
         print "config_local.py is not present loading configdef.py"
         from config import * #default configuration  
@@ -809,7 +815,7 @@ if __name__=="__main__":
 
     cfg.fy=lfy#[7,10]#lfy
     cfg.fx=lfx#[11,7]#lfx
-
+    
     import time
     initime=time.time()
     #intit model

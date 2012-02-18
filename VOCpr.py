@@ -441,6 +441,111 @@ def VOCprRecord(gtImages,detlist,show=False,ovr=0.5,pixels=None):
 
     return tp,fp,thr,tot
 
+def VOCprRecordthr(gtImages,detlist,show=False,ovr=0.5,pixels=None):
+    """
+        calculate the precision recall curve
+    """
+    dimg={}
+    tot=0
+    posd=[]
+    for idx in range(len(gtImages)):
+        rect=gtImages[idx]["bbox"][:]
+        #if idx>288:
+        #    print idx,rect
+        if rect!=[]:
+            #print gtImages.getImageName(idx).split("/")[-1].split(".")[0]
+            dimg[gtImages[idx]["name"].split("/")[-1].split(".")[0]]={"bbox":rect,"det":[False]*len(rect)}
+            for i, recti in enumerate(rect):
+                if recti[5] == 0:
+                    tot=tot+1
+
+    imname=[]
+    cnt=0
+    tp=numpy.zeros(len(detlist))
+    fp=numpy.zeros(len(detlist))
+    thr=numpy.zeros(len(detlist))
+    detlist.sort(cmpscore)
+    for idx,detbb in enumerate(detlist):
+        #print detbb[1]
+        found=False
+        maxovr=0
+        #gtdet=[False]
+        gt=0
+        if dimg.has_key(detbb[0]):
+            rect=dimg[detbb[0]]["bbox"]
+            found=False
+            for ir,r in enumerate(rect):
+                #gtdet.append(False)
+                rb=(float(detbb[3]),float(detbb[2]),float(detbb[5]),float(detbb[4]))
+                #print "GT:",r
+                #print "DET:",rb
+                if pixels==None:
+                    covr=overlap(rb,r)
+                else:
+                    covr=overlapx(rb,r,pixels)
+                if covr>=maxovr:
+                    maxovr=covr
+                    gt=ir
+                    #dimg[detbb[0]].remove(r)
+                    #found=True
+                    #break
+
+        if maxovr>ovr:
+            if dimg[detbb[0]]["bbox"][gt][5] == 0:
+                if not(dimg[detbb[0]]["det"][gt]):
+                    tp[idx]=1
+                    dimg[detbb[0]]["det"][gt]=True
+                    posd.append(detbb[1])
+                else:
+                    fp[idx]=1
+        else:
+            fp[idx]=1
+
+########### PASCAL 2010
+#    if ovmax>=VOCopts.minoverlap
+#        if ~gt(i).diff(jmax)
+#            if ~gt(i).det(jmax)
+#                tp(d)=1;            % true positive
+#		        gt(i).det(jmax)=true;
+#            else
+#                fp(d)=1;            % false positive (multiple detection)
+#            end
+#        end
+#    else
+#        fp(d)=1;                    % false positive
+#    end
+########################
+
+
+
+        thr[idx]=detbb[1]
+        if show:
+            prec=numpy.sum(tp)/float(numpy.sum(tp)+numpy.sum(fp))
+            rec=numpy.sum(tp)/tot
+            print "Scr:",detbb[1],"Prec:%.3f"%prec,"Rec:%.3f"%rec
+            ss=raw_input()
+            if ss=="s" or not(found):
+                pylab.ioff()
+                img=gtImages.getImageByName2(detbb[0])
+                pylab.figure(1)
+                pylab.clf()
+                pylab.imshow(img)
+                rb=(float(detbb[3]),float(detbb[2]),float(detbb[5]),float(detbb[4]))
+                for r in rect:
+                    pylab.figure(1)
+                    pylab.ioff()
+                    box(r[0],r[1],r[2],r[3],'b',lw=1.5)
+                if found:
+                    box(rb[0],rb[1],rb[2],rb[3],'g',lw=1.5)
+                else:
+                    box(rb[0],rb[1],rb[2],rb[3],'r',lw=1.5)
+                pylab.draw()
+                pylab.show()
+                rect=[]
+
+    return tp,fp,thr,tot,posd
+
+
 def VOCanalysis(gtImages,detlist,show=False,usetr=True,usedf=False,ovr=0.5):
     """
         calculate the precision recall curve

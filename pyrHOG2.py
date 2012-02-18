@@ -437,10 +437,28 @@ class container(object):
         self.obj=objarray
         self.ptr=ptrarray
 
-hogbuffer={}
+#hogbuffer={}
+
+def HOGi2f(pyr,outtype,maxf=2.0):
+    if len(pyr)==0:
+        return []
+    intype=pyr[0].dtype
+    maxin=numpy.iinfo(intype).max
+    npyr=[]
+    for l in pyr:
+        npyr.append((l.astype(outtype)/maxin)*maxf)
+    return npyr
+        
+def HOGf2i(pyr,outtype,maxf=2.0):
+    #intype=pyr[0].dtype
+    maxout=numpy.iinfo(outtype).max
+    npyr=[]
+    for l in pyr:
+        npyr.append(numpy.round((l/maxf)*maxout).astype(outtype))
+    return npyr
 
 class pyrHOG:
-    def __init__(self,im,interv=10,sbin=8,savedir="./",compress=False,notload=False,notsave=False,hallucinate=0,cformat=False,flip=False,usebuffer=False):
+    def __init__(self,im,interv=10,sbin=8,savedir="./",compress=False,notload=False,notsave=False,hallucinate=0,cformat=False,flip=False,mybuffer=None):
         """
         Compute the HOG pyramid of an image
         if im is a string call precomputed
@@ -458,20 +476,25 @@ class pyrHOG:
             #return
         if isinstance(im,str):
             rim=im.split("/")[-1]
-            if usebuffer:
-                if hogbuffer.has_key(rim):
+            if mybuffer!=None:
+                if mybuffer.has_key(rim):
                     print "Using Buffer"
-                    aux=hogbuffer[rim]
+                    aux=mybuffer[rim]
+                    self.hog=HOGi2f(aux.hog,numpy.float32,maxf=2.0)
                     self.interv=aux.interv
                     self.oct=aux.oct
                     self.sbin=aux.sbin
-                    self.hog=aux.hog
+                    #self.hog=aux.hog
                     self.scale=aux.scale
                     self.hallucinate=aux.hallucinate
                 else:
                     print "Computing Buffer"
                     self._precompute(im,interv,sbin,savedir,compress,notload,notsave,hallucinate,cformat=cformat)
-                    hogbuffer[rim]=self
+                    hogf=self.hog
+                    hogi=HOGf2i(hogf,numpy.uint16,maxf=2.0)
+                    self.hog=hogi
+                    mybuffer[rim]=self
+                    self.hog=hogf
             else:
                 self._precompute(im,interv,sbin,savedir,compress,notload,notsave,hallucinate,cformat=cformat)
             #return

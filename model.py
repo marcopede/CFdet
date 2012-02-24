@@ -2,6 +2,7 @@
 import numpy
 #danger: code dupicated in pyrHOG2.py: find a solution
 
+
 def initmodel(fy,fx,lev,useRL,deform,numbow=6**4,onlybow=False):
     #fy=cfg.fy[c]
     #fx=cfg.fx[c]

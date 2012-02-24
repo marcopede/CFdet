@@ -4,7 +4,7 @@ import util2 as util
 import numpy
 import math
 import pylab
-#import scipy.misc.pilutil
+#import scipy.misc.pilutils
 import cPickle
 import time
 
@@ -95,6 +95,25 @@ ff.setK(K)
 
 def setK(pk):
     ff.setK(pk)    
+
+def decompose(model,l=0,py=0,px=0,ppy=0,ppx=0):
+        if len(model["ww"])<=l:
+            return []
+        model2={}
+#        if l==0:
+#            model2["ww"]=model["ww"][0]
+#            model2["df"]=model["df"][0]
+#            model2["parts"]=[decompose(model,1,0,0),decompose(model,1,0,1),decompose(model,1,1,0),decompose(model,1,1,1)]
+#        else:
+        dy=model["ww"][0].shape[0]
+        dx=model["ww"][0].shape[1]
+        model2["ww"]=model["ww"][l][(py+ppy)*dy:(py+ppy+1)*dy,(px+ppx)*dx:(px+ppx+1)*dx].copy()
+        model2["df"]=model["df"][l][py+ppy:(py+ppy+1),px+ppx:(px+ppx+1)].copy()
+        #model2["rho"]=model["rho"]
+        model2["base"]=[dy,dx]
+        model2["len"]=len(model["ww"])
+        model2["parts"]=[decompose(model,l+1,ppy*2,ppx*2,0,0),decompose(model,l+1,ppy*2,ppx*2,0,1),decompose(model,l+1,ppy*2,ppx*2,1,0),decompose(model,l+1,ppy*2,ppx*2,1,1)]
+        return model2
 
 def getfeat(a,y1,y2,x1,x2,trunc=0):
     """
@@ -726,7 +745,7 @@ class pyrHOG:
         return res,pparts
 
 
-    def scanRCFLDef(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None,trunc=0):
+    def scanRCFLDef_old(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None,trunc=0):
         """
         scan the HOG pyramid using the CtF algorithm but using deformations
         """     
@@ -781,8 +800,64 @@ class pyrHOG:
             res[i-self.starti]-=rho
         return res,pparts
 
+    def scanRCFLDef(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None,trunc=0):
+        """
+        scan the HOG pyramid using the CtF algorithm but using deformations
+        """     
+        ww=model["ww"]
+        rho=model["rho"]
+        df=model["df"]
+        if model.has_key("occl"):
+            print "Occlusions:",model["occl"]
+            occl=numpy.array(model["occl"])*SMALL
+        else:
+            #print "No Occlusions"
+            occl=numpy.zeros(len(model["ww"]))
+        model2=decompose(model)
+        res=[]#score
+        pparts=[]#parts position
+        tot=0
+        if not(small):
+            self.starti=self.interv*(len(ww)-1)
+        else:
+            if type(small)==bool:
+                self.starti=0
+            else:
+                self.starti=self.interv*(len(ww)-1-small)
+        from time import time
+        for i in range(self.starti,len(self.hog)):
+            if mysamples==None:
+                samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(c_int)
+            else:
+                samples=mysamples[i]
+            sshape=samples.shape[1:3]
+            res.append(numpy.zeros(sshape,dtype=ctypes.c_float))
+            pparts.append([])
+            nelem=(sshape[0]*sshape[1])
+            for l in range(len(ww)):
+                pparts[-1].append(numpy.zeros((2**l,2**l,4,sshape[0],sshape[1]),dtype=c_int))
+            ff.scaneigh(self.hog[i],
+                self.hog[i].shape[0],
+                self.hog[i].shape[1],
+                ww[0],
+                ww[0].shape[0],ww[0].shape[1],ww[0].shape[2],
+                samples[0,:,:],
+                samples[1,:,:],
+                res[-1],
+                pparts[-1][0][0,0,0,:,:],
+                pparts[-1][0][0,0,1,:,:],
+                initr,initr,
+                nelem,trunc)
+            samples[:,:,:]=(samples[:,:,:]+pparts[-1][0][0,0,:2,:,:])*2+1
+            if i-self.interv>=0 and len(model["ww"])-1>0:
+                self.scanRCFLPart(model2,samples,pparts[-1],res[i-self.starti],i-self.interv,1,0,0,ratio,usemrf,occl,trunc) 
+            else:
+                res[i-self.starti]+=numpy.sum(occl[1:])
+            res[i-self.starti]-=rho
+        return res,pparts
 
-    def scanRCFLPart(self,model,samples,pparts,res,i,lev,locy,locx,ratio,usemrf,occl,trunc):
+
+    def scanRCFLPart_old(self,model,samples,pparts,res,i,lev,locy,locx,ratio,usemrf,occl,trunc):
         """
         auxiliary function for the recursive search of the parts
         """     
@@ -815,6 +890,42 @@ class pyrHOG:
         else:
             if len(model["ww"])-1>lev:
                 res+=numpy.sum(occl[lev+1:])
+
+    def scanRCFLPart(self,model2,samples,pparts,res,i,lev,locy,locx,ratio,usemrf,occl,trunc):
+        """
+        auxiliary function for the recursive search of the parts
+        """     
+        locy=locy*2
+        locx=locx*2
+        #model2=decompose(model)
+        fy=model2["base"][0].shape[0]
+        fx=model2["base"][0].shape[1]
+#        ww1=model["ww"][lev][(locy+0)*fy:(locy+1)*fy,(locx+0)*fx:(locx+1)*fx,:].copy()
+#        ww2=model["ww"][lev][(locy+0)*fy:(locy+1)*fy,(locx+1)*fx:(locx+2)*fx,:].copy()
+#        ww3=model["ww"][lev][(locy+1)*fy:(locy+2)*fy,(locx+0)*fx:(locx+1)*fx,:].copy()
+#        ww4=model["ww"][lev][(locy+1)*fy:(locy+2)*fy,(locx+1)*fx:(locx+2)*fx,:].copy()
+#        df1=model["df"][lev][(locy+0):(locy+1),(locx+0):(locx+1),:].copy()
+#        df2=model["df"][lev][(locy+0):(locy+1),(locx+1):(locx+2),:].copy()
+#        df3=model["df"][lev][(locy+1):(locy+2),(locx+0):(locx+1),:].copy()
+#        df4=model["df"][lev][(locy+1):(locy+2),(locx+1):(locx+2),:].copy()
+        parts=numpy.zeros((2,2,4,res.shape[0],res.shape[1]),dtype=c_int)
+        auxres=numpy.zeros(res.shape,numpy.float32)
+        ff.scanDef2(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,numpy.array([],dtype=numpy.float32),0,ctypes.POINTER(c_float)(),0,0,trunc)
+        res+=auxres
+        pparts[lev][(locy+0):(locy+2),(locx+0):(locx+2),:,:,:]=parts
+        if i-self.interv>=0 and model2["len"]-1>lev:
+            samples1=(samples+parts[0,0,:2,:,:])*2+1
+            self.scanRCFLPart(model2["parts"][0],samples1.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+0),ratio,usemrf,occl,trunc)
+            samples2=((samples.T+parts[0,1,:2,:,:].T+numpy.array([0,fx],dtype=c_int).T)*2+1).T
+            self.scanRCFLPart(model2["parts"][1],samples2.copy(),pparts,res,i-self.interv,lev+1,(locy+0),(locx+1),ratio,usemrf,occl,trunc)
+            samples3=((samples.T+parts[1,0,:2,:,:].T+numpy.array([fy,0],dtype=c_int).T)*2+1).T
+            self.scanRCFLPart(model2["parts"][2],samples3.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+0),ratio,usemrf,occl,trunc)
+            samples4=((samples.T+parts[1,1,:2,:,:].T+numpy.array([fy,fx],dtype=c_int).T)*2+1).T
+            self.scanRCFLPart(model2["parts"][3],samples4.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf,occl,trunc)
+        else:
+            if model2["len"]-1>lev:
+                res+=numpy.sum(occl[lev+1:])
+
 
     def scanRCFLDefbow(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None,trunc=0):
         """
@@ -993,7 +1104,8 @@ class pyrHOG:
             samples4=((samples.T+parts[1,1,:2,:,:].T+numpy.array([fy,fx],dtype=c_int).T)*2+1).T
             self.scanRCFLPartThr(model,samples4.copy(),pparts,res,i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf,mythr)
 
-    def scanRCFLDefBU(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None):
+
+    def scanRCFLDefBU_old(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None):
         """
         scan the HOG pyramid using the full search and using deformations
         """   
@@ -1005,6 +1117,7 @@ class pyrHOG:
         pres=[]
         pparts=[]#parts position
         tot=0
+        #model2=decompose(model)
         pady=model["ww"][-1].shape[0]
         padx=model["ww"][-1].shape[1]
         if not(small):
@@ -1060,6 +1173,7 @@ class pyrHOG:
                         nelem,0)
                     csamples=csamples[:,:,:]*2+1
                     self.scanRCFLPartBU(model,csamples,pparts[-1],ct.ptr[(dy+initr)*(2*initr+1)+(dx+initr)],pres[i-self.starti][(dy+initr)*(2*initr+1)+(dx+initr),:,:],i-self.interv,1,0,0,ratio,usemrf,prec,pady,padx) 
+                    #self.scanRCFLPartBU2(model2["parts"],csamples,pparts[-1],ct.ptr[(dy+initr)*(2*initr+1)+(dx+initr)],pres[i-self.starti][(dy+initr)*(2*initr+1)+(dx+initr),:,:],i-self.interv,1,0,0,ratio,usemrf,prec,pady,padx) 
             res[i-self.starti]=pres[i-self.starti].max(0)
             el=pres[i-self.starti].argmax(0)
             pparts[-1][0][0,0,0,:,:]=el/(initr*2+1)-1
@@ -1134,6 +1248,156 @@ class pyrHOG:
                         ct.best[-1][locy+2:locy+2+2,locx+0:locx+0+2,:,py,px]=auxparts[2,ps][:,:,:,py,px]
                         ps=(parts[1,1,0,py,px]+ratio)*(ratio*2+1)+parts[1,1,1,py,px]+ratio
                         ct.best[-1][locy+2:locy+2+2,locx+2:locx+2+2,:,py,px]=auxparts[3,ps][:,:,:,py,px]
+        return parts
+
+    def scanRCFLDefBU(self,model,initr=1,ratio=1,small=True,usemrf=True,mysamples=None):
+        """
+        scan the HOG pyramid using the full search and using deformations
+        """   
+        ww=model["ww"]
+        rho=model["rho"]
+        df=model["df"]
+        res=[]#score
+        prec=[]#precomputed scores
+        pres=[]
+        pparts=[]#parts position
+        tot=0
+        model2=decompose(model)
+        pady=model["ww"][-1].shape[0]
+        padx=model["ww"][-1].shape[1]
+        if not(small):
+            self.starti=self.interv*(len(ww)-1)
+        else:
+            if type(small)==bool:
+                self.starti=0
+            else:
+                self.starti=self.interv*(len(ww)-1-small)
+        from time import time
+        ttt=0
+        for i in range(self.starti,len(self.hog)):
+            #print "Level",i,"--------------------------------------------------"
+            #print "Time:",time()-ttt
+            ttt=time()
+            if mysamples==None:
+                samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(c_int)
+            else:
+                samples=mysamples[i]
+            csamples=samples.copy()
+            sshape=samples.shape[1:3]
+            pres.append(numpy.zeros(((2*initr+1)*(2*initr+1),sshape[0],sshape[1]),dtype=ctypes.c_float))
+            res.append(numpy.zeros(sshape,dtype=ctypes.c_float))
+            pparts.append([])
+            prec=[]#.append([])
+            nelem=(sshape[0]*sshape[1])
+            #auxpparts=[]
+            for l in range(len(ww)):
+                prec.append(-100000*numpy.ones((4**l,2**l*(self.hog[i].shape[0]+2)+pady*2,2**l*(self.hog[i].shape[1]+2)+padx*2),dtype=ctypes.c_float))
+                pparts[-1].append(numpy.zeros((2**l,2**l,4,sshape[0],sshape[1]),dtype=c_int))                
+            auxpparts=(numpy.zeros(((2*initr+1)*(2*initr+1),2,2,4,sshape[0],sshape[1]),dtype=c_int))
+            auxptr=numpy.zeros((2*initr+1)*(2*initr+1),dtype=object)
+            ct=container(auxpparts,auxptr)
+            for l in range((2*initr+1)**2):
+                maux=(numpy.zeros((4,(2*ratio+1)*(2*ratio+1),2,2,4,sshape[0],sshape[1]),dtype=c_int))
+                auxptr=numpy.zeros((4,(2*ratio+1)*(2*ratio+1)),dtype=object)
+                ct.ptr[l]=container(maux,auxptr)
+            for dy in range(-initr,initr+1):
+                for dx in range(-initr,initr+1):
+                    csamples[0,:,:]=samples[0,:,:]+dy
+                    csamples[1,:,:]=samples[1,:,:]+dx
+                    ff.scaneigh(self.hog[i],
+                        self.hog[i].shape[0],
+                        self.hog[i].shape[1],
+                        ww[0],
+                        ww[0].shape[0],ww[0].shape[1],ww[0].shape[2],
+                        csamples[0,:,:],
+                        csamples[1,:,:],
+                        pres[-1][(dy+initr)*(2*initr+1)+(dx+initr),:,:],
+                        pparts[-1][0][0,0,0,:,:],
+                        pparts[-1][0][0,0,1,:,:],
+                        0,0,
+                        nelem,0)
+                    csamples=csamples[:,:,:]*2+1
+                    self.scanRCFLPartBU2(model2,csamples,pparts[-1],ct.ptr[(dy+initr)*(2*initr+1)+(dx+initr)],pres[i-self.starti][(dy+initr)*(2*initr+1)+(dx+initr),:,:],i-self.interv,1,0,0,ratio,usemrf,prec,pady,padx) 
+                    #self.scanRCFLPartBU2(model2["parts"],csamples,pparts[-1],ct.ptr[(dy+initr)*(2*initr+1)+(dx+initr)],pres[i-self.starti][(dy+initr)*(2*initr+1)+(dx+initr),:,:],i-self.interv,1,0,0,ratio,usemrf,prec,pady,padx) 
+            res[i-self.starti]=pres[i-self.starti].max(0)
+            el=pres[i-self.starti].argmax(0)
+            pparts[-1][0][0,0,0,:,:]=el/(initr*2+1)-1
+            pparts[-1][0][0,0,1,:,:]=el%(initr*2+1)-1
+            for l in range(1,len(ww)):
+                elx=numpy.tile(el,(2**l,2**l,4,1,1))
+                for pt in range((2*initr+1)*(2*initr+1)):
+                    if len(ct.ptr[pt].best)>=l:
+                        pparts[-1][l][elx==pt]=ct.ptr[pt].best[l-1][elx==pt]
+            res[i-self.starti]-=rho
+        return res,pparts
+
+
+    def scanRCFLPartBU2(self,model2,samples,pparts,ct,res,i,lev,locy,locx,ratio,usemrf,prec,pady,padx):
+        """
+        auxiliary function for the recursive search of the parts for the complete search
+        """   
+        locy=locy*2
+        locx=locx*2
+        fy=model2["base"][0]#model["ww"][0].shape[0]
+        fx=model2["base"][1]#model["ww"][0].shape[1]
+        ww1=model2["parts"][0]["ww"];ww2=model2["parts"][1]["ww"]
+        ww3=model2["parts"][2]["ww"];ww4=model2["parts"][3]["ww"]
+        df1=model2["parts"][0]["df"];df2=model2["parts"][1]["df"]
+        df3=model2["parts"][2]["df"];df4=model2["parts"][3]["df"]
+#        ww1=model["ww"][lev][(locy+0)*fy:(locy+1)*fy,(locx+0)*fx:(locx+1)*fx,:].copy()
+#        ww2=model["ww"][lev][(locy+0)*fy:(locy+1)*fy,(locx+1)*fx:(locx+2)*fx,:].copy()
+#        ww3=model["ww"][lev][(locy+1)*fy:(locy+2)*fy,(locx+0)*fx:(locx+1)*fx,:].copy()
+#        ww4=model["ww"][lev][(locy+1)*fy:(locy+2)*fy,(locx+1)*fx:(locx+2)*fx,:].copy()
+#        df1=model["df"][lev][(locy+0):(locy+1),(locx+0):(locx+1),:].copy()
+#        df2=model["df"][lev][(locy+0):(locy+1),(locx+1):(locx+2),:].copy()
+#        df3=model["df"][lev][(locy+1):(locy+2),(locx+0):(locx+1),:].copy()
+#        df4=model["df"][lev][(locy+1):(locy+2),(locx+1):(locx+2),:].copy()
+        parts=numpy.zeros((2,2,4,res.shape[0],res.shape[1]),dtype=c_int)
+        auxparts=numpy.zeros((4,(2*ratio+1)*(2*ratio+1),2,2,4,res.shape[0],res.shape[1]),dtype=c_int)
+        if i-self.interv>=0 and model2["len"]-1>lev:
+            for l in range(len(ct.ptr)):
+                maux=(numpy.zeros((4,(2*ratio+1)*(2*ratio+1),2,2,4,res.shape[0],res.shape[1]),dtype=c_int))
+                auxptr=numpy.zeros((4,(2*ratio+1)*(2*ratio+1)),dtype=object)
+                ct.ptr[l]=container(maux,auxptr)
+        auxres=numpy.zeros(res.shape,numpy.float32)
+        pres=numpy.zeros((4,(2*ratio+1),(2*ratio+1),res.shape[0],res.shape[1]),numpy.float32)
+        csamples=samples.copy()
+        if i-self.interv>=0 and model2["len"]-1>lev:
+            for dy in range(-ratio,ratio+1):
+                for dx in range(-ratio,ratio+1):
+                    csamples[0,:,:]=(samples[0,:,:]+dy)
+                    csamples[1,:,:]=(samples[1,:,:]+dx)
+                    samples1=(csamples)*2+1
+                    auxparts[0,(dy+ratio)*(2*ratio+1)+(dx+ratio)]=self.scanRCFLPartBU2(model2["parts"][0],samples1,pparts,ct.ptr[0,(dy+ratio)*(2*ratio+1)+(dx+ratio)],pres[0,(dy+ratio),(dx+ratio),:,:],i-self.interv,lev+1,(locy+0),(locx+0),ratio,usemrf,prec,pady,padx)
+                    samples2=((csamples.T+numpy.array([0,fx],dtype=c_int).T)*2+1).T
+                    auxparts[1,(dy+ratio)*(2*ratio+1)+(dx+ratio)]=self.scanRCFLPartBU2(model2["parts"][1],samples2.copy(),pparts,ct.ptr[1,(dy+ratio)*(2*ratio+1)+(dx+ratio)],pres[1,(dy+ratio),(dx+ratio),:,:],i-self.interv,lev+1,(locy+0),(locx+1),ratio,usemrf,prec,pady,padx)
+                    samples3=((csamples.T+numpy.array([fy,0],dtype=c_int).T)*2+1).T
+                    auxparts[2,(dy+ratio)*(2*ratio+1)+(dx+ratio)]=self.scanRCFLPartBU2(model2["parts"][2],samples3.copy(),pparts,ct.ptr[2,(dy+ratio)*(2*ratio+1)+(dx+ratio)],pres[2,(dy+ratio),(dx+ratio),:,:],i-self.interv,lev+1,(locy+1),(locx+0),ratio,usemrf,prec,pady,padx)
+                    samples4=((csamples.T+numpy.array([fy,fx],dtype=c_int).T)*2+1).T
+                    auxparts[3,(dy+ratio)*(2*ratio+1)+(dx+ratio)]=self.scanRCFLPartBU2(model2["parts"][3],samples4.copy(),pparts,ct.ptr[3,(dy+ratio)*(2*ratio+1)+(dx+ratio)],pres[3,(dy+ratio),(dx+ratio),:,:],i-self.interv,lev+1,(locy+1),(locx+1),ratio,usemrf,prec,pady,padx)
+        
+        auxprec=prec[lev][((locy/2)*2+(locx/2))*4:((locy/2)*2+(locx/2)+1)*4]
+        tt=time.time()
+        ff.scanDef2(ww1,ww2,ww3,ww4,fy,fx,ww1.shape[2],df1,df2,df3,df4,self.hog[i],self.hog[i].shape[0],self.hog[i].shape[1],samples[0,:,:],samples[1,:,:],parts,auxres,ratio,samples.shape[1]*samples.shape[2],usemrf,pres,1,auxprec.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),pady,padx,0)
+        #print time.time()-tt
+        res+=auxres
+        ct.best=[parts]
+
+        if i-self.interv>=0 and model2["len"]-1>lev:            
+            ps=(parts[:,:,0]+ratio)*(ratio*2+1)+parts[:,:,1]+ratio
+            for l in range(len(ct.ptr[0,0].best)):
+                aux=numpy.zeros((ct.ptr[0,0].best[l].shape[0]*2,ct.ptr[0,0].best[l].shape[1]*2,4,res.shape[0],res.shape[1]))
+                ct.best.append(aux)
+                for py in range(res.shape[0]):
+                    for px in range(res.shape[1]):
+                        #ps=(parts[0,0,0,py,px]+ratio)*(ratio*2+1)+parts[0,0,1,py,px]+ratio
+                        ct.best[-1][locy+0:locy+0+2,locx+0:locx+0+2,:,py,px]=auxparts[0,ps[0,0,py,px]][:,:,:,py,px]
+                        #ps=(parts[0,1,0,py,px]+ratio)*(ratio*2+1)+parts[0,1,1,py,px]+ratio
+                        ct.best[-1][locy+0:locy+0+2,locx+2:locx+2+2,:,py,px]=auxparts[1,ps[0,1,py,px]][:,:,:,py,px]
+                        #ps=(parts[1,0,0,py,px]+ratio)*(ratio*2+1)+parts[1,0,1,py,px]+ratio
+                        ct.best[-1][locy+2:locy+2+2,locx+0:locx+0+2,:,py,px]=auxparts[2,ps[1,0,py,px]][:,:,:,py,px]
+                        #ps=(parts[1,1,0,py,px]+ratio)*(ratio*2+1)+parts[1,1,1,py,px]+ratio
+                        ct.best[-1][locy+2:locy+2+2,locx+2:locx+2+2,:,py,px]=auxparts[3,ps[1,1,py,px]][:,:,:,py,px]
         return parts
 
 
@@ -1868,7 +2132,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             showlabel=False
         if fastBU:#enable TD+BU
             t1=time.time()
-            det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
+            det=tr.doall(thr=thr,rank=10,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
             samples=tr.goodsamples(det,initr=initr,ratio=ratio)
             scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
             print "Refine Time:",time.time()-t1

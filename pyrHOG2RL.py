@@ -271,7 +271,6 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
     else:
         tr=TreatRL(f,fscr,pos,pos1,lr,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
 
-    numhog=f.getHOG()
     if gtbbox==None:
         if show==True:
             showlabel="Parts"
@@ -280,29 +279,23 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
         if fastBU:#enable TD+BU
             print "Fast BU"
             t1=time.time()
-            det=tr.doall(thr=thr,rank=10,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
-            #detR=[];detL=[]
-            #for d in det:
-            #    if d["rl"]==1:
-            #        detR.append(d)
-            #    else:
-            #        detL.append(d)
-            #samplesR=tr.goodsamples(detR,initr=initr,ratio=ratio)
-            #samplesL=tr.goodsamples(detL,initr=initr,ratio=ratio)
-            #scrR,posR=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samplesR)
-            #scrL,posL=f.scanRCFLDefBU(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samplesL)
-            #lr=[];fscr=[]
-            #for idl,l in enumerate(scrR):
-            #    auxscr=numpy.zeros((l.shape[0],l.shape[1],2),numpy.float32)
-            #    auxscr[:,:,0]=scrR[idl]
-            #    auxscr[:,:,1]=scrL[idl]
-            #    fscr.append(numpy.max(auxscr,2))
-            #    lr.append(numpy.argmax(auxscr,2))
-            #tr=TreatDefRL(f,fscr,posR,posL,lr,initr,m["fy"],m["fx"],occl=occl)
-
-            samples=tr.goodsamples(det,initr=initr,ratio=ratio)
-            scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
-            scr1,pos1=f.scanRCFLDefBU(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
+            det=tr.doall(thr=thr,rank=100,refine=True,rawdet=False,cluster=False,show=False,inclusion=inclusion,cl=cl)
+            detR=[];detL=[]
+            greedy=False
+            if greedy:
+                for d in det:
+                    if d["rl"]==1:
+                        detR.append(d)
+                    else:
+                        detL.append(d)
+                samplesR=tr.goodsamples(detL,initr=initr,ratio=ratio)
+                samplesL=tr.goodsamples(detR,initr=initr,ratio=ratio)
+                scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samplesR)
+                scr1,pos1=f.scanRCFLDefBU(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samplesL)
+            else:
+                samples=tr.goodsamples(det,initr=initr,ratio=ratio)
+                scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
+                scr1,pos1=f.scanRCFLDefBU(m1,initr=initr,ratio=ratio,small=small,usemrf=usemrf,mysamples=samples)
             lr=[]
             fscr=[]
             for idl,l in enumerate(scr):
@@ -329,6 +322,7 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
         if show:
             tr.show(det,parts=showlabel,thr=-1.0,maxnum=0)  
         print "Detect: %.3f"%(time.time()-t)
+        numhog=f.getHOG()
         return tr,det,dettime,numhog
     else:
         best1,worste1=tr.doalltrain(gtbbox,thr=thr,rank=ranktr,show=show,mpos=mpos,numpos=1,posovr=posovr,numneg=numneg,minnegovr=0,minnegincl=minnegincl,cl=cl,useMaxOvr=useMaxOvr)        

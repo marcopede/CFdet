@@ -898,8 +898,12 @@ class pyrHOG:
         locy=locy*2
         locx=locx*2
         #model2=decompose(model)
-        fy=model2["base"][0].shape[0]
-        fx=model2["base"][0].shape[1]
+        fy=model2["base"][0]
+        fx=model2["base"][1]
+        ww1=model2["parts"][0]["ww"];ww2=model2["parts"][1]["ww"]
+        ww3=model2["parts"][2]["ww"];ww4=model2["parts"][3]["ww"]
+        df1=model2["parts"][0]["df"];df2=model2["parts"][1]["df"]
+        df3=model2["parts"][2]["df"];df4=model2["parts"][3]["df"]
 #        ww1=model["ww"][lev][(locy+0)*fy:(locy+1)*fy,(locx+0)*fx:(locx+1)*fx,:].copy()
 #        ww2=model["ww"][lev][(locy+0)*fy:(locy+1)*fy,(locx+1)*fx:(locx+2)*fx,:].copy()
 #        ww3=model["ww"][lev][(locy+1)*fy:(locy+2)*fy,(locx+0)*fx:(locx+1)*fx,:].copy()

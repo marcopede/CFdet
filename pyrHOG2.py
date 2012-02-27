@@ -805,6 +805,8 @@ class pyrHOG:
         scan the HOG pyramid using the CtF algorithm but using deformations
         """     
         ww=model["ww"]
+        auxww=numpy.zeros((ww[0].shape[0],ww[0].shape[1],ww[0].shape[2]+1),dtype=numpy.float32)
+        auxww[:-1]=ww[0]
         rho=model["rho"]
         df=model["df"]
         if model.has_key("occl"):
@@ -839,7 +841,8 @@ class pyrHOG:
             ff.scaneigh(self.hog[i],
                 self.hog[i].shape[0],
                 self.hog[i].shape[1],
-                ww[0],
+                #ww[0],
+                auxww,
                 ww[0].shape[0],ww[0].shape[1],ww[0].shape[2],
                 samples[0,:,:],
                 samples[1,:,:],

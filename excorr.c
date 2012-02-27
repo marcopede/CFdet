@@ -1,6 +1,8 @@
 
 #include<stdio.h>
 #include<stdlib.h>
+#include <xmmintrin.h>
+
 //#include<math.h>
 
 #define ftype float
@@ -31,7 +33,7 @@ long getHOG()
 }
 
 //compute 3d correlation between an image feature img and a mask 
-inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx,int occl)
+inline ftype corr3dpad_old(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx,int occl)
 {
     int dimzfull=dimz;
     if (occl!=0)
@@ -65,6 +67,68 @@ inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int ma
                         sum=sum+img[posi]*mask[z+x*dimzfull+y*dimzfull*maskx];      
                     }*/
                 }
+            }
+            else
+            //occlusion using dimz
+            {
+                for (z=dimz;z<dimzfull;z++)
+                {
+                    //printf("%d:%f\n",z,mask[z+x*dimzfull+y*dimzfull*maskx]);
+                    //posi=z+(x+posx)*dimz+(y+posy)*dimz*imgx;
+                    sum=sum+mask[z+x*dimzfull+y*dimzfull*maskx];      
+                }
+            }
+        }
+    if (prec!=NULL)//save computed values in the buffer
+    {
+        if (posy>=-pady && posy<imgy+pady && posx>=-padx && posx<imgx+padx)
+        {
+            prec[(posy+pady)*(imgx+2*padx)+(posx+padx)]=sum;
+        }
+    }
+    return sum;
+}
+
+//compute 3d correlation between an image feature img and a mask 
+inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx,int occl)
+{
+    int dimzfull=dimz;
+    if (occl!=0)
+        //with occl
+        dimz=dimz-occl;
+        //printf("Occl:%d Dimzfull:%d Dimz:%d",occl,dimzfull,dimz);
+    if (prec!=NULL)//memoization of the already computed locations
+    {
+        if (posy>=-pady && posy<imgy+pady && posx>=-padx && posx<imgx+padx)
+            if (prec[(posy+pady)*(imgx+2*padx)+(posx+padx)]>-INFINITY)
+            {
+                return prec[(posy+pady)*(imgx+2*padx)+(posx+padx)];
+            }
+    }    
+    ftype sum=0.0;
+    int x,y,z,posi;
+    for (x=0;x<maskx;x++)
+        for (y=0;y<masky;y++)
+        {
+            compHOG++;
+            if (((x+posx)>=0 && (x+posx<imgx)) && ((y+posy)>=0 && (y+posy<imgy)))
+            //inside the image
+            {
+                __m128 X, Y;
+                __m128 acc = _mm_setzero_ps();
+                float inner_prod, temp[4];
+                posi=(x+posx)*dimz+(y+posy)*dimz*imgx;
+                X = _mm_load_ps(mask+x*dimzfull+y*dimzfull*maskx);
+                Y = _mm_load_ps(img+posi);
+                acc = _mm_add_ps(acc, _mm_mul_ps(X, Y));
+                _mm_store_ps(&temp[0], acc);
+                sum += temp[0]+temp[1]+temp[2]+temp[3];
+                /*for (z=0;z<dimz;z++)
+                {   
+                    //printf("%d:%f\n",z,mask[z+x*dimzfull+y*dimzfull*maskx]);
+                    posi=z+(x+posx)*dimz+(y+posy)*dimz*imgx;
+                    sum=sum+img[posi]*mask[z+x*dimzfull+y*dimzfull*maskx];      
+                }*/
             }
             else
             //occlusion using dimz

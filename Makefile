@@ -1,8 +1,8 @@
 CC = gcc
 #CC = icc
 
-CFLAGS = -O3 -march=nocona -ffast-math -fomit-frame-pointer -fopenmp
-#CFLAGS = -lm -msse2 -O2 -march=nocona -ffast-math -fomit-frame-pointer -fopenmp 
+#CFLAGS = -O3 -march=nocona -ffast-math -fomit-frame-pointer -fopenmp
+CFLAGS = -lm -msse2 -O2 -march=nocona -ffast-math -fomit-frame-pointer -fopenmp 
 
 #OMPFLAGS = -fopenmp
 

@@ -107,7 +107,10 @@ def decompose(model,l=0,py=0,px=0,ppy=0,ppx=0):
 #        else:
         dy=model["ww"][0].shape[0]
         dx=model["ww"][0].shape[1]
-        model2["ww"]=model["ww"][l][(py+ppy)*dy:(py+ppy+1)*dy,(px+ppx)*dx:(px+ppx+1)*dx].copy()
+        #model2["ww"]=model["ww"][l][(py+ppy)*dy:(py+ppy+1)*dy,(px+ppx)*dx:(px+ppx+1)*dx].copy()
+        aux=numpy.zeros((dy,dx,32),dtype=numpy.float32)
+        aux[:,:,:-1]=model["ww"][l][(py+ppy)*dy:(py+ppy+1)*dy,(px+ppx)*dx:(px+ppx+1)*dx]
+        model2["ww"]=aux
         model2["df"]=model["df"][l][py+ppy:(py+ppy+1),px+ppx:(px+ppx+1)].copy()
         #model2["rho"]=model["rho"]
         model2["base"]=[dy,dx]
@@ -404,8 +407,8 @@ def hog(img,sbin=8):
     hy=int(round(img.shape[0]/float(sbin)))-2
     hx=int(round(img.shape[1]/float(sbin)))-2
     mtype=c_float
-    hog=numpy.zeros((hy,hx,31),dtype=mtype,order="f")
-    lhog.process(numpy.asfortranarray(img,dtype=mtype),img.shape[0],img.shape[1],sbin,hog,hy,hx,31)
+    hog=numpy.zeros((hy,hx,32),dtype=mtype,order="f")
+    lhog.process(numpy.asfortranarray(img,dtype=mtype),img.shape[0],img.shape[1],sbin,hog,hy,hx,32)
     return hog;#mfeatures.mfeatures(img , sbin);
 
 def hogd(img,sbin=8):
@@ -806,7 +809,7 @@ class pyrHOG:
         """     
         ww=model["ww"]
         auxww=numpy.zeros((ww[0].shape[0],ww[0].shape[1],ww[0].shape[2]+1),dtype=numpy.float32)
-        auxww[:-1]=ww[0]
+        auxww[:,:,:-1]=ww[0]
         rho=model["rho"]
         df=model["df"]
         if model.has_key("occl"):
@@ -818,6 +821,7 @@ class pyrHOG:
         model2=decompose(model)
         res=[]#score
         pparts=[]#parts position
+        print "--->",auxww.shape[2]
         tot=0
         if not(small):
             self.starti=self.interv*(len(ww)-1)
@@ -843,7 +847,7 @@ class pyrHOG:
                 self.hog[i].shape[1],
                 #ww[0],
                 auxww,
-                ww[0].shape[0],ww[0].shape[1],ww[0].shape[2],
+                auxww.shape[0],auxww.shape[1],auxww.shape[2],
                 samples[0,:,:],
                 samples[1,:,:],
                 res[-1],
@@ -1314,8 +1318,10 @@ class pyrHOG:
                     ff.scaneigh(self.hog[i],
                         self.hog[i].shape[0],
                         self.hog[i].shape[1],
-                        ww[0],
-                        ww[0].shape[0],ww[0].shape[1],ww[0].shape[2],
+                        model2["ww"],
+                        model2["ww"].shape[0],model2["ww"].shape[1],model2["ww"].shape[2],
+                        #ww[0],
+                        #ww[0].shape[0],ww[0].shape[1],ww[0].shape[2],
                         csamples[0,:,:],
                         csamples[1,:,:],
                         pres[-1][(dy+initr)*(2*initr+1)+(dx+initr),:,:],

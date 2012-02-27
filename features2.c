@@ -92,7 +92,7 @@ void process(ftype *im, int dimy, int dimx, int sbin, ftype *feat, int hy, int h
   int out[3];
   out[0] = max(blocks[0]-2, 0);
   out[1] = max(blocks[1]-2, 0);
-  out[2] = 27+4;
+  out[2] = 27+4+1;
   if (hy!=out[0] || hx!=out[1] || hz!=out[2])
   {
     printf("Error in hog shape\n");

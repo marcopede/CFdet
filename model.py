@@ -3,7 +3,7 @@ import numpy
 #danger: code dupicated in pyrHOG2.py: find a solution
 
 
-def initmodel(fy,fx,lev,useRL,deform,numbow=6**4,onlybow=False):
+def initmodel(fy,fx,lev,useRL,deform,usemrf,usefather,numbow=6**4,onlybow=False):
     #fy=cfg.fy[c]
     #fx=cfg.fx[c]
     ww=[]
@@ -29,7 +29,12 @@ def initmodel(fy,fx,lev,useRL,deform,numbow=6**4,onlybow=False):
             lowd=numpy.zeros((1*2**l,1*2**l,4)).astype(numpy.float32)
             #lowd=-numpy.ones((1*2**l,1*2**l,4)).astype(numpy.float32)
         else:
-            lowd=-numpy.ones((1*2**l,1*2**l,4)).astype(numpy.float32)
+            #lowd=-numpy.ones((1*2**l,1*2**l,4)).astype(numpy.float32)
+            lowd=numpy.zeros((1*2**l,1*2**l,4)).astype(numpy.float32)
+            if usefather:
+                lowd[:,:,2:]=-numpy.ones((1*2**l,1*2**l,2)).astype(numpy.float32)
+            if usemrf:
+                lowd[:,:,:2]=-numpy.ones((1*2**l,1*2**l,2)).astype(numpy.float32)
         ww.append(lowf)
         #hww.append(numpy.ones((2**l,2**l,numbow),dtype=numpy.float32))
         if deform:
@@ -149,6 +154,7 @@ def w2modelDef(descr,rho,lev,fsz,fy=[],fx=[],bin=5,siftsize=2,mindef=0.001,usemr
         if l>0: #skip level 0
             ddp=4**l
             aux=numpy.zeros((2**l,2**l,4))
+            #aux=-numpy.ones((2**l,2**l,4))
             if usefather:
                 aux[:,:,0]=d[p:p+ddp].reshape((2**l,2**l))
                 p+=ddp

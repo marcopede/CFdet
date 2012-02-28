@@ -480,7 +480,7 @@ def HOGf2i(pyr,outtype,maxf=2.0):
     return npyr
 
 class pyrHOG:
-    def __init__(self,im,interv=10,sbin=8,savedir="./",compress=False,notload=False,notsave=False,hallucinate=0,cformat=False,flip=False,mybuffer=None):
+    def __init__(self,im,interv=10,sbin=8,savedir="./",compress=False,notload=False,notsave=False,hallucinate=0,cformat=False,flip=False,mybuffer=None,lenbuf=1000):
         """
         Compute the HOG pyramid of an image
         if im is a string call precomputed
@@ -510,13 +510,14 @@ class pyrHOG:
                     self.scale=aux.scale
                     self.hallucinate=aux.hallucinate
                 else:
-                    print "Computing Buffer"
                     self._precompute(im,interv,sbin,savedir,compress,notload,notsave,hallucinate,cformat=cformat)
-                    hogf=self.hog
-                    hogi=HOGf2i(hogf,numpy.uint16,maxf=2.0)
-                    self.hog=hogi
-                    mybuffer[rim]=self
-                    self.hog=hogf
+                    if len(mybuffer)<lenbuf:
+                        print "Computing Buffer"
+                        hogf=self.hog
+                        hogi=HOGf2i(hogf,numpy.uint16,maxf=2.0)
+                        self.hog=hogi
+                        mybuffer[rim]=self
+                        self.hog=hogf
             else:
                 self._precompute(im,interv,sbin,savedir,compress,notload,notsave,hallucinate,cformat=cformat)
             #return
@@ -821,7 +822,7 @@ class pyrHOG:
         model2=decompose(model)
         res=[]#score
         pparts=[]#parts position
-        print "--->",auxww.shape[2]
+        #print "--->",auxww.shape[2]
         tot=0
         if not(small):
             self.starti=self.interv*(len(ww)-1)
@@ -1938,12 +1939,11 @@ class TreatDef(Treat):
             rdet.append(el)
         return rdet
 
-    def rawdet(self,det):
+    def rawdet(self,det,hogdim=31):
         """
         extract features from detections and store in "feat"
         """        
         rdet=det[:]
-        hogdim=31
         if self.trunc:
             hogdim=32
         for item in det:
@@ -1960,7 +1960,7 @@ class TreatDef(Treat):
                         for px in range(sz):
                             mov[py,px,0]=2*mov[py,px,0]+item["def"]["dy"][l][py,px]
                             mov[py,px,1]=2*mov[py,px,1]+item["def"]["dx"][l][py,px]
-                            aux[py*fy:(py+1)*fy,px*fx:(px+1)*fx,:]=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+mov[py,px,0]-1,cy+mov[py,px,0]+fy-1,cx+mov[py,px,1]-1,cx+mov[py,px,1]+fx-1,self.trunc)
+                            aux[py*fy:(py+1)*fy,px*fx:(px+1)*fx,:]=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+mov[py,px,0]-1,cy+mov[py,px,0]+fy-1,cx+mov[py,px,1]-1,cx+mov[py,px,1]+fx-1,self.trunc)[:,:,:hogdim]
                     cy=(cy)*2
                     cx=(cx)*2
                     aux1=numpy.kron(mov.T,[[1,1],[1,1]]).T
@@ -2108,16 +2108,16 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         and trainig --> gtbbox = list of bounding boxes
     """
     ff.setK(K)#set the degree of deformation
-    if useprior:
-        numrank=200
-    else:
-        numrank=1000
-    if gtbbox!=None and gtbbox!=[] and useprior:
-        t1=time.time()
-        pr=f.buildPrior(gtbbox,m["fy"],m["fx"])
-        print "Prior Time:",time.time()-t1
-    else:
-        pr=None
+#    if useprior:
+#        numrank=200
+#    else:
+#        numrank=1000
+#    if gtbbox!=None and gtbbox!=[] and useprior:
+#        t1=time.time()
+#        pr=f.buildPrior(gtbbox,m["fy"],m["fx"])
+#        print "Prior Time:",time.time()-t1
+#    else:
+#        pr=None
     t=time.time()        
     f.resetHOG()
     if deform:

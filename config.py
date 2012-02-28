@@ -53,6 +53,13 @@ cfg.useRL=False
 cfg.kmeans=False
 cfg.resize=None
 cfg.occl=False
+cfg.oldlearning=False
+cfg.usebuffer=False
+cfg.usebufpos=False
+cfg.usebufneg=False
+cfg.usebuftest=False
+cfg.lenbuf=200
+
 #cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save
 #    mydebug=False
 #    if mydebug:

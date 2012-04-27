@@ -59,6 +59,7 @@ cfg.usebufpos=False
 cfg.usebufneg=False
 cfg.usebuftest=False
 cfg.lenbuf=200
+cfg.ranktr=100
 
 #cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save
 #    mydebug=False

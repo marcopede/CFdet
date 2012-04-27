@@ -34,7 +34,7 @@ long getHOG()
 }
 
 //compute 3d correlation between an image feature img and a mask 
-inline ftype corr3dpad_(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx,int occl)
+inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx,int occl)
 {
     int dimzfull=dimz;
     if (occl!=0)
@@ -91,7 +91,7 @@ inline ftype corr3dpad_(ftype *img,int imgy,int imgx,ftype *mask,int masky,int m
 }
 
 //compute 3d correlation between an image feature img and a mask 
-inline ftype corr3dpad(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx,int occl)
+inline ftype corr3dpad_fast(ftype *img,int imgy,int imgx,ftype *mask,int masky,int maskx,int dimz,int posy,int posx,ftype *prec,int pady,int padx,int occl)
 {
     int dimzfull=dimz;
     if (occl!=0)
@@ -808,7 +808,25 @@ void scanDefbow(ftype *ww1,ftype *ww2,ftype *ww3,ftype *ww4,int fy,int fx,int di
         parts[3*len*sizedf+1*len+i]=dx[3]; //dx3
         parts[3*len*sizedf+2*len+i]=(dy[3]-dy[2])*(dy[3]-dy[2]); //dy32
         parts[3*len*sizedf+3*len+i]=(dx[3]-dx[2])*(dx[3]-dx[2]); //dx32
-       
+        /*//additional features
+        parts[0*len*sizedf+0*len+i]=(dy[0]-dy[1]); //dy0
+        parts[0*len*sizedf+1*len+i]=(dx[0]-dx[1]); //dx0
+        parts[0*len*sizedf+2*len+i]=(dy[0]-dy[1])*(dy[0]-dy[1]); //dy01
+        parts[0*len*sizedf+3*len+i]=(dx[0]-dx[1])*(dx[0]-dx[1]); //dx01
+        parts[1*len*sizedf+0*len+i]=dy[1]; //dy1
+        parts[1*len*sizedf+1*len+i]=dx[1]; //dx1
+        parts[1*len*sizedf+2*len+i]=(dy[1]-dy[3])*(dy[1]-dy[3]); //dy13
+        parts[1*len*sizedf+3*len+i]=(dx[1]-dx[3])*(dx[1]-dx[3]); //dx13
+        parts[2*len*sizedf+0*len+i]=dy[2]; //dy2
+        parts[2*len*sizedf+1*len+i]=dx[2]; //dx2
+        parts[2*len*sizedf+2*len+i]=(dy[2]-dy[0])*(dy[2]-dy[0]); //dy20
+        parts[2*len*sizedf+3*len+i]=(dx[2]-dx[0])*(dx[2]-dx[0]); //dx20
+        parts[3*len*sizedf+0*len+i]=dy[3]; //dy3
+        parts[3*len*sizedf+1*len+i]=dx[3]; //dx3
+        parts[3*len*sizedf+2*len+i]=(dy[3]-dy[2])*(dy[3]-dy[2]); //dy32
+        parts[3*len*sizedf+3*len+i]=(dx[3]-dx[2])*(dx[3]-dx[2]); //dx32
+
+        */
     }
 }
 

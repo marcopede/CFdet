@@ -246,10 +246,9 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
         if usebow:
             scr,pos=f.scanRCFLbow(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
             scr1,pos1=f.scanRCFLbow(m1,initr=initr,ratio=ratio,small=small,trunc=trunc)
-        else:
+        else:   
             scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
             scr1,pos1=f.scanRCFL(m1,initr=initr,ratio=ratio,small=small,trunc=trunc)
-            
     lr=[]
     fscr=[]
     for idl,l in enumerate(scr):

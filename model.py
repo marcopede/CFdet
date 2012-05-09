@@ -3,7 +3,7 @@ import numpy
 #danger: code dupicated in pyrHOG2.py: find a solution
 
 
-def initmodel(fy,fx,lev,useRL,deform,numbow=6**4,onlybow=False):
+def initmodel(fy,fx,lev,useRL,deform,numbow=6**4,onlybow=False,CRF=False):
     #fy=cfg.fy[c]
     #fx=cfg.fx[c]
     ww=[]
@@ -57,9 +57,18 @@ def initmodel(fy,fx,lev,useRL,deform,numbow=6**4,onlybow=False):
         if onlybow:
             ww[idw][:,:,:]=0.0
             dd[idw][:,:,:]=0.0
+    if CRF:
+        cost=0.01*numpy.ones((2,fy*2,fx*2),dtype=numpy.float32)
+        #cost[0,-1,:]=0
+        #cost[1,:,-1]=0
+        #import crf3
+        #cache_cost=crf3.cost(fy*2,fx*2,(fy*2*2-1)/2,(fx*2*2-1)/2,c=0.001,ch=cost[0],cv=cost[1])
+        #cache_cost=numpy.zeros((2,fy*2*fx*2,(fy*2*2-1)/2*(fx*2*2-1)/2,(fy*2*2-1)/2*(fx*2*2-1)/2),dtype=numpy.float32)
+        #crf3.fill_cache(cache_cost,fy*2,fx*2,(fy*2*2-1)/2*(fx*2*2-1)/2,(fy*2*2-1)/2,(fx*2*2-1)/2,cost)
+        return {"ww":ww,"hist":hww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1],"cost":cost}        
     return {"ww":ww,"hist":hww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1]}
 
-def model2w(model,deform,usemrf,usefather,k,lastlev=0,usebow=False):
+def model2w(model,deform,usemrf,usefather,k=10,lastlev=0,usebow=False,useCRF=False):
     w=numpy.zeros(0,dtype=numpy.float32)
     for l in range(len(model["ww"])-lastlev):
         #print "here"#,item
@@ -74,6 +83,8 @@ def model2w(model,deform,usemrf,usefather,k,lastlev=0,usebow=False):
     if usebow:
         for l in range(len(model["hist"])-lastlev):
             w=numpy.concatenate((w,model["hist"][l].flatten()))
+    if useCRF:
+        w=numpy.concatenate((w,(model["cost"]*k).flatten()))
     return w
 
 def model2wDef(model,k,deform=False,usemrf=True,usefather=True,lastlev=0,useoccl=False,usebow=False):
@@ -104,7 +115,7 @@ def model2wDef(model,k,deform=False,usemrf=True,usefather=True,lastlev=0,useoccl
                 d=numpy.concatenate((d,model["hist"][l].flatten()))
         return d
 
-def w2model(descr,rho,lev,fsz,fy=[],fx=[],bin=5,siftsize=2,deform=False,usemrf=False,usefather=False,useoccl=False,usebow=False):
+def w2model(descr,rho,lev,fsz,fy=[],fx=[],bin=5,siftsize=2,deform=False,usemrf=False,usefather=False,k=10,useoccl=False,usebow=False,useCRF=False):
         #does not work with occlusions
         """
         build a new model from the weights of the SVM
@@ -131,6 +142,8 @@ def w2model(descr,rho,lev,fsz,fy=[],fx=[],bin=5,siftsize=2,deform=False,usemrf=F
                 #hist.append(numpy.zeros(625,dtype=numpy.float32))
                 p=p+bin**(siftsize**2)
         m={"ww":ww,"rho":rho,"fy":fy,"fx":fx,"occl":occl,"hist":hist,"voc":hist}
+        if useCRF:
+            m["cost"]=((d[p:].reshape((2,2*fy,2*fx))/float(k)).clip(0.001,10))
         return m
 
 def w2modelDef(descr,rho,lev,fsz,fy=[],fx=[],bin=5,siftsize=2,mindef=0.001,usemrf=True,usefather=True,useoccl=False,usebow=False): 

@@ -625,7 +625,7 @@ class pyrHOG:
         "get the HOG computation counter"
         return ff.getHOG()
 
-    def scanRCFL(self,model,initr=1,ratio=1,small=True,trunc=0):
+    def scanRCFL_old(self,model,initr=1,ratio=1,small=True,trunc=0):
         """
         scan the HOG pyramid using the CtF algorithm
         """        
@@ -678,6 +678,69 @@ class pyrHOG:
                     if len(model["ww"])-1>lev:
                         res[i-self.starti]+=occl[lev-1]
             res[i-self.starti]-=rho
+        return res,pparts
+
+
+    def scanRCFL(self,model,initr=1,ratio=1,small=True,trunc=0,partScr=False):
+        """
+        scan the HOG pyramid using the CtF algorithm
+        """        
+        ww=model["ww"]
+        rho=model["rho"]
+        if model.has_key("occl"):
+            print "Occlusions:",model["occl"]
+            occl=numpy.array(model["occl"])*SMALL
+        else:
+            #print "No Occlusions"
+            occl=numpy.zeros(len(model["ww"]))
+        res=[]#score
+        res2=[]#partial score
+        pparts=[]#parts position
+        tot=0
+        if not(small):
+            self.starti=self.interv*(len(ww)-1)
+        else:
+            if type(small)==bool:
+                self.starti=0
+            else:
+                self.starti=self.interv*(len(ww)-1-small)
+        from time import time
+        for i in range(self.starti,len(self.hog)):
+            samples=numpy.mgrid[-ww[0].shape[0]+initr:self.hog[i].shape[0]+1:1+2*initr,-ww[0].shape[1]+initr:self.hog[i].shape[1]+1:1+2*initr].astype(ctypes.c_int)
+            sshape=samples.shape[1:3]
+            res.append(numpy.zeros(sshape,dtype=ctypes.c_float))
+            if partScr:
+                res2.append(numpy.zeros((sshape[0],sshape[1],len(model["ww"])),dtype=ctypes.c_float))
+            pparts.append(numpy.zeros((2,len(ww),sshape[0],sshape[1]),dtype=c_int))
+            for lev in range(len(ww)):
+                if i-self.interv*lev>=0:
+                    if lev==0:
+                        r=initr
+                    else:
+                        r=ratio
+                    auxres=res[-1].copy()
+                    ff.scaneigh(self.hog[i-self.interv*lev],
+                        self.hog[i-self.interv*lev].shape[0],
+                        self.hog[i-self.interv*lev].shape[1],
+                        ww[lev],
+                        ww[lev].shape[0],ww[lev].shape[1],ww[lev].shape[2],
+                        samples[0,:,:],
+                        samples[1,:,:],
+                        auxres,
+                        pparts[-1][0,lev,:,:],
+                        pparts[-1][1,lev,:,:],
+                        r,r,
+                        sshape[0]*sshape[1],trunc)
+                    res[i-self.starti]+=auxres
+                    if partScr:
+                        res2[i-self.starti][:,:,lev]=auxres
+                    samples[:,:,:]=(samples[:,:,:]+pparts[-1][:,lev,:,:])*2+1
+                else:#resolution occlusion
+                    if len(model["ww"])-1>lev:
+                        res[i-self.starti]+=occl[lev-1]
+            res[i-self.starti]-=rho
+        if partScr:
+            return res,res2,pparts
         return res,pparts
 
 
@@ -1893,6 +1956,191 @@ class Treat:
                     samples[-1][0,d["py"],d["px"]]=csamples[d["py"],d["px"]]      
         return samples
 
+
+class TreatCRF(Treat):
+
+    def __init__(self,f,scr,pos,sample,fy,fx,model,pscr,occl=False,trunc=0):
+        self.pos=pos
+        self.scr=scr
+        self.f=f
+        self.interv=f.interv
+        self.sbin=f.sbin
+        self.fy=fy
+        self.fx=fx
+        self.scale=f.scale
+        self.sample=sample
+        self.occl=occl
+        self.trunc=trunc
+        self.model=model
+        self.pscr=pscr
+
+    def refine(self,ldet):
+        #normal refine
+        print "Refine CRF"
+        rdet=[]
+        fy=self.fy
+        fx=self.fx
+        for idi,item in enumerate(ldet):
+            i=item["i"];cy=item["py"];cx=item["px"];
+            el=item.copy()
+            el["ny"]=el["ry"]
+            el["nx"]=el["rx"]
+            mov=numpy.zeros(2)
+            el["def"]={"dy":numpy.zeros(self.pos[i].shape[1]),"dx":numpy.zeros(self.pos[i].shape[1])}
+            my=0;mx=0
+            for l in range(self.pos[i].shape[1]):
+                aux=self.pos[i][:,l,cy,cx]#[cy,cx,:,l]
+                el["def"]["dy"][l]=aux[0]
+                el["def"]["dx"][l]=aux[1]
+                my=2*my+el["def"]["dy"][l]
+                mx=2*mx+el["def"]["dx"][l]
+                mov=mov+aux*2**(-l)
+            el["ry"]+=mov[0]
+            el["rx"]+=mov[1]
+            el["pscr"]=self.pscr[i][cy,cx]
+            rdet.append(el)
+            l=len(self.model["ww"])-1
+            if i+self.f.starti-(l)*self.interv>=0:
+                #print idi
+                #getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1,cy+my+fy*2**l-1,cx+mx-1,cx+mx+fx*2**l-1,self.trunc)
+                pad=1
+                feat=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],el["ny"]*2**l+my-1-pad,el["ny"]*2**l+my+fy*2**l-1+pad,el["nx"]*2**l+mx-1-pad,el["nx"]*2**l+mx+fx*2**l-1+pad,self.trunc)
+                m=self.model["ww"][-1]
+                cost=self.model["cost"]
+                import crf3
+                nscr,ndef,dfeat,edge=crf3.match(m,feat,cost,pad=pad,show=False)
+                #el["efeat"]=feat
+#                el["my"]=my
+#                el["mx"]=mx
+#                el["nny"]=el["ny"]
+#                el["nnx"]=el["nx"]                
+                el["dfeat"]=dfeat
+                el["CRF"]=ndef
+                el["edge"]=edge
+                el["oldscr"]=item["scr"]
+                el["scr"]=nscr+sum(el["pscr"][:-1])-self.model["rho"]
+            else:
+                m=self.model["ww"][-1]
+                el["dfeat"]=numpy.zeros(m.shape,dtype=numpy.float32)
+                #item["CRF"]=numpy.ones(m.shape,dtype=numpy.float32)
+                #item["oldscr"]=item["scr"]
+                #item["scr"]=nscr
+        #print self.model["ww"][-1].shape,el["edge"].shape
+        return rdet
+
+    def rawdet(self,det):
+        """
+        extract features from detections and store in "feat"
+        """        
+        rdet=det[:]
+        hogdim=31
+        if self.trunc:
+            hogdim=32
+        for item in det:
+            i=item["i"];cy=item["ny"];cx=item["nx"];
+            fy=self.fy
+            fx=self.fx
+            item["feat"]=[]
+            item["feat2"]=[]
+            my=0;mx=0;
+            for l in range(len(item["def"]["dy"])):
+                if i+self.f.starti-(l)*self.interv>=0:
+                    if l==len(item["def"]["dy"])-1:#CRF
+                        item["feat"].append(item["dfeat"])
+                    else:
+                        my=2*my+item["def"]["dy"][l]
+                        mx=2*mx+item["def"]["dx"][l]
+                        aux=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1,cy+my+fy*2**l-1,cx+mx-1,cx+mx+fx*2**l-1,self.trunc)
+                        item["feat"].append(aux)
+                        #item["feat2"].append(hog2bow(aux))
+                        cy=(cy)*2
+                        cx=(cx)*2
+                else:
+                    item["feat"].append(numpy.zeros((fy*2**l,fx*2**l,hogdim)))
+        return rdet
+
+    def descr(self,det,flip=False,usemrf=False,usefather=False,k=10,usebow=False):
+        """
+        convert each detection in a feature descriptor for the SVM
+        """  
+        ld=Treat.descr(self,det,flip,usemrf,usefather,k,usebow)         
+        for idl,item in enumerate(det):
+            #ld[idl]=numpy.concatenate((ld[idl],-abs((item["edge"]*self.model["cost"]).flatten())))
+            if not(flip):
+                ld[idl]=numpy.concatenate((ld[idl],(item["edge"]/float(k)).flatten()))
+            else:
+                aux=item["edge"].copy()
+                aux[0]=aux[0,:,::-1]
+                aux[1,:,:-1]=aux[1,:,-2::-1]
+                ld[idl]=numpy.concatenate((ld[idl],(aux/float(k)).flatten()))
+        return ld
+
+#    def model(self,descr,rho,lev,fsz,fy=[],fx=[],usemrf=False,usefather=False,usebow=False,numbow=6**4):
+#        """
+#        build a new model from the weights of the SVM
+#        """     
+#        m=Treat.model(self,descr,rho,lev,fsz,fy,fx,usemrf,usefather,usebow,numbow)
+#        p=2*2*fy*2*fx
+#        m["cost"]=(d[-p:].reshape((2,2*fy,2*fx))).clip(0.001,10)
+#        #import crf3
+#        #cache_cost=crf3.cost(fy*2,fx*2,(fy*2*2-1)/2,(fx*2*2-1)/2,c=0.001,ch=m["cost"][0],cv=m["cost"][1])
+#        #m["cache_cost"]=cache_cost
+#        return m
+
+    def show(self,ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf,scr=True,cls=None):
+        """
+        show the detections in an image
+        """        
+        ar=[5,4,2]
+        count=0
+        for item in ldet:
+            cpy=item["fy"]*2#self.model["cost"][0].shape[0]
+            cpx=item["fx"]*2#self.model["cost"][0].shape[1]        
+            nlev=0
+            if item.has_key("def"):
+                nlev=len(item["def"]["dy"])
+            if item["scr"]>thr:
+                bbox=item["bbox"]
+                if parts:
+                    d=item["def"]
+                    scl=item["scl"]
+                    mx=0
+                    my=0
+                    for l,val in enumerate(d["dy"]):
+                        my+=d["dy"][l]*2**-l
+                        mx+=d["dx"][l]*2**-l
+                        y1=(item["ny"]+my)*self.f.sbin/scl
+                        x1=(item["nx"]+mx)*self.f.sbin/scl
+                        y2=(item["ny"]+my+item["fy"])*self.f.sbin/scl
+                        x2=(item["nx"]+mx+item["fx"])*self.f.sbin/scl
+                        pylab.fill([x1,x1,x2,x2,x1],[y1,y2,y2,y1,y1],colors[1+l], alpha=0.1, edgecolor=colors[1+l],lw=ar[l],fill=False)        
+                        if l==len(d["dy"])-1 and parts:
+                            sy=float(y2-y1)/cpy
+                            sx=float(x2-x1)/cpx
+                            defy=item["CRF"][0]
+                            defx=item["CRF"][1]
+                            for py in range(cpy):
+                                for px in range(cpx):
+                                    py1=y1+sy*py+defy[py,px]*sy/2
+                                    px1=x1+sx*px+defx[py,px]*sx/2
+                                    pylab.fill([px1,px1,px1+sx,px1+sx,px1],[py1,py1+sy,py1+sy,py1,py1],colors[0], alpha=0.1, edgecolor=colors[0],lw=2,fill=False)        
+                util.box(bbox[0],bbox[1],bbox[2],bbox[3],colors[0],lw=2)
+                if item["i"]-(nlev-1)*self.interv>=-self.f.starti:#no occlusion
+                    strsmall=""
+                else:
+                    strsmall="S%d"%(-((item["i"]+self.f.starti-(nlev-1)*self.interv)/self.interv))
+                if scr:
+                    if cls!=None:
+                        pylab.text(bbox[1],bbox[0],"%d %.3f %s"%(item["cl"],item["scr"],cls),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)
+                    else:
+                        if item["cl"]==0:
+                            pylab.text(bbox[1],bbox[0],"%.3f %s"%(item["scr"],strsmall),bbox=dict(facecolor='w',alpha=0.5),fontsize=10)
+                        else:
+                            pylab.text(bbox[1],bbox[0],"%d %.3f %s"%(item["cl"],item["scr"],strsmall),bbox=dict(facecolor='w', alpha=0.5),fontsize=10)                            
+            count+=1
+            if count>maxnum:
+                break
+
 class TreatDef(Treat):
 
     def refine(self,ldet):
@@ -2111,6 +2359,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         pr=None
     t=time.time()        
     f.resetHOG()
+    CRF=True
     if deform:
         if bottomup:
             scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
@@ -2126,8 +2375,14 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             scr,pos=f.scanRCFLbow(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
             #scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
         else:
-            scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
-        tr=Treat(f,scr,pos,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
+            if CRF:
+                scr,pscr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc,partScr=True)
+            else:                
+                scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
+        if CRF:
+            tr=TreatCRF(f,scr,pos,initr,m["fy"],m["fx"],m,pscr,occl=occl,trunc=trunc)        
+        else:
+            tr=Treat(f,scr,pos,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
     print "Scan: %.3f s"%(time.time()-t)    
     if gtbbox==None:#test
         if show==True:

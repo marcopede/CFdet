@@ -1532,6 +1532,7 @@ class Treat:
         executes all the detection steps for training
         """        
         t=time.time()
+        #print "THR:",thr
         self.det=self.select_fast(thr,cl=cl)
         #print "Select time:",time.time()-t
         t=time.time()
@@ -1959,7 +1960,7 @@ class Treat:
 
 class TreatCRF(Treat):
 
-    def __init__(self,f,scr,pos,sample,fy,fx,model,pscr,occl=False,trunc=0):
+    def __init__(self,f,scr,pos,sample,fy,fx,model,pscr,ranktr,occl=False,trunc=0):
         self.pos=pos
         self.scr=scr
         self.f=f
@@ -1973,10 +1974,17 @@ class TreatCRF(Treat):
         self.trunc=trunc
         self.model=model
         self.pscr=pscr
+        self.ranktr=ranktr
+
+    def select_fast(self,thr=0,cl=0,dense=DENSE):
+        thr_margin=1.0
+        res=Treat.select_fast(self,thr-thr_margin,cl,dense)
+        self.thr=thr
+        return res
 
     def refine(self,ldet):
         #normal refine
-        print "Refine CRF"
+        print "Refine CRF",len(ldet)
         rdet=[]
         fy=self.fy
         fx=self.fx
@@ -2003,7 +2011,7 @@ class TreatCRF(Treat):
             if i+self.f.starti-(l)*self.interv>=0:
                 #print idi
                 #getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1,cy+my+fy*2**l-1,cx+mx-1,cx+mx+fx*2**l-1,self.trunc)
-                pad=1
+                pad=2
                 feat=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],el["ny"]*2**l+my-1-pad,el["ny"]*2**l+my+fy*2**l-1+pad,el["nx"]*2**l+mx-1-pad,el["nx"]*2**l+mx+fx*2**l-1+pad,self.trunc)
                 m=self.model["ww"][-1]
                 cost=self.model["cost"]
@@ -2026,6 +2034,13 @@ class TreatCRF(Treat):
                 #item["oldscr"]=item["scr"]
                 #item["scr"]=nscr
         #print self.model["ww"][-1].shape,el["edge"].shape
+        #rerank
+        rdet=self.rank(rdet,maxnum=self.ranktr)
+        #thresholding 
+        for idel,el in enumerate(rdet):
+            if el["scr"]<self.thr:
+                break    
+        rdet=rdet[:idel]
         return rdet
 
     def rawdet(self,det):
@@ -2059,7 +2074,7 @@ class TreatCRF(Treat):
                     item["feat"].append(numpy.zeros((fy*2**l,fx*2**l,hogdim)))
         return rdet
 
-    def descr(self,det,flip=False,usemrf=False,usefather=False,k=10,usebow=False):
+    def descr(self,det,flip=False,usemrf=False,usefather=False,k=0.3,usebow=False):
         """
         convert each detection in a feature descriptor for the SVM
         """  
@@ -2341,7 +2356,7 @@ class TreatDef(Treat):
 
 import time
 
-def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000,fastBU=False,usebow=False):
+def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000,fastBU=False,usebow=False,CRF=False):
     """Detect objects in an image
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -2359,7 +2374,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
         pr=None
     t=time.time()        
     f.resetHOG()
-    CRF=True
+    #CRF=True
     if deform:
         if bottomup:
             scr,pos=f.scanRCFLDefBU(m,initr=initr,ratio=ratio,small=small,usemrf=usemrf)
@@ -2380,7 +2395,7 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
             else:                
                 scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
         if CRF:
-            tr=TreatCRF(f,scr,pos,initr,m["fy"],m["fx"],m,pscr,occl=occl,trunc=trunc)        
+            tr=TreatCRF(f,scr,pos,initr,m["fy"],m["fx"],m,pscr,ranktr,occl=occl,trunc=trunc)        
         else:
             tr=Treat(f,scr,pos,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
     print "Scan: %.3f s"%(time.time()-t)    

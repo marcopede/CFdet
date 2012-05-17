@@ -68,7 +68,7 @@ def initmodel(fy,fx,lev,useRL,deform,numbow=6**4,onlybow=False,CRF=False):
         return {"ww":ww,"hist":hww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1],"cost":cost}        
     return {"ww":ww,"hist":hww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1]}
 
-def model2w(model,deform,usemrf,usefather,k=10,lastlev=0,usebow=False,useCRF=False):
+def model2w(model,deform,usemrf,usefather,k=1,lastlev=0,usebow=False,useCRF=False):
     w=numpy.zeros(0,dtype=numpy.float32)
     for l in range(len(model["ww"])-lastlev):
         #print "here"#,item
@@ -115,7 +115,7 @@ def model2wDef(model,k,deform=False,usemrf=True,usefather=True,lastlev=0,useoccl
                 d=numpy.concatenate((d,model["hist"][l].flatten()))
         return d
 
-def w2model(descr,rho,lev,fsz,fy=[],fx=[],bin=5,siftsize=2,deform=False,usemrf=False,usefather=False,k=10,useoccl=False,usebow=False,useCRF=False):
+def w2model(descr,rho,lev,fsz,fy=[],fx=[],bin=5,siftsize=2,deform=False,usemrf=False,usefather=False,k=1,mindef=0.0,useoccl=False,usebow=False,useCRF=False):
         #does not work with occlusions
         """
         build a new model from the weights of the SVM
@@ -143,7 +143,7 @@ def w2model(descr,rho,lev,fsz,fy=[],fx=[],bin=5,siftsize=2,deform=False,usemrf=F
                 p=p+bin**(siftsize**2)
         m={"ww":ww,"rho":rho,"fy":fy,"fx":fx,"occl":occl,"hist":hist,"voc":hist}
         if useCRF:
-            m["cost"]=((d[p:].reshape((2,2*fy,2*fx))/float(k)).clip(0.001,10))
+            m["cost"]=((d[p:].reshape((2,2*fy,2*fx))/float(k)).clip(mindef,10))
         return m
 
 def w2modelDef(descr,rho,lev,fsz,fy=[],fx=[],bin=5,siftsize=2,mindef=0.001,usemrf=True,usefather=True,useoccl=False,usebow=False): 

@@ -58,6 +58,7 @@ def initmodel(fy,fx,lev,useRL,deform,numbow=6**4,onlybow=False,CRF=False):
             ww[idw][:,:,:]=0.0
             dd[idw][:,:,:]=0.0
     if CRF:
+        #cost=0.01*numpy.ones((2,fy*2,fx*2),dtype=numpy.float32)
         cost=0.01*numpy.ones((2,fy*2,fx*2),dtype=numpy.float32)
         #cost[0,-1,:]=0
         #cost[1,:,-1]=0

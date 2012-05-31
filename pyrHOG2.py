@@ -1957,6 +1957,7 @@ class Treat:
                     samples[-1][0,d["py"],d["px"]]=csamples[d["py"],d["px"]]      
         return samples
 
+import crf3
 
 class TreatCRF(Treat):
 
@@ -1975,6 +1976,7 @@ class TreatCRF(Treat):
         self.model=model
         self.pscr=pscr
         self.ranktr=ranktr
+        self.pad=2
 
     def select_fast(self,thr=0,cl=0,dense=DENSE):
         thr_margin=1.0
@@ -1984,6 +1986,7 @@ class TreatCRF(Treat):
 
     def refine(self,ldet):
         #normal refine
+        pad=self.pad
         print "Refine CRF",len(ldet)
         rdet=[]
         fy=self.fy
@@ -2011,13 +2014,12 @@ class TreatCRF(Treat):
             if i+self.f.starti-(l)*self.interv>=0:
                 #print idi
                 #getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1,cy+my+fy*2**l-1,cx+mx-1,cx+mx+fx*2**l-1,self.trunc)
-                pad=2
-                feat=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],el["ny"]*2**l+my-1-pad,el["ny"]*2**l+my+fy*2**l-1+pad,el["nx"]*2**l+mx-1-pad,el["nx"]*2**l+mx+fx*2**l-1+pad,self.trunc)
+                feat=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],el["ny"]*2**l+my-1-pad,el["ny"]*2**l+my+fy*2**l-1+pad,el["nx"]*2**l+mx-1-pad,el["nx"]*2**l+mx+fx*2**l-1+pad,self.trunc).astype(c_float)
                 m=self.model["ww"][-1]
                 cost=self.model["cost"]
-                import crf3
                 nscr,ndef,dfeat,edge=crf3.match(m,feat,cost,pad=pad,show=False)
-                #el["efeat"]=feat
+                #nscr,ndef=crf3.match(m,feat,cost,pad=pad,show=False,feat=False)
+                el["efeat"]=feat
 #                el["my"]=my
 #                el["mx"]=mx
 #                el["nny"]=el["ny"]
@@ -2027,16 +2029,17 @@ class TreatCRF(Treat):
                 el["edge"]=edge
                 el["oldscr"]=item["scr"]
                 el["scr"]=nscr+sum(el["pscr"][:-1])-self.model["rho"]
-            else:
-                m=self.model["ww"][-1]
-                el["dfeat"]=numpy.zeros(m.shape,dtype=numpy.float32)
+            #else:
+                #m=self.model["ww"][-1]
+                #el["dfeat"]=numpy.zeros(m.shape,dtype=numpy.float32)
                 #item["CRF"]=numpy.ones(m.shape,dtype=numpy.float32)
                 #item["oldscr"]=item["scr"]
                 #item["scr"]=nscr
         #print self.model["ww"][-1].shape,el["edge"].shape
         #rerank
         rdet=self.rank(rdet,maxnum=self.ranktr)
-        #thresholding 
+        #thresholding
+        idel=0 
         for idel,el in enumerate(rdet):
             if el["scr"]<self.thr:
                 break    
@@ -2056,20 +2059,31 @@ class TreatCRF(Treat):
             fy=self.fy
             fx=self.fx
             item["feat"]=[]
-            item["feat2"]=[]
+            #item["feat2"]=[]
             my=0;mx=0;
             for l in range(len(item["def"]["dy"])):
                 if i+self.f.starti-(l)*self.interv>=0:
+                    #if l==len(item["def"]["dy"])-1:#CRF
+                        #item["feat"].append(item["dfeat"])
+                    #else:
+                    my=2*my+item["def"]["dy"][l]
+                    mx=2*mx+item["def"]["dx"][l]
                     if l==len(item["def"]["dy"])-1:#CRF
-                        item["feat"].append(item["dfeat"])
+                        aux2=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1-self.pad,cy+my+fy*2**l-1+self.pad,cx+mx-1-self.pad,cx+mx+fx*2**l-1+self.pad,self.trunc)               
+                        aux,edge=crf3.getfeat(aux2,self.pad,item["CRF"])
+                        if numpy.sum(aux2-item["efeat"])>0.0001:
+                            print "Error rigid:",numpy.sum(aux2-item["efeat"])
+                            raw_input()
+                        if numpy.sum(aux-item["dfeat"]):
+                            print "Error deform:",numpy.sum(aux-item["dfeat"])
+                            raw_input()                            
+                        item["edge"]=edge
                     else:
-                        my=2*my+item["def"]["dy"][l]
-                        mx=2*mx+item["def"]["dx"][l]
                         aux=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1,cy+my+fy*2**l-1,cx+mx-1,cx+mx+fx*2**l-1,self.trunc)
-                        item["feat"].append(aux)
-                        #item["feat2"].append(hog2bow(aux))
-                        cy=(cy)*2
-                        cx=(cx)*2
+                    item["feat"].append(aux)
+                    #item["feat2"].append(hog2bow(aux))
+                    cy=(cy)*2
+                    cx=(cx)*2
                 else:
                     item["feat"].append(numpy.zeros((fy*2**l,fx*2**l,hogdim)))
         return rdet

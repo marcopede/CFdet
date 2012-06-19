@@ -7,7 +7,7 @@ import scipy.ndimage.filters as flt
 from subprocess import call,PIPE
 try:
     import scipy.misc.pilutil as pil
-else:
+except:
     import scipy.misc as pil
 
 i32=numpy.int32

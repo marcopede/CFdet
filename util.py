@@ -5,7 +5,10 @@ import cPickle
 import time
 import scipy.ndimage.filters as flt
 from subprocess import call,PIPE
-import scipy.misc.pilutil as pil
+try:
+    import scipy.misc.pilutil as pil
+else:
+    import scipy.misc as pil
 
 i32=numpy.int32
 part=numpy.dtype([("itr", i32),("oct",i32),("y",i32),("x",i32),("sy",i32),("sx",i32)])

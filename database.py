@@ -1,6 +1,9 @@
 import numpy
 import pylab
-import scipy.misc.pilutil as pil
+try:
+    import scipy.misc.pilutil as pil
+except:
+    import scipy.misc as pil
 import string
 import pickle
 

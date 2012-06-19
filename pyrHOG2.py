@@ -439,6 +439,14 @@ def hogflip(feat,obin=9):
     return numpy.ascontiguousarray(aux)
 
 
+def crfflip(edge):
+    aux=edge.copy()#numpy.zeros(edge)
+    aux[0]=edge[0,:,::-1]#aux[0,:,::-1]
+    aux[1,:,:-1]=edge[1,:,-2::-1]#aux[1,:,-2::-1]
+    #aux[1,:,-1]=0
+    return aux
+
+
 def defflip(feat):
     """    
     returns the horizontally flipped version of the deformation features
@@ -2017,16 +2025,16 @@ class TreatCRF(Treat):
                 feat=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],el["ny"]*2**l+my-1-pad,el["ny"]*2**l+my+fy*2**l-1+pad,el["nx"]*2**l+mx-1-pad,el["nx"]*2**l+mx+fx*2**l-1+pad,self.trunc).astype(c_float)
                 m=self.model["ww"][-1]
                 cost=self.model["cost"]
-                nscr,ndef,dfeat,edge=crf3.match(m,feat,cost,pad=pad,show=False)
-                #nscr,ndef=crf3.match(m,feat,cost,pad=pad,show=False,feat=False)
-                el["efeat"]=feat
-#                el["my"]=my
-#                el["mx"]=mx
-#                el["nny"]=el["ny"]
-#                el["nnx"]=el["nx"]                
-                el["dfeat"]=dfeat
+                #nscr,ndef,dfeat,edge=crf3.match(m,feat,cost,pad=pad,show=False)
+                check=0
+                if check:
+                    nscr,ndef,dfeat,edge=crf3.match(m,feat,cost,pad=pad,show=False)
+                    el["efeat"]=feat
+                    el["dfeat"]=dfeat                
+                    el["edge"]=edge
+                else:
+                    nscr,ndef=crf3.match(m,feat,cost,pad=pad,show=False,feat=False)
                 el["CRF"]=ndef
-                el["edge"]=edge
                 el["oldscr"]=item["scr"]
                 el["scr"]=nscr+sum(el["pscr"][:-1])-self.model["rho"]
             #else:
@@ -2071,12 +2079,12 @@ class TreatCRF(Treat):
                     if l==len(item["def"]["dy"])-1:#CRF
                         aux2=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1-self.pad,cy+my+fy*2**l-1+self.pad,cx+mx-1-self.pad,cx+mx+fx*2**l-1+self.pad,self.trunc)               
                         aux,edge=crf3.getfeat(aux2,self.pad,item["CRF"])
-                        if numpy.sum(aux2-item["efeat"])>0.0001:
-                            print "Error rigid:",numpy.sum(aux2-item["efeat"])
-                            raw_input()
-                        if numpy.sum(aux-item["dfeat"]):
-                            print "Error deform:",numpy.sum(aux-item["dfeat"])
-                            raw_input()                            
+#                        if numpy.sum(aux2-item["efeat"])>0.0001:
+#                            print "Error rigid:",numpy.sum(aux2-item["efeat"])
+#                            raw_input()
+#                        if numpy.sum(aux-item["dfeat"]):
+#                            print "Error deform:",numpy.sum(aux-item["dfeat"])
+#                            raw_input()                            
                         item["edge"]=edge
                     else:
                         aux=getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],cy+my-1,cy+my+fy*2**l-1,cx+mx-1,cx+mx+fx*2**l-1,self.trunc)
@@ -2098,9 +2106,9 @@ class TreatCRF(Treat):
             if not(flip):
                 ld[idl]=numpy.concatenate((ld[idl],(item["edge"]/float(k)).flatten()))
             else:
-                aux=item["edge"].copy()
-                aux[0]=aux[0,:,::-1]
-                aux[1,:,:-1]=aux[1,:,-2::-1]
+                aux=crfflip(item["edge"])
+                #aux[0]=item["edge"][0,:,::-1]#aux[0,:,::-1]
+                #aux[1,:,:-1]=item["edge"][1,:,-2::-1]#aux[1,:,-2::-1]
                 ld[idl]=numpy.concatenate((ld[idl],(aux/float(k)).flatten()))
         return ld
 

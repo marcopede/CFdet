@@ -163,12 +163,12 @@ def rundet(img,cfg,models,gtbbox):
             res.append(pyrHOG2RL.detectflip(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,
 bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,
 minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,
-usefather=cfg.usefather,useprior=cfg.useprior,K=cfg.k,occl=cfg.occl,fastBU=cfg.fastBU,usebow=cfg.usebow,ranktr=cfg.ranktr,CRF=cfg.CRF))
+usefather=cfg.usefather,useprior=cfg.useprior,K=cfg.k,occl=cfg.occl,fastBU=cfg.fastBU,usebow=cfg.usebow,ranktr=cfg.ranktr,CRF=cfg.CRF,small2=cfg.small2))
         else:
             res.append(pyrHOG2.detect(f,m,gtbbox,hallucinate=cfg.hallucinate,initr=cfg.initr,ratio=cfg.ratio,deform=cfg.deform,
 bottomup=cfg.bottomup,usemrf=cfg.usemrf,numneg=cfg.numneg,thr=cfg.thr,posovr=cfg.posovr,
 minnegincl=cfg.minnegincl,small=cfg.small,show=cfg.show,cl=clm,mythr=cfg.mythr,mpos=cfg.mpos,
-usefather=cfg.usefather,useprior=cfg.useprior,K=cfg.k,occl=cfg.occl,fastBU=cfg.fastBU,usebow=cfg.usebow,ranktr=cfg.ranktr,CRF=cfg.CRF))
+usefather=cfg.usefather,useprior=cfg.useprior,K=cfg.k,occl=cfg.occl,fastBU=cfg.fastBU,usebow=cfg.usebow,ranktr=cfg.ranktr,CRF=cfg.CRF,small2=cfg.small2))
     if cfg.show:
         pylab.draw()
         pylab.show()
@@ -481,7 +481,8 @@ if __name__=="__main__":
                 {"name":"negratio[-1]","txt":"Ratio Neg loss:"},
                 {"name":"nexratio[-1]","txt":"Ratio Examples: "},
                 {"name":"posratio[-1]","txt":"Ratio Pos loss: "},
-                {"name":"rpnewloss","txt":"Pos Loss: "}])
+                {"name":"rpoldloss","txt":"Old Pos Loss: "},
+                {"name":"rpnewloss","txt":"New Pos Loss: "}])
 
     stpos=stats([{"name":"cntadded","txt":"Added"},
                 {"name":"cntnochange","txt":"No Change"},
@@ -811,7 +812,7 @@ if __name__=="__main__":
         lfx.append(round(fx))
         print
 
-    raw_input()
+    #raw_input()
 
     cfg.fy=lfy#[7,10]#lfy
     cfg.fx=lfx#[11,7]#lfx
@@ -824,7 +825,7 @@ if __name__=="__main__":
     
     models=[]
     for c in range(cfg.numcl):      
-        models.append(model.initmodel(cfg.fy[c],cfg.fx[c],cfg.lev[c],cfg.useRL,cfg.deform,numbow,CRF=True))
+        models.append(model.initmodel(cfg.fy[c],cfg.fx[c],cfg.lev[c],cfg.useRL,cfg.deform,numbow,CRF=cfg.CRF,small2=cfg.small2))
 #check model
     #pyrHOG2.BOW=cfg.usebow
     #BOW=pyrHOG2.BOW
@@ -841,7 +842,7 @@ if __name__=="__main__":
         if cfg.deform:
             waux.append(model.model2wDef(models[l],cfg.k,deform=cfg.deform,usemrf=cfg.usemrf,usefather=cfg.usefather,usebow=cfg.usebow))
         else:
-            waux.append(model.model2w(models[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow,useCRF=cfg.CRF))
+            waux.append(model.model2w(models[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow,useCRF=cfg.CRF,small2=cfg.small2))
         rr.append(models[l]["rho"])
         w=numpy.concatenate((w,waux[-1],numpy.array([models[l]["rho"]])))
     #from w to model m1
@@ -850,7 +851,7 @@ if __name__=="__main__":
         if cfg.deform:
             m1.append(model.w2modelDef(waux[l],rr[l],cfg.lev[0],31,siftsize=siftsize,bin=numbin,fy=models[l]["fy"],fx=models[l]["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather,useoccl=cfg.occl,usebow=cfg.usebow))
         else:
-            m1.append(model.w2model(waux[l],rr[l],cfg.lev[0],31,siftsize=siftsize,bin=numbin,fy=models[l]["fy"],fx=models[l]["fx"],k=cfg.k,usemrf=cfg.usemrf,usefather=cfg.usefather,useoccl=cfg.occl,usebow=cfg.usebow,useCRF=cfg.CRF))
+            m1.append(model.w2model(waux[l],rr[l],cfg.lev[0],31,siftsize=siftsize,bin=numbin,fy=models[l]["fy"],fx=models[l]["fx"],k=cfg.k,usemrf=cfg.usemrf,usefather=cfg.usefather,useoccl=cfg.occl,usebow=cfg.usebow,useCRF=cfg.CRF,small2=cfg.small2))
 
     #from m1 to w1
     waux1=[]
@@ -859,7 +860,7 @@ if __name__=="__main__":
         if cfg.deform:
             waux1.append(model.model2wDef(m1[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow))
         else:
-            waux1.append(model.model2w(m1[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow,useCRF=cfg.CRF))
+            waux1.append(model.model2w(m1[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow,useCRF=cfg.CRF,small2=cfg.small2))
         w1=numpy.concatenate((w1,waux1[-1],numpy.array([m1[l]["rho"]])))
     
     assert(numpy.all(w1==w))
@@ -889,6 +890,7 @@ if __name__=="__main__":
     nexratio=[-1]
     fobj=[]
     rpnewloss=0.0
+    rpoldloss=0.0
     #cumsize=None
     cumsize=numpy.zeros(numcl+1,dtype=numpy.int)
     for idl,l in enumerate(waux):
@@ -899,7 +901,10 @@ if __name__=="__main__":
     totPosEx=0
     for i in range(len(trPosImages)):
             totPosEx += len(trPosImages[i]["bbox"])  
-    #totPosEx*=2
+    print "TOT POS EX:",totPosEx
+    #raw_input()
+    #if cfg.useRL:
+    totPosEx*=2 #double number of bboxes because of flip
     pyrHOG2.setK(cfg.k)
     #pyrHOG2.setDENSE(cfg.dense)
     for it in range(cfg.posit):
@@ -926,10 +931,11 @@ if __name__=="__main__":
         print "Positive Images:"
         if cfg.bestovr and it==0:#force to take best overlapping
             cfg.mpos=10
-            cfg.ranktr=500 #should be at least 1000
+            temprank=cfg.ranktr
+            cfg.ranktr=2000 #should be at least 1000
         else:
             cfg.mpos=0#0.5
-            cfg.ranktr=500
+            cfg.ranktr=temprank
         cfgpos=copy.copy(cfg)
         cfgpos.numneg=cfg.numneginpos
         #arg=[[i,trPosImages[i]["name"],trPosImages[i]["bbox"],models,cfgpos] for i in range(len(trPosImages))]
@@ -1219,10 +1225,13 @@ if __name__=="__main__":
             oldloss=moldloss+(totPosEx-numoldtrpos)*(1-cfg.thr)
             newloss=mnewloss+(totPosEx-len(trpos))*(1-cfg.thr)
             print "IT:",it,"OLDPOSLOSS",oldloss,"NEWPOSLOSS:",newloss
+            print "NO BOUND: OLDPOSLOSS",moldloss,"NEWPOSLOSS",mnewloss
+            print "TOT EX POS:",totPosEx
             posratio.append((oldloss-newloss)/oldloss)
             nexratio.append(float(abs(len(trpos)-numoldtrpos))/numoldtrpos)
             print "RATIO: abs(oldpos-newpos)/oldpos:",posratio
             print "N old examples:",numoldtrpos,"N new examples",len(trpos),"ratio",nexratio
+            #raw_input()
             #fobj.append(nobj)
             #print "OBj:",fobj
             #raw_input()
@@ -1231,12 +1240,15 @@ if __name__=="__main__":
                 output+="Warning increasing positive loss\n"
                 print output
                 raw_input()
-            if (posratio[-1]<0.0001) and nexratio[-1]<0.01:
-                output+="Very small positive improvement: convergence at iteration %d!"%it
+            #if (posratio[-1]<0.0001) and nexratio[-1]<0.01:
+            if (posratio[-1]<cfg.convPos) and nexratio[-1]<0.01:
+                output="Very small positive improvement: convergence at iteration %d!"%it
+                output+="Last iteration with all negatives!!!"
                 print output
-## for the moment skip positive convergency
-##                last_round=True 
-            rpnewloss=newloss               
+                #now it really checks for convergency pos loss
+                last_round=True 
+            rpnewloss=newloss  
+            rpoldloss=oldloss             
             stloss.report(cfg.testname+".rpt.txt","a","Positive Convergency")
             #if (posratio[-1]<0.0001) and nexratio[-1]<0.01:
                 #continue
@@ -1410,12 +1422,13 @@ if __name__=="__main__":
                 negratio.append(nobj/(old_nobj+0.000001))
                 print "RATIO: newobj/oldobj:",negratio
                 output="Negative not converging yet!"
-                if (negratio[-1]<1.05):
+                #if (negratio[-1]<1.05):
+                if (negratio[-1]<cfg.convNeg):
                     output= "Very small negative newloss: convergence at iteration %d!"%nit
                     #raw_input()
                     #break
                 stloss.report(cfg.testname+".rpt.txt","a","Negative Convergency")
-                if (negratio[-1]<1.05):
+                if (negratio[-1]<cfg.convNeg):
                     break
             #else:
             #    negl=1
@@ -1497,13 +1510,13 @@ if __name__=="__main__":
                 if cfg.deform:
                     models[idm]=model.w2modelDef(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],bin=numbin,siftsize=siftsize,usemrf=cfg.usemrf,usefather=cfg.usefather,usebow=cfg.usebow)
                 else:
-                    models[idm]=model.w2model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],bin=numbin,siftsize=siftsize,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow,useCRF=cfg.CRF)
+                    models[idm]=model.w2model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],bin=numbin,siftsize=siftsize,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow,useCRF=cfg.CRF,small2=cfg.small2)
                 #models[idm]["ra"]=w[cumsize[idm+1]-1]
                 #from model to w #changing the clip...
                 if cfg.deform:
                     waux.append(model.model2wDef(models[idm],cfg.k,deform=cfg.deform,usemrf=cfg.usemrf,usefather=cfg.usefather,usebow=cfg.usebow))
                 else:
-                    waux.append(model.model2w(models[idm],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow,useCRF=cfg.CRF))
+                    waux.append(model.model2w(models[idm],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow,useCRF=cfg.CRF,small2=cfg.small2))
                 rr.append(models[idm]["rho"])
                 w1=numpy.concatenate((w1,waux[-1],-numpy.array([models[idm]["rho"]])/bias))
             w2=w

@@ -1477,7 +1477,7 @@ class pyrHOG:
 
 
 class Treat:
-    def __init__(self,f,scr,pos,sample,fy,fx,occl=False,trunc=0):
+    def __init__(self,f,scr,pos,sample,fy,fx,occl=False,trunc=0,small2=False):
         self.pos=pos
         self.scr=scr
         self.f=f
@@ -1489,6 +1489,7 @@ class Treat:
         self.sample=sample
         self.occl=occl
         self.trunc=trunc
+        self.small2=small2
 
     def showBBox(self,allgtbbox,colors=["w","g"],new_alpha=0.15):
         for item in allgtbbox:
@@ -1790,6 +1791,13 @@ class Treat:
                     else:
                         d=numpy.concatenate((d,[1.0*SMALL]))
             #ld.append(d.astype(numpy.float32))
+            if self.small2:
+                aux=numpy.array([0.0,0.0,0.0])
+                if item["i"]<10:
+                    aux[0]=1.0*SMALL
+                elif item["i"]<20:
+                    aux[1]=1.0*SMALL
+                d=numpy.concatenate((d,aux))
             if usebow:#usebow:#625*3-->later 625*21
                 for l in range(len(item["feat"])):
                     #hist=numpy.zeros(625,dtype=numpy.float32)
@@ -1812,33 +1820,33 @@ class Treat:
             ld.append(item["cl"])
         return ld
 
-    def model(self,descr,rho,lev,fsz,fy=[],fx=[],usemrf=False,usefather=False,usebow=False,numbow=6**4):
-        """
-        build a new model from the weights of the SVM
-        """     
-        ww=[]  
-        p=0
-        occl=[0]*lev
-        if fy==[]:
-            fy=self.fy
-        if fx==[]:
-            fx=self.fx
-        d=descr
-        for l in range(lev):
-            dp=(fy*fx)*4**l*fsz
-            ww.append((d[p:p+dp].reshape((fy*2**l,fx*2**l,fsz))).astype(numpy.float32))
-            p+=dp
-            if self.occl:
-                occl[l]=d[p]
-                p+=1
-        hist=[]
-        if usebow:#usebow:
-            for l in range(lev):
-                hist.append(d[p:p+numbow].astype(numpy.float32)) 
-                #hist.append(numpy.zeros(625,dtype=numpy.float32))#remind to remove this line
-                p=p+numbow
-        m={"ww":ww,"rho":rho,"fy":fy,"fx":fx,"occl":occl,"hist":hist,"voc":[]}
-        return m
+#    def model(self,descr,rho,lev,fsz,fy=[],fx=[],usemrf=False,usefather=False,usebow=False,numbow=6**4):
+#        """
+#        build a new model from the weights of the SVM
+#        """     
+#        ww=[]  
+#        p=0
+#        occl=[0]*lev
+#        if fy==[]:
+#            fy=self.fy
+#        if fx==[]:
+#            fx=self.fx
+#        d=descr
+#        for l in range(lev):
+#            dp=(fy*fx)*4**l*fsz
+#            ww.append((d[p:p+dp].reshape((fy*2**l,fx*2**l,fsz))).astype(numpy.float32))
+#            p+=dp
+#            if self.occl:
+#                occl[l]=d[p]
+#                p+=1
+#        hist=[]
+#        if usebow:#usebow:
+#            for l in range(lev):
+#                hist.append(d[p:p+numbow].astype(numpy.float32)) 
+#                #hist.append(numpy.zeros(625,dtype=numpy.float32))#remind to remove this line
+#                p=p+numbow
+#        m={"ww":ww,"rho":rho,"fy":fy,"fx":fx,"occl":occl,"hist":hist,"voc":[]}
+#        return m
 
     def getbestworste(self,det,gtbbox,numpos=1,numneg=10,posovr=0.5,negovr=0.2,mpos=0,minnegovr=0,minnegincl=0,emptybb=True,useMaxOvr=False):
         """
@@ -2378,7 +2386,7 @@ class TreatDef(Treat):
 
 import time
 
-def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000,fastBU=False,usebow=False,CRF=False):
+def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,emptybb=False,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000,fastBU=False,usebow=False,CRF=False,small2=False):
     """Detect objects in an image
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -2416,10 +2424,14 @@ def detect(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False
                 scr,pscr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc,partScr=True)
             else:                
                 scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc)
+        if small2:
+            for l in range(f.interv):
+                scr[l]=scr[l]+m["small2"][0]*SMALL    
+                scr[l+f.interv]=scr[l+f.interv]+m["small2"][1]*SMALL    
         if CRF:
             tr=TreatCRF(f,scr,pos,initr,m["fy"],m["fx"],m,pscr,ranktr,occl=occl,trunc=trunc)        
         else:
-            tr=Treat(f,scr,pos,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
+            tr=Treat(f,scr,pos,initr,m["fy"],m["fx"],occl=occl,trunc=trunc,small2=small2)
     print "Scan: %.3f s"%(time.time()-t)    
     if gtbbox==None:#test
         if show==True:

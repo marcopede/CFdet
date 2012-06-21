@@ -6,8 +6,8 @@ import crf3
 
 
 class TreatRL(pyrHOG2.Treat):
-    def __init__(self,f,scr,pos,pos1,lr,sample,fy,fx,occl=False,trunc=0):
-        pyrHOG2.Treat.__init__(self,f,scr,pos,sample,fy,fx,occl=occl,trunc=trunc)
+    def __init__(self,f,scr,pos,pos1,lr,sample,fy,fx,occl=False,trunc=0,small2=False):
+        pyrHOG2.Treat.__init__(self,f,scr,pos,sample,fy,fx,occl=occl,trunc=trunc,small2=small2)
         self.lr=lr
         self.pose=[pos,pos1]
 
@@ -344,7 +344,7 @@ def flip(m):
     return m1    
 
 
-def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000,fastBU=False,usebow=False,CRF=False):
+def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=False,bottomup=False,usemrf=False,numneg=0,thr=-2,posovr=0.7,minnegincl=0.5,small=True,show=False,cl=0,mythr=-10,nms=0.5,inclusion=False,usefather=True,mpos=1,useprior=False,K=1.0,occl=False,trunc=0,useMaxOvr=False,ranktr=1000,fastBU=False,usebow=False,CRF=False,small2=False):
     """Detect objects with RL flip
         used for both test --> gtbbox=None
         and trainig --> gtbbox = list of bounding boxes
@@ -386,7 +386,12 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
             else:
                 scr,pos=f.scanRCFL(m,initr=initr,ratio=ratio,small=small,trunc=trunc,partScr=False)
                 scr1,pos1=f.scanRCFL(m1,initr=initr,ratio=ratio,small=small,trunc=trunc,partScr=False)
-            
+        if small2:
+            for l in range(f.interv):
+                scr[l]=scr[l]+m["small2"][0]*pyrHOG2.SMALL    
+                scr[l+f.interv]=scr[l+f.interv]+m["small2"][1]*pyrHOG2.SMALL          
+                scr1[l]=scr1[l]+m["small2"][0]*pyrHOG2.SMALL    
+                scr1[l+f.interv]=scr1[l+f.interv]+m["small2"][1]*pyrHOG2.SMALL          
     lr=[]
     fscr=[]
     for idl,l in enumerate(scr):
@@ -409,7 +414,7 @@ def detectflip(f,m,gtbbox=None,auxdir=".",hallucinate=1,initr=1,ratio=1,deform=F
         if CRF:
             tr=TreatCRFRL(f,fscr,pos,pos1,lr,initr,m["fy"],m["fx"],m,m1,pscr,pscr1,ranktr,occl=occl,trunc=trunc)
         else:
-            tr=TreatRL(f,fscr,pos,pos1,lr,initr,m["fy"],m["fx"],occl=occl,trunc=trunc)
+            tr=TreatRL(f,fscr,pos,pos1,lr,initr,m["fy"],m["fx"],occl=occl,trunc=trunc,small2=small2)
 
     if gtbbox==None:
         if show==True:

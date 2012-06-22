@@ -1973,6 +1973,16 @@ class Treat:
                     samples[-1][0,d["py"],d["px"]]=csamples[d["py"],d["px"]]      
         return samples
 
+#class TreatSMALL(Treat):
+#    def __init__(self,tr):
+#        self.tr=tr
+
+#    def doall(self,*arg,**args):
+#        self.tr.doall(arg,args)
+    
+        
+
+
 import crf3
 
 class TreatCRF(Treat):

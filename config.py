@@ -29,7 +29,7 @@ cfg.numneginpos=5
 cfg.useflipos=True
 cfg.useflineg=True
 cfg.svmc=0.001#0.001#0.002#0.004
-cfg.convPos=0.001
+cfg.convPos=0.005
 cfg.convNeg=1.05
 cfg.show=False
 cfg.thr=-2
@@ -54,6 +54,7 @@ cfg.bestovr=False
 cfg.useRL=False
 cfg.kmeans=False
 cfg.resize=None
+cfg.ranktr=500
 cfg.occl=False
 cfg.small2=False
 #cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save

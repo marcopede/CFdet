@@ -57,6 +57,8 @@ cfg.resize=None
 cfg.ranktr=500
 cfg.occl=False
 cfg.small2=False
+cfg.saveVOC=False
+
 #cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save
 #    mydebug=False
 #    if mydebug:

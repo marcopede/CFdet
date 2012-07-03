@@ -1987,18 +1987,19 @@ import crf3
 
 class TreatCRF(Treat):
 
-    def __init__(self,f,scr,pos,sample,fy,fx,model,pscr,ranktr,occl=False,trunc=0):
-        self.pos=pos
-        self.scr=scr
-        self.f=f
-        self.interv=f.interv
-        self.sbin=f.sbin
-        self.fy=fy
-        self.fx=fx
-        self.scale=f.scale
-        self.sample=sample
-        self.occl=occl
-        self.trunc=trunc
+    def __init__(self,f,scr,pos,sample,fy,fx,model,pscr,ranktr,occl=False,trunc=0,small2=False):
+        Treat.__init__(self,f,scr,pos,sample,fy,fx,occl=occl,trunc=trunc,small2=small2)
+        #self.pos=pos
+        #self.scr=scr
+        #self.f=f
+        #self.interv=f.interv
+        #self.sbin=f.sbin
+        #self.fy=fy
+        #self.fx=fx
+        #self.scale=f.scale
+        #self.sample=sample
+        #self.occl=occl
+        #self.trunc=trunc
         self.model=model
         self.pscr=pscr
         self.ranktr=ranktr

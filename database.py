@@ -575,7 +575,7 @@ class VOC07Data(VOC06Data):
                 imagepath="VOC2007/VOCdevkit/VOC2007/JPEGImages/",
                 annpath="VOC2007/VOCdevkit/VOC2007/Annotations/",
                 local="VOC2007/VOCdevkit/local/VOC2007/",
-                usetr=False,usedf=False):
+                usetr=False,usedf=False,mina=0):
         self.cl=cl
         self.usetr=usetr
         self.usedf=usedf
@@ -593,6 +593,7 @@ class VOC07Data(VOC06Data):
         if select=="neg":#Negatives images
             self.str="-1\n"
         self.selines=self.__selected()
+        self.mina=mina
         
     def __selected(self):
         lst=[]
@@ -628,6 +629,17 @@ class VOC07Data(VOC06Data):
     def getTotal(self):
         return len(self.selines)
     
+#    def getBBox(self,i,cl=None,usetr=None,usedf=None):
+#        if usetr==None:
+#            usetr=self.usetr
+#        if usedf==None:
+#            usedf=self.usedf
+#        if cl==None:#use the right class
+#            cl=self.cl.split("_")[0]
+#        item=self.selines[i]
+#        filename=self.annpath+item.split(" ")[0]+".xml"
+#        return getbboxVOC07(filename,cl,usetr,usedf)
+
     def getBBox(self,i,cl=None,usetr=None,usedf=None):
         if usetr==None:
             usetr=self.usetr
@@ -637,7 +649,16 @@ class VOC07Data(VOC06Data):
             cl=self.cl.split("_")[0]
         item=self.selines[i]
         filename=self.annpath+item.split(" ")[0]+".xml"
-        return getbboxVOC07(filename,cl,usetr,usedf)
+        bb=getbboxVOC07(filename,cl,usetr,usedf)
+        auxb=[]
+        for b in bb:
+            a=abs(b[0]-b[2])*abs(b[1]-b[3])
+            #print a
+            if a>self.mina:
+                #print "OK!"
+                auxb.append(b)
+        return auxb
+
 
 class VOC11Data(VOC07Data):
     """

@@ -256,6 +256,118 @@ class TreatCRFRL(pyrHOG2.TreatCRF):
         rdet=rdet[:idel]
         return rdet
 
+#    def refine(self,ldet):
+#        """
+#            refine the localization of the object based on the position of the parts
+#        """
+#        ### we are assuming the good model based on rigid also for left right
+#        ### maybe is not the best choice
+#        pad=self.pad
+#        print "Refine CRF",len(ldet)
+#        #fmodel=flip(self.model)
+#        rdet=[]
+#        fy=self.fy
+#        fx=self.fx
+#        for idi,item in enumerate(ldet):
+#            i=item["i"];cy=item["py"];cx=item["px"];pp=self.lr[i][cy,cx]
+#            el=item.copy()
+#            el["ny"]=el["ry"]
+#            el["nx"]=el["rx"]
+#            el["rl"]=pp
+#            movl=numpy.zeros(2)
+#            movr=numpy.zeros(2)
+#            #el["def"]={"dy":numpy.zeros(self.pos[i].shape[1]),"dx":numpy.zeros(self.pos[i].shape[1])}
+#            el["def"]={"dy":numpy.zeros(self.pose[pp][i].shape[1]),"dx":numpy.zeros(self.pose[pp][i].shape[1])}
+#            myl=0;mxl=0
+#            myr=0;mxr=0
+#            auxl={"ry":0,"rx":0}
+#            auxl["def"]={"dy":numpy.zeros(self.pose[pp][i].shape[1]),"dx":numpy.zeros(self.pose[pp][i].shape[1])}
+#            for l in range(self.pos[i].shape[1]):
+#                #aux=self.pos[i][:,l,cy,cx]#[cy,cx,:,l]
+#                aux=self.pose[0][i][:,l,cy,cx]
+#                auxl["def"]["dy"][l]=aux[0]
+#                auxl["def"]["dx"][l]=aux[1]
+#                myl=2*myl+auxl["def"]["dy"][l]
+#                mxl=2*mxl+auxl["def"]["dx"][l]
+#                movl=movl+aux*2**(-l)
+#            auxl["ry"]+=movl[0]
+#            auxl["rx"]+=movl[1]
+#            #el["pscr"]=self.pscr[i][cy,cx]
+#            auxl["pscr"]=self.pscr[0][i][cy,cx]
+
+#            auxr={"ry":0,"rx":0}
+#            auxr["def"]={"dy":numpy.zeros(self.pose[pp][i].shape[1]),"dx":numpy.zeros(self.pose[pp][i].shape[1])}
+#            for l in range(self.pos[i].shape[1]):
+#                #aux=self.pos[i][:,l,cy,cx]#[cy,cx,:,l]
+#                aux=self.pose[1][i][:,l,cy,cx]
+#                auxr["def"]["dy"][l]=aux[0]
+#                auxr["def"]["dx"][l]=aux[1]
+#                myr=2*myr+auxr["def"]["dy"][l]
+#                mxr=2*mxr+auxr["def"]["dx"][l]
+#                movr=movr+aux*2**(-l)
+#            auxr["ry"]+=movr[0]
+#            auxr["rx"]+=movr[1]
+#            #el["pscr"]=self.pscr[i][cy,cx]
+#            auxr["pscr"]=self.pscr[1][i][cy,cx]
+
+#            #rdet.append(el)
+
+#            l=len(self.model[pp]["ww"])-1
+#            if i+self.f.starti-(l)*self.interv>=0:
+#                featl=pyrHOG2.getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],el["ny"]*2**l+myl-1-pad,el["ny"]*2**l+myl+fy*2**l-1+pad,el["nx"]*2**l+mxl-1-pad,el["nx"]*2**l+mxl+fx*2**l-1+pad,self.trunc).astype(numpy.float32)
+#                featr=pyrHOG2.getfeat(self.f.hog[i+self.f.starti-(l)*self.interv],el["ny"]*2**l+myr-1-pad,el["ny"]*2**l+myr+fy*2**l-1+pad,el["nx"]*2**l+mxr-1-pad,el["nx"]*2**l+mxr+fx*2**l-1+pad,self.trunc).astype(numpy.float32)
+#                m=self.model[0]["ww"][-1]
+#                cost=self.model[0]["cost"]
+#                m1=self.model[1]["ww"][-1]
+#                cost1=self.model[1]["cost"]
+#                #nscr1,ndef1=crf3.match(m1,feat,cost1,pad=pad,show=False,feat=False)
+#                nscr,ndef=crf3.match(m,featl,cost,pad=pad,show=False,feat=False)
+#                nscr1,ndef1=crf3.match(m1,featr,cost1,pad=pad,show=False,feat=False)
+##                check=0
+##                if check:
+##                    nscr,ndef,dfeat,edge=crf3.match(m,feat,cost,pad=pad,show=False)
+##                    el["efeat"]=feat
+##                    el["dfeat"]=dfeat
+##                    el["edge"]=edge
+##                else:
+##                    nscr,ndef=crf3.match(m,feat,cost,pad=pad,show=False,feat=False)
+#                if nscr1>nscr:
+#                    nscr=nscr1
+#                    ndef=ndef1
+#                    el["rl"]=1
+#                    el["def"]["dy"]=auxr["def"]["dy"]
+#                    el["def"]["dx"]=auxr["def"]["dx"]
+#                    el["ry"]=el["ry"]+auxl["ry"]
+#                    el["rx"]=el["rx"]+auxl["rx"]
+#                    el["pscr"]=auxl["pscr"]
+#                else:
+#                    el["rl"]=0
+#                    el["def"]["dy"]=auxr["def"]["dy"]
+#                    el["def"]["dx"]=auxr["def"]["dx"]
+#                    el["ry"]=el["ry"]+auxl["ry"]
+#                    el["rx"]=el["rx"]+auxl["rx"]
+#                    el["pscr"]=auxl["pscr"]
+
+##                el["fullpscr"]=[self.pscr[0][i][cy,cx],self.pscr[1][i][cy,cx]]
+##                el["pscr"]=self.pscr[el["rl"]][i][cy,cx]
+#                el["CRF"]=ndef
+#                #el["edge"]=edge
+#                el["oldscr"]=item["scr"]
+#                el["scr"]=nscr+sum(el["pscr"][:-1])-self.model[el["rl"]]["rho"]
+#            else:
+#                print "small error!"
+#                raw_input()
+#        #rerank
+#        rdet=self.rank(rdet,maxnum=self.ranktr)
+#        #thresholding
+#        idel=0 
+#        for idel,el in enumerate(rdet):
+#            if el["scr"]<self.thr:
+#                break    
+#        rdet=rdet[:idel]
+#        return rdet
+
+
 
     def show(self,*args,**kargs):#ldet,parts=False,colors=["w","r","g","b"],thr=-numpy.inf,maxnum=numpy.inf):
         """

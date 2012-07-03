@@ -592,11 +592,11 @@ if __name__=="__main__":
     elif cfg.db=="adondemand":
         trPosImages=getRecord(ImgFile("/home/marcopede/databases/videos/bigbang/%s.txt"%cfg.cls,imgpath="/home/marcopede/databases/videos/bigbang/images/",sort=True),cfg.maxpos)#[:1000:10]
         trNegImages=getRecord(DirImages(imagepath="/media/OS/data/PVTRA101/neg/"),cfg.maxneg)
-        #trNegImages=getRecord(DirImages(imagepath="/home/marcopede/databases/videos/bigbang/images/"),10000)[1000:1000+cfg.maxneg*10:10]
+        #trNegImages=getRecord(DirImages(imagepath="/home/marcopede/databases/videos/bigbang/images/"),10000)[700:700+cfg.maxneg*10:10]
         trNegImagesFull=trNegImages
         #tsImages=getRecord(ImgFile("/home/marcopede/databases/videos/bigbang/annotations.txt",imgpath="/home/marcopede/databases/videos/bigbang/images/",sort=True),cfg.maxtest)#[:1000:10]
         tsImages=[]#getRecord(DirImages(imagepath="/home/marcopede/databases/videos/bigbang/images/"))[200:]
-        tsImagesFull=getRecord(DirImages(imagepath="/home/marcopede/databases/videos/bigbang/images/"))[200:200+cfg.maxtest]#tsImages
+        tsImagesFull=getRecord(DirImages(imagepath="/home/marcopede/databases/videos/bigbang/images/"))[5969:5969+cfg.maxtest*10:10]#tsImages
     elif cfg.db=="inria":
         trPosImages=getRecord(InriaPosData(basepath=cfg.dbpath),cfg.maxpos)
         trNegImages=getRecord(InriaNegData(basepath=cfg.dbpath),cfg.maxneg)#check if it works better like this
@@ -978,13 +978,21 @@ if __name__=="__main__":
         print "Positive Images:"
         if cfg.bestovr and it==0:#force to take best overlapping
             cfg.mpos=10
+            #cfg.bottomup=True
             temprank=cfg.ranktr
-            cfg.ranktr=20000 #should be at least 1000
-            auxinitr=cfg.initr
+            if cfg.CRF:
+                cfg.ranktr=2000 #should be at least 1000
+            else:
+                cfg.ranktr=20000 #should be at least 1000
             cfg.initr=0
+            #auxCRF=cfg.CRF
+            #cfg.CRF=False
         else:
             cfg.mpos=0#0.5
             cfg.ranktr=temprank
+            #cfg.bottomup=False
+            cfg.initr=1
+            #cfg.CRF=auxCRF
         cfgpos=copy.copy(cfg)
         cfgpos.numneg=cfg.numneginpos
         #arg=[[i,trPosImages[i]["name"],trPosImages[i]["bbox"],models,cfgpos] for i in range(len(trPosImages))]
@@ -1115,6 +1123,12 @@ if __name__=="__main__":
             print "----Pos Image %d(%s)----"%(ii,imname)
             print "Pos:",len(nfuse),"Neg:",len(nfuseneg)
             print "Tot Pos:",len(dtrpos)," Neg:",len(trneg)+len(newtrneg)
+
+
+            cfg.initr=1
+            #cfg.bottomup=False
+
+
             #check score
             if (nfuse!=[] and not(nfuse[0].has_key("notfound")) and it>=0):
                 #if cfg.deform:
@@ -1268,7 +1282,10 @@ if __name__=="__main__":
             print "IT:",it,"OLDPOSLOSS",oldloss,"NEWPOSLOSS:",newloss
             print "NO BOUND: OLDPOSLOSS",moldloss,"NEWPOSLOSS",mnewloss
             print "TOT EX POS:",totPosEx
-            posratio.append((oldloss-newloss)/oldloss)
+            if oldloss!=0:
+                posratio.append((oldloss-newloss)/oldloss)
+            else:
+                posratio.append(0.0)
             nexratio.append(float(abs(len(trpos)-numoldtrpos))/numoldtrpos)
             print "RATIO: abs(oldpos-newpos)/oldpos:",posratio
             print "N old examples:",numoldtrpos,"N new examples",len(trpos),"ratio",nexratio
@@ -1300,10 +1317,7 @@ if __name__=="__main__":
         newtrneg2,newtrnegcl2=myunique(trneg,newtrneg,trnegcl,newtrnegcl,cfg.numcl)
         trneg=trneg+newtrneg2
         trnegcl=trnegcl+newtrnegcl2
-
-        #reset initr to the configuration
-        cfg.initr=auxinitr        
-
+        
         #negative retraining
         trneglen=1
         newPositives=True
@@ -1687,6 +1701,8 @@ if __name__=="__main__":
         print "AP(it=",it,")=",ap
         print "Training Time: %.3f h"%(tinit)
         rpres.report(testname+".rpt.txt","a","Results")
+        if cfg.saveVOC:
+            util.savedetVOC(detlist,testname+".det.txt")
 
 
 

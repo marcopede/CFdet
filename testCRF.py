@@ -64,8 +64,14 @@ def test(thr,cfg):
     
     #cfg.test=True
     import util
-    it=9
-    models=util.load("%s%d.model"%(cfg.testname,it))
+    it=19
+    for kit in range(it):
+        try:
+            models=util.load("%s%d.model"%(cfg.testname,kit))
+        except:
+            if kit==0:
+                print "No models for %s"%cfg.testname
+                exit()
     w=[]
     rho=[]
     cfg.mythr=thr
@@ -87,6 +93,12 @@ def test(thr,cfg):
             tsImages=getRecord(InriaTestData(basepath=cfg.dbpath),cfg.maxtest)
         else:
             tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
+    elif cfg.db=="adondemand":
+        trPosImages=getRecord(ImgFile("/home/marcopede/databases/videos/bigbang/%s.txt"%cfg.cls,imgpath="/home/marcopede/databases/videos/bigbang/images/",sort=True),cfg.maxpos)#[:1000:10]
+        trNegImages=getRecord(DirImages(imagepath="/media/OS/data/PVTRA101/neg/"),cfg.maxneg)
+        #trNegImages=getRecord(DirImages(imagepath="/home/marcopede/databases/videos/bigbang/images/"),10000)[700:700+cfg.maxneg*10:10]
+        trNegImagesFull=trNegImages
+        tsImages=getRecord(DirImages(imagepath="/home/marcopede/databases/videos/bigbang/images/"))[5969:5969+cfg.maxtest]#tsImages
     else:
         if select=="dir":#"." or select[0]=="/"
             import glob
@@ -154,7 +166,7 @@ def test(thr,cfg):
             #pylab.gca().set_ylim(0,img.shape[0])
             #pylab.gca().set_xlim(0,img.shape[1])
             #pylab.gca().set_ylim(pylab.gca().get_ylim()[::-1])
-            tr.show(nfuse,parts=showlabel,thr=-1.0,maxnum=3)
+            tr.show(nfuse,parts=showlabel,thr=-0.9,maxnum=3)
             pylab.axis((0,img.shape[1],img.shape[0],0))           
             pylab.draw()
             pylab.show()
@@ -193,6 +205,8 @@ def test(thr,cfg):
     print "Total number of HOG:",numhog
     print "AP(it=",it,")=",ap
     print "Testing Time: %.3f s"%tottime#/3600.0)
+    if cfg.saveVOC:
+        util.savedetVOC(detlist,cfg.testname+".fulldet.txt")
     #results={"det":detlist,"ap":ap,"tp":tp,"fp":fp,"pr":pr,"rc":rc,"numhog":numhog,"mythr":cfg.mythr,"time":tottime}
     #util.savemat("%s_ap%d_test_thr_%.3f.mat"%(cfg.testname,it,cfg.mythr),results)
     #util.save("%s_ap%d_test_thr_%.3f.dat"%(testname,it,cfg.mythr),results)
@@ -217,16 +231,18 @@ if __name__=="__main__":
     else:
         select="all"
     
-    numcl=3
+    numcl=1
 
     #cfg=loadcfg("./data/finalRL","test",cls,select)
     #cfg=loadcfg("./data/PASCAL/11_10_09","full",cls,select)
     #cfg=loadcfg("./data/PASCAL/11_10_09","full",cls,select)
     #cfg=loadcfg("./data/INRIA/12_01_11","Last",cls,select,numcl)
     #cfg=loadcfg("./data/INRIA/11_09_06","full",cls,select,numcl)
-    cfg=loadcfg("./data/CRF/12_06_15","symmfull",cls,select,numcl)
-    cfg.useRL=False
-    cfg.ranktr=500
+    #cfg=loadcfg("./data/CRF/12_06_15","symmfull",cls,select,numcl)
+    cfg=loadcfg("./data/ADONDEMAND/12_06_29","video",cls,select,numcl)
+    cfg.maxtest=1000
+    #cfg.useRL=False
+    #cfg.ranktr=500
     if len(sys.argv)>3:
         tmin=float(sys.argv[3])
         tmax=float(sys.argv[4])

@@ -338,7 +338,7 @@ def extract_feat2(tr,dtrpos,cumsize,useRL):
         if cumsize!=None:
             dns=buildense(aux,auxcl,cumsize)
             #print "Det:",dtrpos[el][0]["img"],[x["scr"] for x in dtrpos[el]],tr.mixture(dtrpos[el])
-            print "Det:",dtrpos[el][0]["img"],[numpy.sum(x*w)-r for x in dns],tr.mixture(dtrpos[el])
+            #print "Det:",dtrpos[el][0]["img"],[numpy.sum(x*w)-r for x in dns],tr.mixture(dtrpos[el])
     #if cumsize!=None:    
     print "Number descr:",len(ls)
     #raw_input()

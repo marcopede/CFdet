@@ -18,24 +18,27 @@ cfg.maxneg=240 #maximum number of negative images
 cfg.maxexamples=20000 #maximum number of examples
 
 if 0:
-    cfg.maxpos=20 #maximum number of positive images
+    cfg.maxpos=40 #maximum number of positive images
     cfg.maxtest=20 #0 #maximum number of test images
-    cfg.maxneg=24 #maximum number of negative images
+    cfg.maxneg=40 #maximum number of negative images
     cfg.maxexamples=20000 #maximum number of examples
 
-cfg.deform=True
+cfg.CRF=False
+cfg.deform=False
 cfg.usemrf=True
 cfg.usefather=True
 cfg.bottomup=False
+cfg.fastBU=False #for the moment only in test
 cfg.initr=1
 cfg.ratio=1
 
+
+cfg.db="VOC"#"adondemand"#"VOC"#"inria"#"ivan"#"VOC"
 #additional for pascal
 cfg.lev=[3,3,3,3,3]
-cfg.numcl=2
+cfg.numcl=3
 cfg.numneginpos=0#6/cfg.numcl #reduce the number of negatives
-cfg.svmc=0.002#0.002#0.004
-cfg.db="ivan"
+cfg.svmc=0.001#0.001
 cfg.cls="bicycle"
 cfg.year="2007"
 cfg.show=True
@@ -43,55 +46,112 @@ cfg.thr=-2      #threshold positives
 cfg.mythr=-10   #threshold cascade
 cfg.posovr=0.75#0.65
 cfg.perc=0.12
-cfg.posit=10#8
-cfg.negit=10#5
+cfg.posit=15#8
+cfg.negit=15#5
 cfg.useprior=False
 cfg.dense=0
-cfg.k=0.3
-cfg.useRL=True#True
+cfg.k=0.3#3:CRF#0.3:CF
+cfg.useRL=True
+cfg.kmeans=True
 cfg.bestovr=True
 cfg.resize=1.0
-cfg.kmeans=False
-cfg.small=1
-cfg.occl=True
+cfg.small=False
+cfg.occl=False
+cfg.usebow=False
 cfg.trunc=0
+cfg.noiselev = 0.05
+cfg.ranktr=2000 #for CRF should be 500
+
+cfg.small2=True
+cfg.hallucinate=2 #important to set to 2 otherwise small2 would not work
 
 cfg.comment    =""
 #cfg.testname="./data/11_02_28/iria_full" #location of the current test
-cfg.testpath="./data/PASCAL/11_10_10/"
-cfg.testspec="debug"
+#cfg.testpath="./data/PASCAL/12_02_16_buffer/"
+cfg.testpath="./data/CRF/12_08_15/"
+#cfg.testpath="./data/SMALL2/12_06_19/"
+#cfg.testspec="HighNorm"
+cfg.testspec="fullflip"
 #cfg.testname="./data/11_03_10/%s_%d_3levnompos_hres"%(cfg.cls,cfg.numcl)
 
+boost=True
+if boost:
+    cfg.lev=[3]*10
+    cfg.deform=True
+    cfg.CRF=False
+    cfg.svmc=0.001
+    cfg.lev=[3]
+    cfg.maxpos=2000 #maximum number of positive images
+    cfg.maxtest=2000 #0 #maximum number of test images
+    cfg.maxneg=240 #maximum number of negative images
+    cfg.maxexamples=20000 #maximum number of examples
+    cfg.posovr=0.75
+    cfg.ranktr=10
+    cfg.useRL=True
+    cfg.kmeans=True
+    cfg.testpath="./data/BOOST/12_07_01/"
+    cfg.testspec="rank10"
+    cfg.small2=False
+    cfg.hallucinate=1
+
+if cfg.db=="adondemand":
+    cfg.deform=False
+    cfg.CRF=False
+    cfg.svmc=0.01
+    cfg.lev=[3]
+    cfg.maxpos=1 #maximum number of positive images
+    cfg.maxtest=100 #0 #maximum number of test images
+    cfg.maxneg=20 #maximum number of negative images
+    cfg.maxexamples=2000 #maximum number of examples
+    cfg.cls="escote"
+    cfg.posovr=0.5
+    cfg.ranktr=2000
+    cfg.numcl=1
+    cfg.useRL=True
+    cfg.kmeans=False
+    cfg.testpath="./data/ADONDEMAND/12_06_29/"
+    cfg.testspec="video"
+    cfg.small2=True
+    cfg.hallucinate=2
+    cfg.saveVOC=True
 
 #cfg.cls="inria"
 if cfg.db=="inria":
     cfg.cls="person"
-    cfg.testspec="full"
+    cfg.testspec="Rigid500"
     cfg.multipr=4
+    #cfg.usefather=False
+    #cfg.fastBU=True
     cfg.sortneg=True
-    cfg.show=True
-    cfg.useRL=False
+    #cfg.show=False
+    cfg.useRL=False#True
     cfg.negit=10
     cfg.posit=10
-    cfg.testpath="./data/INRIA/11_09_06/"
+    cfg.testpath="./data/CRF/12_06_15/"#"./data/INRIA/12_02_20/"
     cfg.minnegincl=0.5
     cfg.maxpos=2000 #maximum number of positive images
-    cfg.maxtest=2000 #maximum number of test images
-    cfg.maxneg=200#0#0 #maximum number of negative images
+    cfg.maxtest=1000 #maximum number of test images
+    cfg.maxneg=240 #maximum number of negative images
     cfg.maxexamples=10000 #maximum number of examples
-    cfg.lev=[3]#[3,3]
+    cfg.lev=[3,3]#[3,3]
     cfg.numcl=1
     cfg.numneginpos=0#10
-    cfg.k=0.3
-    cfg.small=1
+    cfg.k=0.3#3#0.3
+    cfg.small=False#1
     cfg.dense=0
     cfg.posovr=0.75
-    cfg.perc=0.2 #how many examples to discard
+    cfg.perc=0.12 #how many examples to discard
     cfg.mpos=0.5
     cfg.resize=1.0
-    cfg.kmeans=False
-    cfg.occl=True
+    cfg.kmeans=False#True
+    cfg.occl=False#True
     cfg.ratio=1
+    cfg.oldlearning=False
+    cfg.usebuffer=False#True
+    cfg.lenbuf=240
+    cfg.usebufpos=False
+    cfg.usebufneg=True
+    cfg.usebuftest=False
 
 if cfg.db=="cvc02":
     cfg.cls="person"
@@ -123,7 +183,7 @@ if cfg.db=="cvc02":
 
 if cfg.db=="ivan":
     cfg.cls="person"
-    cfg.testspec="withGT"
+    cfg.testspec="test"
     cfg.multipr=4
     cfg.deform=True
     cfg.sbin=8
@@ -145,28 +205,67 @@ if cfg.db=="ivan":
     cfg.k=0.3
     cfg.small=True
     cfg.dense=0
-    cfg.posovr=0.75
+    cfg.posovr=0.7
+    cfg.perc=0.2
+    cfg.mpos=0.5
+    cfg.kmeans=False
+    cfg.occl=True
+#### for clustering    
+    cluster=True
+    if cluster:
+        cfg.posit=3
+        cfg.negit=10
+        cfg.occl=False
+        cfg.small=False
+        cfg.posovr=0.4
+        cfg.numcl=1
+
+if cfg.db=="ransac":
+    #cfg.db="VOC"
+    #cfg.cls="bicycle"
+    cfg.multipr=4
+    cfg.testspec="full100"
+    cfg.deform=True
+    cfg.sbin=8
+    cfg.useRL=False
+    cfg.testpath="./data/ransac/11_11_25/"
+    cfg.sortneg=True
+    cfg.useRL=True
+    cfg.show=True
+    cfg.posit=5
+    cfg.negit=10
+    cfg.minnegincl=0.5
+    cfg.maxpos=1 #maximum number of positive images
+    cfg.maxneg=20 #maximum number of negative images
+    cfg.maxtest=20 #maximum number of test images
+    cfg.maxexamples=10000 #maximum number of examples
+    cfg.lev=[3,3]
+    cfg.numcl=1
+    cfg.numneginpos=0
+    cfg.k=0.3
+    cfg.small=True
+    cfg.dense=0
+    cfg.posovr=0.7
     cfg.perc=0.2
     cfg.mpos=0.5
     cfg.kmeans=False
     cfg.occl=True
 
-
-cfg.debug = False #debug mode
+cfg.debug = False#False #debug mode
 
 if cfg.debug:
     #cfg.posovr=0.5#0.65
-    cfg.useprior=False
-    cfg.lev=[3,3]
-    cfg.numcl=2
+    #cfg.useprior=False
+    #cfg.lev=[3,3]
+    #cfg.testspec="Debug"
     cfg.show=True
     cfg.posit=8
-    cfg.negit=1
+    cfg.negit=5
     #cfg.testspec="debug"
-    cfg.multipr=4#2
-    cfg.maxpos=100#120
-    cfg.maxtest=100#100
-    cfg.maxneg=100#120
-    cfg.description="DEBUG"
+    cfg.multipr=4
+    cfg.maxpos=20#120
+    cfg.maxtest=20#100
+    cfg.maxneg=20#120
+    cfg.description="False"
     #cfg.testname=cfg.testname+"_debug"
 

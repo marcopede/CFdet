@@ -979,7 +979,10 @@ if __name__=="__main__":
         if cfg.bestovr and it==0:#force to take best overlapping
             cfg.mpos=10
             temprank=cfg.ranktr
-            cfg.ranktr=20000 #should be at least 1000
+            if cfg.CRF:
+                cfg.ranktr=1000
+            else:
+                cfg.ranktr=20000 #should be at least 1000
             auxinitr=cfg.initr
             cfg.initr=0
         else:

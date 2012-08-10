@@ -987,7 +987,9 @@ if __name__=="__main__":
             cfg.initr=0
         else:
             cfg.mpos=0#0.5
-            cfg.ranktr=temprank
+            #not necessary they are done at negative stage
+            #cfg.ranktr=temprank 
+            #cfg.initr=auxinitr
         cfgpos=copy.copy(cfg)
         cfgpos.numneg=cfg.numneginpos
         #arg=[[i,trPosImages[i]["name"],trPosImages[i]["bbox"],models,cfgpos] for i in range(len(trPosImages))]
@@ -1305,7 +1307,8 @@ if __name__=="__main__":
         trnegcl=trnegcl+newtrnegcl2
 
         #reset initr to the configuration
-        cfg.initr=auxinitr        
+        cfg.initr=auxinitr     
+        cfg.ranktr=temprank
 
         #negative retraining
         trneglen=1

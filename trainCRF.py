@@ -955,6 +955,27 @@ if __name__=="__main__":
     pyrHOG2.setK(cfg.k)
     #pyrHOG2.setDENSE(cfg.dense)
     for it in range(cfg.posit):
+        if cfg.checkpoint:
+            try:
+                m1=util.load("%s%d.model"%(testname,it))
+                m1=util.load("%s%d.model"%(testname,it+1))
+                continue
+            except:
+                if it==0:
+                    print "Starting from scracth!!"
+                else:
+                    print "Using model %d for it %d because it is the last complete"%(it-1,it)
+                    m1=util.load("%s%d.model"%(testname,it-1))
+                    w1=numpy.array([])
+                    waux1=[]
+                    for l in range(cfg.numcl):
+                        if cfg.deform:
+                            waux1.append(model.model2wDef(m1[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow))
+                        else:
+                            waux1.append(model.model2w(m1[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow,useCRF=cfg.CRF,small2=cfg.small2))
+                        w1=numpy.concatenate((w1,waux1[-1],numpy.array([-m1[l]["rho"]/100.0])))
+                    w=w1
+                    models=m1
         if last_round:
             print "Finished!!!!"
             break
@@ -1261,7 +1282,7 @@ if __name__=="__main__":
                 trpos+=(mytrpos[cl1]).tolist()
                 trposcl+=([l]*len(cl1))
                     
-        if it>0:
+        if len(trneg)>0:#it>0
             
             #lambd=1.0/(len(trpos)*cfg.svmc)
             #trpos,trneg,trposcl,trnegcl,clsize,w,lamda
@@ -1306,9 +1327,10 @@ if __name__=="__main__":
         trneg=trneg+newtrneg2
         trnegcl=trnegcl+newtrnegcl2
 
-        #reset initr to the configuration
-        cfg.initr=auxinitr     
-        cfg.ranktr=temprank
+        if it==0:
+            #reset initr to the configuration
+            cfg.initr=auxinitr     
+            cfg.ranktr=temprank
 
         #negative retraining
         trneglen=1
@@ -1317,7 +1339,7 @@ if __name__=="__main__":
             trNegImages=trNegImagesFull
             #cfg.maxneg=5000
         for nit in range(cfg.negit):
-            if nit==0 and it>0:
+            if nit==0 and len(trneg)>0:#it>0:
                 print "Skipping searching more negatives in the first iteration"
             else:
                 newtrneg=[]

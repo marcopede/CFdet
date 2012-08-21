@@ -356,7 +356,7 @@ def match(m1,m2,cost,movy=None,movx=None,padvalue=0,pad=0,feat=True,show=True):
     return scr,res2
 
 
-def getfeat(m1,pad,res2,movy=None,movx=None):
+def getfeat(m1,pad,res2,movy=None,movx=None,mode="New"):
     if movy==None:
         movy=((m1.shape[0]-2*pad)-1)/2
     if movx==None:
@@ -373,16 +373,22 @@ def getfeat(m1,pad,res2,movy=None,movx=None):
     edge=numpy.zeros(res2.shape,dtype=numpy.float32)
     #edge[0,:-1,:]=(res2[0,:-1]-res2[0,1:])
     #edge[1,:,:-1]=(res2[1,:,:-1]-res2[1,:,1:])
-    edge[0,:-1,:]=abs(res2[0,:-1,:]-res2[0,1:,:])+abs(res2[1,:-1,:]-res2[1,1:,:])
-    edge[1,:,:-1]=abs(res2[0,:,:-1]-res2[0,:,1:])+abs(res2[1,:,:-1]-res2[1,:,1:])
+    if mode=="Old":
+        edge[0,:-1,:]=abs(res2[0,:-1,:]-res2[0,1:,:])+abs(res2[1,:-1,:]-res2[1,1:,:])
+        edge[1,:,:-1]=abs(res2[0,:,:-1]-res2[0,:,1:])+abs(res2[1,:,:-1]-res2[1,:,1:])
+    else:
+        edge[0,:-1,:]=abs(res2[0,:-1,:]-res2[0,1:,:])
+        edge[1,:,:-1]=abs(res2[1,:,:-1]-res2[1,:,1:])
     return dfeat,-edge    
 
 if __name__ == "__main__":
 
     if 1:#example with HOG
         import util
-        model1=util.load("./data/CRF/12_04_27/bicycle2_NoCRF9.model")
-        model2=util.load("./data/CRF/12_04_27/bicycle2_NoCRFNoDef9.model")
+        #model1=util.load("./data/CRF/12_04_27/bicycle2_NoCRF9.model")
+        #model2=util.load("./data/CRF/12_04_27/bicycle2_NoCRFNoDef9.model")
+        model1=util.load("./data/rigid/12_08_17/bicycle3_complete8.model")
+        model2=util.load("data/CF/12_08_15/bicycle3_newcache2.model")
         m1=model1[0]["ww"][2]
         m2=model2[0]["ww"][2]    
         pad=2
@@ -394,7 +400,7 @@ if __name__ == "__main__":
         numx=m1.shape[1]/2
         movy=(numy*2-1)/2
         movx=(numx*2-1)/2
-        mcost=0.000001*numpy.ones((2,numy,numx),dtype=c_float)
+        mcost=0.1*numpy.ones((2,numy,numx),dtype=c_float)
         #mcost[0,-1,:]=0#vertical 
         #mcost[0,0,:]=0#added v
         #mcost[1,:,-1]=0#horizontal

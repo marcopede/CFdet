@@ -311,7 +311,7 @@ def extract_feat(tr,dtrpos,cumsize,useRL):
         if cumsize!=None:
             dns=buildense(aux,auxcl,cumsize)
             #print "Det:",dtrpos[el][0]["img"],[x["scr"] for x in dtrpos[el]],tr.mixture(dtrpos[el])
-            print "Det:",dtrpos[el][0]["img"],[numpy.sum(x*w)-r for x in dns],tr.mixture(dtrpos[el])
+            #print "Det:",dtrpos[el][0]["img"],[numpy.sum(x*w)-r for x in dns],tr.mixture(dtrpos[el])
     #if cumsize!=None:    
     #    raw_input()
     return ls,lscl
@@ -335,7 +335,7 @@ def extract_feat2(tr,dtrpos,cumsize,useRL):
         if cumsize!=None:
             dns=buildense(aux,auxcl,cumsize)
             #print "Det:",dtrpos[el][0]["img"],[x["scr"] for x in dtrpos[el]],tr.mixture(dtrpos[el])
-            print "Det:",dtrpos[el][0]["img"],[numpy.sum(x*w)-r for x in dns],tr.mixture(dtrpos[el])
+            #print "Det:",dtrpos[el][0]["img"],[numpy.sum(x*w)-r for x in dns],tr.mixture(dtrpos[el])
     #if cumsize!=None:    
     print "Number descr:",len(ls)
     #raw_input()
@@ -604,6 +604,7 @@ if __name__=="__main__":
         #test
         tsImages=getRecord(InriaTestFullData(basepath=cfg.dbpath),cfg.maxtest)
         tsImagesFull=tsImages
+
     #compute simple vocabulary
     from PySegment import *
     maxsift=10000
@@ -952,6 +953,13 @@ if __name__=="__main__":
     #raw_input()
     #if cfg.useRL:
     totPosEx*=2 #double number of bboxes because of flip
+
+    #now chache is 10 times positive examples
+    if cfg.variablecache:
+        cfg.maxexamples= min(cfg.maxexamples,totPosEx*10)
+        print "Real cache:",cfg.maxexamples
+        #raw_input()
+
     pyrHOG2.setK(cfg.k)
     #pyrHOG2.setDENSE(cfg.dense)
     for it in range(cfg.posit):
@@ -999,13 +1007,15 @@ if __name__=="__main__":
         print "Positive Images:"
         if cfg.bestovr and it==0:#force to take best overlapping
             cfg.mpos=10
-            temprank=cfg.ranktr
-            if cfg.CRF:
-                cfg.ranktr=1000
-            else:
-                cfg.ranktr=20000 #should be at least 1000
             auxinitr=cfg.initr
-            cfg.initr=0
+            temprank=cfg.ranktr
+            if cfg.denseinit:
+                if cfg.CRF:
+                    cfg.ranktr=1000
+                    cfg.initr=1
+                else:
+                    cfg.ranktr=20000 #should be at least 1000
+                    cfg.initr=0
         else:
             cfg.mpos=0#0.5
             #not necessary they are done at negative stage
@@ -1254,7 +1264,8 @@ if __name__=="__main__":
                 mytrpos=numpy.array(mytrpos)
                 cl1=range(0,len(mytrpos),2)
                 cl2=range(1,len(mytrpos),2)
-                rrnum=len(mytrpos)
+                #rrnum=len(mytrpos)
+                rrnum=min(len(mytrpos),1000)#to avoid too long clustering
                 #rrnum=3*len(mytrpos)
                 #if cfg.cls=="person": #speed-up the clustering for person because too many examples
                 #    rrnum=len(mytrpos)

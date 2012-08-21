@@ -36,6 +36,8 @@ int st_parts_x;
 dtype * st_cost_y;
 dtype * st_cost_x;
 int st_numlab;
+int st_num_lab_x;
+int st_num_lab_y;
 int maxlab=500;
 //dtype* V[maxlab*maxlab];
 
@@ -179,11 +181,43 @@ MRF::CostVal smoothApp3(int p1, int p2, int l1, int l2)
 //    int p1y=p1/st_parts_x;
 //    int p2x=p2%st_parts_x;
 //    int p2y=p2/st_parts_x;
-    int x1=l1%(st_parts_x*2-1)/2;
-    int y1=l1/(st_parts_x*2-1)/2;
-    int x2=l2%(st_parts_x*2-1)/2;    
-    int y2=l2/(st_parts_x*2-1)/2;
+//    int x1=l1%(st_parts_x*2-1)/2;
+//    int y1=l1/(st_parts_x*2-1)/2;
+//    int x2=l2%(st_parts_x*2-1)/2;    
+//    int y2=l2/(st_parts_x*2-1)/2;
+      int x1=l1%st_num_lab_x;
+      int y1=l1/st_num_lab_x;
+      int x2=l2%st_num_lab_x;    
+      int y2=l2/st_num_lab_x;
     return st_cost_x[p1]*abs(x1-x2)+st_cost_y[p1]*abs(y1-y2); 
+}
+
+MRF::CostVal smoothApp4(int p1, int p2, int l1, int l2)
+{
+    if (p1>p2)
+    {
+        int tmp;
+        tmp=p2;p2=p1; p1=tmp;
+        tmp = l1; l1 = l2; l2 = tmp;
+    }
+//    int p1x=p1%st_parts_x;
+//    int p1y=p1/st_parts_x;
+//    int p2x=p2%st_parts_x;
+//    int p2y=p2/st_parts_x;
+      int x1=l1%st_num_lab_x;
+      int y1=l1/st_num_lab_x;
+      int x2=l2%st_num_lab_x;    
+      int y2=l2/st_num_lab_x;
+    if (p2==p1+1)
+        {
+        //printf("Horizontal Edge! part:%d score:%f\n",p1,st_cost_x[p1]*abs(x1-x2));
+        return st_cost_x[p1]*abs(x1-x2); //horizontal edge
+        }
+    else
+        {
+        //printf("Vertical Edge! part:%d score:%f\n",p1,st_cost_y[p1]*abs(y1-y2));
+        return st_cost_y[p1]*abs(y1-y2); //vertical edge
+        }
 }
 
 //MRF::CostVal smoothApp4(int p1, int p2, int l1, int l2)
@@ -277,6 +311,8 @@ dtype compute_graph(int num_parts_y,int num_parts_x,dtype *costs,int num_lab_y,i
     st_cost_x=costs+num_parts_x*num_parts_y;
     st_parts_x=num_parts_x;
     st_parts_y=num_parts_y;
+    st_num_lab_x=num_lab_x;
+    st_num_lab_y=num_lab_y;
     st_numlab=num_lab_y*num_lab_x;//num_parts_x*num_parts_y;//num_labels;
     clock_t t0,t1;
     t0 = clock ();
@@ -305,7 +341,8 @@ dtype compute_graph(int num_parts_y,int num_parts_x,dtype *costs,int num_lab_y,i
         DataCost *dt         = new DataCost(data);
         //SmoothnessCost *sm   = new SmoothnessCost(smoothApp2);
         //SmoothnessCost *sm   = new SmoothnessCost(smoothApp3);
-        SmoothnessCost *sm   = new SmoothnessCost(V, st_cost_x, st_cost_y);
+        SmoothnessCost *sm   = new SmoothnessCost(smoothApp4);
+        //SmoothnessCost *sm   = new SmoothnessCost(V, st_cost_x, st_cost_y);
         //SmoothnessCost *sm   = new SmoothnessCost(1, 100, 1, st_cost_x, st_cost_y);
         EnergyFunction *energy = new EnergyFunction(dt,sm);
 

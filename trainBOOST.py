@@ -85,43 +85,6 @@ def extractInfo(trPosImages,maxnum=-1,usetr=True,usedf=False):
     area=(bb[:,2]-bb[:,0])*(bb[:,3]-bb[:,1])
     return name,bb[:cnt,:],ratio[:cnt],area[:cnt]
 
-#def initalPos(model,name,ratio,area,cfg):
-#    bb=numpy.zeros((len(trPosImages)*20,4))#as maximum 5 persons per image in average
-#    name=[]
-#    cnt=0
-#    tot=0
-#    if maxnum==-1:
-#        tot=len(trPosImages)
-#    else:
-#        tot=min(maxnum,trPosImages)
-#    for idx in range(tot):
-#        #print trPosImages.getImageName(idx)
-#        #img=trPosImages.getImage(idx)
-#        rect=trPosImages[idx]["bbox"]#.getBBox(idx,usetr=usetr,usedf=usedf)
-#        for r in rect:
-#            bb[cnt,:]=r[:4]
-#            name.append(trPosImages[idx]["name"])#.getImageName(idx))
-#            cnt+=1
-#        #img=pylab.imread("circle.png")
-#        util.pdone(idx,tot)
-#    ratio=(bb[:,2]-bb[:,0])/(bb[:,3]-bb[:,1])
-#    area=(bb[:,2]-bb[:,0])*(bb[:,3]-bb[:,1])
-#    ######
-#    import scipy.misc.pilutil as pil
-#    masp=[]
-#    for l in model:
-#        masp.append(model[0]["ww"].shape[0]/float(model[0]["ww"].shape[1]))
-#    for l,idl in enumerate(name):
-#        im=util.myimread(l)
-#        #cim=im[bb[idl,0]-cfg.sbin:bb[idl,1]+cfg.sbin,bb[idl,2]-cfg.sbin:bb[idl,3]+cfg.sbin]
-#        sy=bb[idl,2]-bb[idl,0]
-#        sx=bb[idl,3]-bb[idl,1]
-#        #cim=getfeat(im,bb[idl,0]-*0.1,bb[idl,1]+cfg.sbin,bb[idl,2]-cfg.sbin,bb[idl,3]+cfg.sbin)
-#        cim=im[:,:]
-#        asp=nump.argmin(masp-ratio)
-#        rim=pil.imresize(cim,(model[asp]["ww"][-1].shape[0]*cfg.sbin,model[asp]["ww"][-1].shape[1]*cfg.sbin))
-#        fhog=
-#    return 
 
 
 def buildense(trpos,trposcl,cumsize,bias=100):
@@ -533,6 +496,7 @@ if __name__=="__main__":
                 import_name=sys.argv[3]
                 #print "The argument is",import_name
                 #raw_input()
+                print "Loading config_%s configuration"%import_name
                 exec "from config_%s import *"%import_name
             else:
                 from config_local_batch import * #your own configuration
@@ -882,9 +846,11 @@ if __name__=="__main__":
     newtrnegcl=[]
 
 
-    for bost in range(10):
+    for bost in range(20):
         end=False
         #cluster bounding boxes
+        cfg.testname=cfg.testpath+cfg.cls+("%d"%cfg.numcl)+"_B%d"%bost+"_"+cfg.testspec
+        testname=cfg.testname
         for ex in final_trPosImages:
             if ex["name"].split("/")[-1] in dtrpos:
                 print "."    

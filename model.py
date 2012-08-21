@@ -60,7 +60,7 @@ def initmodel(fy,fx,lev,useRL,deform,numbow=6**4,onlybow=False,CRF=False,small2=
     model={"ww":ww,"hist":hww,"rho":rho,"df":dd,"fy":ww[0].shape[0],"fx":ww[0].shape[1]}
     if CRF:
         #cost=0.01*numpy.ones((2,fy*2,fx*2),dtype=numpy.float32)
-        cost=0.01*numpy.ones((2,fy*2,fx*2),dtype=numpy.float32)
+        cost=0.01*numpy.ones((4,fy*2,fx*2),dtype=numpy.float32)
         #cost=0*numpy.ones((2,fy*2,fx*2),dtype=numpy.float32)
         #cost[0,-1,:]=0
         #cost[1,:,-1]=0
@@ -151,8 +151,8 @@ def w2model(descr,rho,lev,fsz,fy=[],fx=[],bin=5,siftsize=2,deform=False,usemrf=F
                 p=p+bin**(siftsize**2)
         m={"ww":ww,"rho":rho,"fy":fy,"fx":fx,"occl":occl,"hist":hist,"voc":hist}
         if useCRF:
-            m["cost"]=((d[p:p+2*(2*fy)*(2*fx)].reshape((2,2*fy,2*fx))/float(k)).clip(mindef,10))
-            p=p+2*(2*fy)*(2*fx)
+            m["cost"]=((d[p:p+4*(2*fy)*(2*fx)].reshape((4,2*fy,2*fx))/float(k)).clip(mindef,10))
+            p=p+4*(2*fy)*(2*fx)
         if small2:
             m["small2"]=d[p:]
         return m

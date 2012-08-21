@@ -356,7 +356,7 @@ def match(m1,m2,cost,movy=None,movx=None,padvalue=0,pad=0,feat=True,show=True):
     return scr,res2
 
 
-def getfeat(m1,pad,res2,movy=None,movx=None,mode="New"):
+def getfeat(m1,pad,res2,movy=None,movx=None,mode="Best"):
     if movy==None:
         movy=((m1.shape[0]-2*pad)-1)/2
     if movx==None:
@@ -370,15 +370,20 @@ def getfeat(m1,pad,res2,movy=None,movx=None,mode="New"):
             cpy=py*2+res2[0,py,px]+movy
             cpx=px*2+res2[1,py,px]+movx    
             dfeat[py*2:py*2+2,px*2:px*2+2]=m1pad[cpy:cpy+2,cpx:cpx+2]
-    edge=numpy.zeros(res2.shape,dtype=numpy.float32)
+    edge=numpy.zeros((res2.shape[0]*2,res2.shape[1],res2.shape[2]),dtype=numpy.float32)
     #edge[0,:-1,:]=(res2[0,:-1]-res2[0,1:])
     #edge[1,:,:-1]=(res2[1,:,:-1]-res2[1,:,1:])
     if mode=="Old":
         edge[0,:-1,:]=abs(res2[0,:-1,:]-res2[0,1:,:])+abs(res2[1,:-1,:]-res2[1,1:,:])
         edge[1,:,:-1]=abs(res2[0,:,:-1]-res2[0,:,1:])+abs(res2[1,:,:-1]-res2[1,:,1:])
-    else:
+    elif mode=="New":
         edge[0,:-1,:]=abs(res2[0,:-1,:]-res2[0,1:,:])
         edge[1,:,:-1]=abs(res2[1,:,:-1]-res2[1,:,1:])
+    elif mode=="Best":
+        edge[0,:-1,:]=abs(res2[0,:-1,:]-res2[0,1:,:])
+        edge[1,:-1,:]=abs(res2[1,:-1,:]-res2[1,1:,:])
+        edge[2,:,:-1]=abs(res2[0,:,:-1]-res2[0,:,1:])
+        edge[3,:,:-1]=abs(res2[1,:,:-1]-res2[1,:,1:])
     return dfeat,-edge    
 
 if __name__ == "__main__":
@@ -400,7 +405,7 @@ if __name__ == "__main__":
         numx=m1.shape[1]/2
         movy=(numy*2-1)/2
         movx=(numx*2-1)/2
-        mcost=0.1*numpy.ones((2,numy,numx),dtype=c_float)
+        mcost=0.01*numpy.ones((4,numy,numx),dtype=c_float)
         #mcost[0,-1,:]=0#vertical 
         #mcost[0,0,:]=0#added v
         #mcost[1,:,-1]=0#horizontal

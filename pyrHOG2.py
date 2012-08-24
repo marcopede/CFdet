@@ -438,7 +438,6 @@ def hogflip(feat,obin=9):
     aux=feat[:,::-1,p]
     return numpy.ascontiguousarray(aux)
 
-
 def crfflip(edge):
     aux=edge.copy()#numpy.zeros(edge)
     aux[0]=edge[0,:,::-1]#aux[0,:,::-1]
@@ -2052,7 +2051,7 @@ class TreatCRF(Treat):
                     el["dfeat"]=dfeat                
                     el["edge"]=edge
                 else:
-                    nscr,ndef=crf3.match(m,feat,cost,pad=pad,show=False,feat=False)
+                    nscr,ndef=crf3.match(m,feat,cost,pad=pad,show=False,feat=False,rotate=True)
                 el["CRF"]=ndef
                 el["oldscr"]=item["scr"]
                 el["scr"]=nscr+sum(el["pscr"][:-1])-self.model["rho"]

@@ -263,7 +263,7 @@ def match_wrong(m1,m2,cost,movy=None,movx=None,padvalue=0,pad=0,feat=True,show=T
 
     return scr,res2
 
-def match(m1,m2,cost,movy=None,movx=None,padvalue=0,pad=0,feat=True,show=True):
+def match(m1,m2,cost,movy=None,movx=None,padvalue=0,pad=0,feat=True,show=True,rotate=False):
     t=time.time()
     #blk1=numpy.concatenate((m1[:-1:,:-1],m1[:-1,1:],m1[1:,:-1],m1[1:,1:]),2)
     #blk2=numpy.concatenate((m2[:-1:,:-1],m2[:-1,1:],m2[1:,:-1],m2[1:,1:]),2)
@@ -299,7 +299,7 @@ def match(m1,m2,cost,movy=None,movx=None,padvalue=0,pad=0,feat=True,show=True):
                 2,2,m1.shape[2],0,0,py*2+pad,px*2+pad,movy,movx,data[py,px],
                 mmax,mmax,ctypes.POINTER(c_float)(),0,0,0)
     #print "Time mode1",time.time()-t1
-
+    
     #print "time hog",time.time()-t
     rdata=data.reshape((data.shape[0]*data.shape[1],-1))
     rmin=rdata.min()
@@ -355,6 +355,119 @@ def match(m1,m2,cost,movy=None,movx=None,padvalue=0,pad=0,feat=True,show=True):
 
     return scr,res2
 
+def rotate(hog,shift=1):
+    """
+    rotate each hog cell of a certain shift
+    """
+    if shift==0:
+        return hog
+    hbin=9
+    rhog=numpy.zeros(hog.shape)
+    rhog[:,:,:18]=hog[:,:,numpy.mod(numpy.arange(shift,hbin*2+shift),hbin*2)]
+    rhog[:,:,18:27]=hog[:,:,numpy.mod(numpy.arange(shift,hbin+shift),hbin)+18]
+    rhog[:,:,27:]=hog[:,:,27:]
+    return rhog
+
+def match_new(m1,m2,cost,movy=None,movx=None,padvalue=0,pad=0,feat=True,show=True,rotate=False):
+    t=time.time()
+    numy=m1.shape[0]/2#p1.shape[0]
+    numx=m1.shape[1]/2#p1.shape[1]
+
+    if movy==None:
+        movy=((m1.shape[0]-2*pad)-1)/2
+    if movx==None:
+        movx=((m1.shape[1]-2*pad)-1)/2
+    numlab=(movy*2+1)*(movx*2+1)
+    data=numpy.zeros((numy,numx,(movy*2+1)*(movx*2+1)),dtype=numpy.float32)
+    auxdata=numpy.zeros((3,numy,numx,(movy*2+1)*(movx*2+1)),dtype=numpy.float32)
+    #print "time preparation",time.time()-t
+    t=time.time()
+    mmax=numpy.zeros(2,dtype=c_int)
+    #original model
+    m2=numpy.ascontiguousarray(m2)
+    for px in range(numx):
+        for py in range(numy):
+            ff.refineighfull(m2,m2.shape[0],m2.shape[1],numpy.ascontiguousarray(m1[2*py:2*(py+1),2*px:2*(px+1)]),
+                2,2,m1.shape[2],0,0,py*2+pad,px*2+pad,movy,movx,auxdata[1,py,px],
+                mmax,mmax,ctypes.POINTER(c_float)(),0,0,0)
+    if rotate:
+        #rotate +1
+        m2=numpy.ascontiguousarray(rotate(m2,shift=1))
+        for px in range(numx):
+            for py in range(numy):
+                ff.refineighfull(m2,m2.shape[0],m2.shape[1],numpy.ascontiguousarray(m1[2*py:2*(py+1),2*px:2*(px+1)]),
+                    2,2,m1.shape[2],0,0,py*2+pad,px*2+pad,movy,movx,auxdata[2,py,px],
+                    mmax,mmax,ctypes.POINTER(c_float)(),0,0,0)
+        #rotate -1
+        m2=numpy.ascontiguousarray(rotate(m2,shift=-1))
+        for px in range(numx):
+            for py in range(numy):
+                ff.refineighfull(m2,m2.shape[0],m2.shape[1],numpy.ascontiguousarray(m1[2*py:2*(py+1),2*px:2*(px+1)]),
+                    2,2,m1.shape[2],0,0,py*2+pad,px*2+pad,movy,movx,auxdata[0,py,px],
+                    mmax,mmax,ctypes.POINTER(c_float)(),0,0,0)
+
+        #print "time hog",time.time()-t
+        data=numpy.max(auxdata,0)
+        rot=numpy.argmax(auxdata,0)
+        rdata=data.reshape((data.shape[0]*data.shape[1],-1))
+        rrot=rot.reshape((rot.shape[0]*rot.shape[1]))
+    else:
+        data=auxdata[1]
+        rdata=data.reshape((data.shape[0]*data.shape[1],-1))
+    rmin=rdata.min()
+    rdata=rdata-rmin
+
+    res=numpy.zeros((numy,numx),dtype=c_int)
+    #print "time matching",time.time()-t
+    t=time.time()
+    #print "before"
+    scr=crfgr(numy,numx,cost,movy*2+1,movx*2+1,rdata,res)  
+    #print "after"
+    scr=scr-rmin*numy*numx
+    res2=numpy.zeros((2,res.shape[0],res.shape[1]),dtype=c_int)
+    res2[0]=(res/(movx*2+1)-movy)
+    res2[1]=(res%(movx*2+1)-movx)
+    #print "time config",time.time()-t
+
+    if show:    
+        print scr,res
+        import pylab
+        pylab.figure(10)
+        pylab.clf()
+        pylab.ion()
+        #pylab.axis("image")
+        aa=pylab.axis()
+        pylab.axis([aa[0],aa[1],aa[3],aa[2]])
+        import util
+        for px in range(res.shape[1]):
+            for py in range(res.shape[0]):
+                util.box(py*20+(res[py,px]/(movy*2+1)-movy)*10, px*20+(res[py,px]%(movx*2+1)-movx)*10, py*20+(res[py,px]/(movy*2+1)-movy)*10+20, px*20+(res[py,px]%(movx*2+1)-movx)*10+20, col='b', lw=2)   
+                pylab.text(px*20+(res[py,px]%(movx*2+1)-movx)*10,py*20+(res[py,px]/(movy*2+1)-movy)*10,"(%d,%d)"%(py,px))
+           
+    if feat:
+        t=time.time()
+        dfeat=numpy.zeros(m1.shape,dtype=numpy.float32)
+        m2pad=numpy.zeros((m2.shape[0]+2*movy-2*pad,m2.shape[1]+2*movx-2*pad,m2.shape[2]),dtype=numpy.float32)
+        m2pad[movy-pad:-movy+pad,movx-pad:-movx+pad]=m2
+        for px in range(numx):
+            for py in range(numy):
+                #dfeat[py*2:py*2+2,px*2:px*2+2]=blk2pad[py*2+res[py,px]/(movx*2+1),px*2+res[py,px]%(movx*2+1)].reshape(2,2,31)
+                cpy=py*2+res2[0,py,px]+movy
+                cpx=px*2+res2[1,py,px]+movx    
+                dfeat[py*2:py*2+2,px*2:px*2+2]=m2pad[cpy:cpy+2,cpx:cpx+2]
+        edge=numpy.zeros(res2.shape,dtype=numpy.float32)
+        #edge[0,:-1,:]=(res2[0,:-1]-res2[0,1:])
+        #edge[1,:,:-1]=(res2[1,:,:-1]-res2[1,:,1:])
+        edge[0,:-1,:]=abs(res2[0,:-1,:]-res2[0,1:,:])+abs(res2[1,:-1,:]-res2[1,1:,:])
+        edge[1,:,:-1]=abs(res2[0,:,:-1]-res2[0,:,1:])+abs(res2[1,:,:-1]-res2[1,:,1:])
+        #edge[0,:-1,:]=abs(dy)/(movx*2+1)+abs(dy)%(movx*2+1)
+        #edge[1,:,:-1]=abs(dx)/(movx*2+1)+abs(dx)%(movx*2+1)
+        #print "time feat",time.time()-t
+        return scr,res2,dfeat,-edge
+
+    return scr,res2
+
+
 
 def getfeat(m1,pad,res2,movy=None,movx=None,mode="Best"):
     if movy==None:
@@ -385,6 +498,40 @@ def getfeat(m1,pad,res2,movy=None,movx=None,mode="Best"):
         edge[2,:,:-1]=abs(res2[0,:,:-1]-res2[0,:,1:])
         edge[3,:,:-1]=abs(res2[1,:,:-1]-res2[1,:,1:])
     return dfeat,-edge    
+
+def getfeat_new(m1,pad,res2,movy=None,movx=None,mode="Best",rot=None):
+    if movy==None:
+        movy=((m1.shape[0]-2*pad)-1)/2
+    if movx==None:
+        movx=((m1.shape[1]-2*pad)-1)/2
+    dfeat=numpy.zeros((m1.shape[0]-2*pad,m1.shape[1]-2*pad,m1.shape[2]),dtype=numpy.float32)
+    m1pad=numpy.zeros((m1.shape[0]+2*movy-2*pad,m1.shape[1]+2*movx-2*pad,m1.shape[2]),dtype=numpy.float32)
+    m1pad[movy-pad:-movy+pad,movx-pad:-movx+pad]=m1
+    for px in range(res2.shape[2]):
+        for py in range(res2.shape[1]):
+            #dfeat[py*2:py*2+2,px*2:px*2+2]=blk2pad[py*2+res[py,px]/(movx*2+1),px*2+res[py,px]%(movx*2+1)].reshape(2,2,31)
+            cpy=py*2+res2[0,py,px]+movy
+            cpx=px*2+res2[1,py,px]+movx    
+            if rot==None:
+                dfeat[py*2:py*2+2,px*2:px*2+2]=m1pad[cpy:cpy+2,cpx:cpx+2]
+            else:
+                dfeat[py*2:py*2+2,px*2:px*2+2]=rotate(m1pad[cpy:cpy+2,cpx:cpx+2],rot[py,px])
+    edge=numpy.zeros((res2.shape[0]*2,res2.shape[1],res2.shape[2]),dtype=numpy.float32)
+    #edge[0,:-1,:]=(res2[0,:-1]-res2[0,1:])
+    #edge[1,:,:-1]=(res2[1,:,:-1]-res2[1,:,1:])
+    if mode=="Old":
+        edge[0,:-1,:]=abs(res2[0,:-1,:]-res2[0,1:,:])+abs(res2[1,:-1,:]-res2[1,1:,:])
+        edge[1,:,:-1]=abs(res2[0,:,:-1]-res2[0,:,1:])+abs(res2[1,:,:-1]-res2[1,:,1:])
+    elif mode=="New":
+        edge[0,:-1,:]=abs(res2[0,:-1,:]-res2[0,1:,:])
+        edge[1,:,:-1]=abs(res2[1,:,:-1]-res2[1,:,1:])
+    elif mode=="Best":
+        edge[0,:-1,:]=abs(res2[0,:-1,:]-res2[0,1:,:])
+        edge[1,:-1,:]=abs(res2[1,:-1,:]-res2[1,1:,:])
+        edge[2,:,:-1]=abs(res2[0,:,:-1]-res2[0,:,1:])
+        edge[3,:,:-1]=abs(res2[1,:,:-1]-res2[1,:,1:])
+    return dfeat,-edge    
+
 
 if __name__ == "__main__":
 

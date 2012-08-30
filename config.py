@@ -61,6 +61,7 @@ cfg.saveVOC=False
 cfg.denseinit=False
 cfg.checkpoint=False
 cfg.variablecache=False
+cfg.bias=100
 
 #cfg.savedir=InriaPosData(basepath=dbpath).getStorageDir() #where to save
 #    mydebug=False

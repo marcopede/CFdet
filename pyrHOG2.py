@@ -2051,7 +2051,7 @@ class TreatCRF(Treat):
                     el["dfeat"]=dfeat                
                     el["edge"]=edge
                 else:
-                    nscr,ndef=crf3.match(m,feat,cost,pad=pad,show=False,feat=False,rotate=True)
+                    nscr,ndef=crf3.match(m,feat,cost,pad=pad,show=False,feat=False)
                 el["CRF"]=ndef
                 el["oldscr"]=item["scr"]
                 el["scr"]=nscr+sum(el["pscr"][:-1])-self.model["rho"]

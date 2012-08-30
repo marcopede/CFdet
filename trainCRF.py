@@ -124,7 +124,7 @@ def extractInfo(trPosImages,maxnum=-1,usetr=True,usedf=False):
 #    return 
 
 
-def buildense(trpos,trposcl,cumsize,bias=100):
+def buildense(trpos,trposcl,cumsize,bias):
     ftrpos=[]
     for iel,el in enumerate(trpos):
         ftrpos.append(numpy.zeros(cumsize[-1],dtype=numpy.float32))
@@ -309,7 +309,7 @@ def extract_feat(tr,dtrpos,cumsize,useRL):
             ls+=(tr.descr(dtrpos[el],flip=True,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow))
             lscl+=tr.mixture(dtrpos[el])
         if cumsize!=None:
-            dns=buildense(aux,auxcl,cumsize)
+            dns=buildense(aux,auxcl,cumsize,cfg.bias)
             #print "Det:",dtrpos[el][0]["img"],[x["scr"] for x in dtrpos[el]],tr.mixture(dtrpos[el])
             #print "Det:",dtrpos[el][0]["img"],[numpy.sum(x*w)-r for x in dns],tr.mixture(dtrpos[el])
     #if cumsize!=None:    
@@ -333,7 +333,7 @@ def extract_feat2(tr,dtrpos,cumsize,useRL):
                 ls.append(aux2[l])
                 lscl.append(auxcl2[l])
         if cumsize!=None:
-            dns=buildense(aux,auxcl,cumsize)
+            dns=buildense(aux,auxcl,cumsize,cfg.bias)
             #print "Det:",dtrpos[el][0]["img"],[x["scr"] for x in dtrpos[el]],tr.mixture(dtrpos[el])
             #print "Det:",dtrpos[el][0]["img"],[numpy.sum(x*w)-r for x in dns],tr.mixture(dtrpos[el])
     #if cumsize!=None:    
@@ -341,8 +341,8 @@ def extract_feat2(tr,dtrpos,cumsize,useRL):
     #raw_input()
     return ls,lscl
 
-def loss_pos(trpos,trposcl,cumsize):
-    dns=buildense(trpos,trposcl,cumsize)
+def loss_pos(trpos,trposcl,cumsize,w):
+    dns=buildense(trpos,trposcl,cumsize,cfg.bias)
     loss=0
     lscr=[]
     for l in dns:
@@ -981,7 +981,7 @@ if __name__=="__main__":
                             waux1.append(model.model2wDef(m1[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow))
                         else:
                             waux1.append(model.model2w(m1[l],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow,useCRF=cfg.CRF,small2=cfg.small2))
-                        w1=numpy.concatenate((w1,waux1[-1],numpy.array([-m1[l]["rho"]/100.0])))
+                        w1=numpy.concatenate((w1,waux1[-1],numpy.array([-m1[l]["rho"]/float(cfg.bias)])))
                     w=w1
                     models=m1
         if last_round:
@@ -1105,11 +1105,11 @@ if __name__=="__main__":
                                     exmatch=True
                                     aux=tr.descr([dtold],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)[0]
                                     auxcl=tr.mixture([dtold])[0]
-                                    dns=buildense([aux],[auxcl],cumsize)
+                                    dns=buildense([aux],[auxcl],cumsize,cfg.bias)
                                     oldscr=numpy.sum(dns*w)#-r
                                     dtaux=tr.descr([dt],flip=False,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)[0]
                                     dtauxcl=tr.mixture([dt])[0]
-                                    dtdns=buildense([dtaux],[dtauxcl],cumsize)
+                                    dtdns=buildense([dtaux],[dtauxcl],cumsize,cfg.bias)
                                     newscr=numpy.sum(dtdns*w)#-r
                                     if abs(newscr-dt["scr"])>approx:
                                         print "Warning dense score and scan score are different!!!!"
@@ -1158,7 +1158,7 @@ if __name__=="__main__":
                 #else:
                 #    aux=tr.descr(nfuse)[0]
                 auxcl=tr.mixture(nfuse)[0]
-                dns=buildense([aux],[auxcl],cumsize)[0]
+                dns=buildense([aux],[auxcl],cumsize,cfg.bias)[0]
                 dscr=numpy.sum(dns*w)
                 print "Approx:",abs(nfuse[0]["scr"]-dscr)
                 #print "Scr:",nfuse[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuse[0]["scr"]-dscr)
@@ -1198,7 +1198,7 @@ if __name__=="__main__":
                 else:
                     aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)[0]
                 auxcl=tr.mixture(nfuseneg)[0]
-                dns=buildense([aux],[auxcl],cumsize)[0]
+                dns=buildense([aux],[auxcl],cumsize,cfg.bias)[0]
                 dscr=numpy.sum(dns*w)
                 #print "Scr:",nfuseneg[0]["scr"],"DesneSCR:",dscr,"Diff:",abs(nfuseneg[0]["scr"]-dscr)
                 if abs(nfuseneg[0]["scr"]-dscr)>approx:
@@ -1225,13 +1225,13 @@ if __name__=="__main__":
         #trposcl=remove_empty(fulltrposcl)
         numoldtrpos=len(trpos)
         if it>0:
-            moldloss,oldscr=loss_pos(trpos,trposcl,cumsize)
+            moldloss,oldscr=loss_pos(trpos,trposcl,cumsize,w)
         else:
             moldloss=1
         oldtrpos=trpos;oldtrposcl=trposcl
         trpos,trposcl=extract_feat(tr,dtrpos,cumsize,cfg.useRL)
         if it>0:
-            mnewloss,newscr=loss_pos(trpos,trposcl,cumsize)
+            mnewloss,newscr=loss_pos(trpos,trposcl,cumsize,w)
         else:
             mnewloss=0
         if it>0:
@@ -1427,7 +1427,7 @@ if __name__=="__main__":
                             else:
                                 aux=tr.descr(nfuseneg,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow)[0]
                             auxcl=tr.mixture(nfuseneg)[0]
-                            dns=buildense([aux],[auxcl],cumsize)[0]
+                            dns=buildense([aux],[auxcl],cumsize,cfg.bias)[0]
                             dscr=numpy.sum(dns*w)
                             if abs(nfuseneg[0]["scr"]-dscr)>approx:
                                 print "Warning: the two scores must be the same!!!"
@@ -1543,7 +1543,7 @@ if __name__=="__main__":
                 newoutlyers=numpy.zeros(len(trpos),dtype=numpy.int)
                 for ii in range(10):
                     lscr=[]
-                    dns=buildense(trpos,trposcl,cumsize)
+                    dns=buildense(trpos,trposcl,cumsize,cfg.bias)
                     for f in dns:
                         lscr.append(numpy.sum(f*w))
                     ordered=numpy.argsort(lscr)             
@@ -1585,15 +1585,15 @@ if __name__=="__main__":
             pylab.draw()
             pylab.show()
 
-            bias=100
+            #bias=100
             waux=[];rr=[];w1=numpy.array([])
             for idm,m in enumerate(models):
                 #models[idm]=tr.model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],usemrf=cfg.usemrf,usefather=cfg.usefather,usebow=cfg.usebow)
                 #from w to model
                 if cfg.deform:
-                    models[idm]=model.w2modelDef(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],bin=numbin,siftsize=siftsize,usemrf=cfg.usemrf,usefather=cfg.usefather,usebow=cfg.usebow)
+                    models[idm]=model.w2modelDef(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*cfg.bias,len(m["ww"]),31,m["fy"],m["fx"],bin=numbin,siftsize=siftsize,usemrf=cfg.usemrf,usefather=cfg.usefather,usebow=cfg.usebow)
                 else:
-                    models[idm]=model.w2model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*bias,len(m["ww"]),31,m["fy"],m["fx"],bin=numbin,siftsize=siftsize,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow,useCRF=cfg.CRF,small2=cfg.small2)
+                    models[idm]=model.w2model(w[cumsize[idm]:cumsize[idm+1]-1],-w[cumsize[idm+1]-1]*cfg.bias,len(m["ww"]),31,m["fy"],m["fx"],bin=numbin,siftsize=siftsize,usemrf=cfg.usemrf,usefather=cfg.usefather,k=cfg.k,usebow=cfg.usebow,useCRF=cfg.CRF,small2=cfg.small2)
                 #models[idm]["ra"]=w[cumsize[idm+1]-1]
                 #from model to w #changing the clip...
                 if cfg.deform:
@@ -1601,7 +1601,7 @@ if __name__=="__main__":
                 else:
                     waux.append(model.model2w(models[idm],cfg.deform,cfg.usemrf,cfg.usefather,cfg.k,usebow=cfg.usebow,useCRF=cfg.CRF,small2=cfg.small2))
                 rr.append(models[idm]["rho"])
-                w1=numpy.concatenate((w1,waux[-1],-numpy.array([models[idm]["rho"]])/bias))
+                w1=numpy.concatenate((w1,waux[-1],-numpy.array([models[idm]["rho"]])/cfg.bias))
             w2=w
             w=w1
             util.save("%s%d.model"%(testname,it),models)
@@ -1614,6 +1614,7 @@ if __name__=="__main__":
                     pylab.figure(100+idm)
                     pylab.clf()
                     util.drawModel(m["ww"])
+                    pylab.title("Bias:%f"%(m["rho"]))
                     pylab.draw()
                     pylab.show()
                     pylab.savefig("%s_hog%d_cl%d.png"%(testname,it,idm))
@@ -1650,7 +1651,7 @@ if __name__=="__main__":
             if cfg.sortneg:
                 order=[]
                 for p,d in enumerate(trneg):
-                    order.append(numpy.dot(buildense([d],[trnegcl[p]],cumsize)[0],w))
+                    order.append(numpy.dot(buildense([d],[trnegcl[p]],cumsize,cfg.bias)[0],w))
                 order=numpy.array(order)
                 sorder=numpy.argsort(order)
                 strneg=[]
@@ -1667,7 +1668,7 @@ if __name__=="__main__":
             print "Length before:",len(trneg)
             for p,d in enumerate(trneg):
             #for p in sorder:
-                aux=buildense([trneg[p]],[trnegcl[p]],cumsize)[0]
+                aux=buildense([trneg[p]],[trnegcl[p]],cumsize,cfg.bias)[0]
                 if numpy.sum(aux*w)<-1:
                     if len(trneg)+len(trpos)>(cfg.maxexamples)/2:
                         trneg.pop(p)
@@ -1727,7 +1728,10 @@ if __name__=="__main__":
         rc,pr,ap=VOCpr.drawPrfast(tp,fp,tot)
         pylab.draw()
         pylab.show()
-        pylab.savefig("%s_ap%d.png"%(testname,it))
+        if last_round:
+            pylab.savefig("%s_finalap%d.png"%(testname,it))        
+        else:
+            pylab.savefig("%s_ap%d.png"%(testname,it))
         #util.savemat("%s_ap%d.mat"%(testname,it),{"tp":tp,"fp":fp,"scr":scr,"tot":tot,"rc":rc,"pr":pr,"ap":ap})
         tinit=((time.time()-initime)/3600.0)
         tpar=((time.time()-partime)/3600.0)
